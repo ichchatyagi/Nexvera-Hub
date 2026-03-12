@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, User, Mail, Phone, MessageSquare } from 'lucide-react';
+import { X, Send, User, Mail, Phone, MessageSquare, Loader2 } from 'lucide-react';
 import { useConsultation } from '../context/ConsultationContext';
+import emailjs from '@emailjs/browser';
 
 const ConsultationModal = () => {
     const { isModalOpen, closeModal } = useConsultation();
@@ -11,14 +12,46 @@ const ConsultationModal = () => {
         phone: '',
         message: ''
     });
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Consultation Request:', formData);
-        // Add submission logic here
-        alert('Thank you! Our experts will contact you soon.');
-        closeModal();
-        setFormData({ name: '', email: '', phone: '', message: '' });
+        setIsSubmitting(true);
+
+        try {
+            // 1. Send Admin Notification
+            await emailjs.send(
+                import.meta.env.VITE_EMAILJS_SERVICE_ID,
+                import.meta.env.VITE_EMAILJS_TEMPLATE_ADMIN_ID,
+                {
+                    name: formData.name,
+                    email: formData.email,
+                    phone: formData.phone,
+                    message: formData.message,
+                },
+                import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+            );
+
+            // // 2. Send Thank You Mail to User
+            // await emailjs.send(
+            //     import.meta.env.VITE_EMAILJS_SERVICE_ID,
+            //     import.meta.env.VITE_EMAILJS_TEMPLATE_USER_ID,
+            //     {
+            //         name: formData.name,
+            //         email: formData.email,
+            //     },
+            //     import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+            // );
+
+            alert('Consultation request sent! Please check your email for details.');
+            closeModal();
+            setFormData({ name: '', email: '', phone: '', message: '' });
+        } catch (error) {
+            console.error('Email Error:', error);
+            alert('Failed to send request. Please try again later.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleChange = (e) => {
@@ -126,10 +159,11 @@ const ConsultationModal = () => {
 
                                 <button
                                     type="submit"
-                                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-sm mt-4"
+                                    disabled={isSubmitting}
+                                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-sm mt-4 disabled:opacity-70"
                                 >
-                                    Request Consultation
-                                    <Send size={18} />
+                                    {isSubmitting ? 'Requesting...' : 'Request Consultation'}
+                                    {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                                 </button>
                             </form>
                         </div>

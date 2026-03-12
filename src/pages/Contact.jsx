@@ -1,8 +1,60 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Mail, Phone, MessageCircle, Clock, Send, Building2, Smartphone } from 'lucide-react';
+import { MapPin, Mail, Phone, MessageCircle, Clock, Send, Building2, Smartphone, Loader2 } from 'lucide-react';
+import emailjs from '@emailjs/browser';
 
 const Contact = () => {
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        phone: '',
+        message: ''
+    });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+
+        try {
+            // 1. Send Admin Notification
+            await emailjs.send(
+                import.meta.env.VITE_EMAILJS_SERVICE_ID,
+                import.meta.env.VITE_EMAILJS_TEMPLATE_ADMIN_ID,
+                {
+                    name: formData.name,
+                    email: formData.email,
+                    phone: formData.phone,
+                    message: formData.message,
+                },
+                import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+            );
+
+            // 2. Send Thank You Mail to User
+            // await emailjs.send(
+            //     import.meta.env.VITE_EMAILJS_SERVICE_ID,
+            //     import.meta.env.VITE_EMAILJS_TEMPLATE_USER_ID,
+            //     {
+            //         name: formData.name,
+            //         email: formData.email,
+            //     },
+            //     import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+            // );
+
+            alert('Details sent successfully! Please check your email for confirmation.');
+            setFormData({ name: '', email: '', phone: '', message: '' });
+        } catch (error) {
+            console.error('Email Error:', error);
+            alert('Failed to send details. Please try again later.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     return (
         <div className="pt-32 pb-24 bg-transparent overflow-hidden">
             <div className="container mx-auto px-6 lg:px-12">
@@ -36,32 +88,67 @@ const Contact = () => {
                     >
                         <div className="bg-white p-8 lg:p-12 rounded-[2.9rem] relative overflow-hidden">
                             <h2 className="text-3xl font-black text-slate-900 mb-8 uppercase tracking-tight">Contact Us</h2>
-                            <form className="space-y-6">
+                            <form onSubmit={handleSubmit} className="space-y-6">
                                 <div className="space-y-2">
                                     <label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Full Name</label>
-                                    <input type="text" className="w-full px-7 py-4 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300" placeholder="Enter your full name" />
+                                    <input 
+                                        required
+                                        type="text" 
+                                        name="name"
+                                        value={formData.name}
+                                        onChange={handleChange}
+                                        className="w-full px-7 py-4 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300" 
+                                        placeholder="Enter your full name" 
+                                    />
                                 </div>
                                 <div className="grid md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Email Address</label>
-                                        <input type="email" className="w-full px-7 py-4 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300" placeholder="name@example.com" />
+                                        <input 
+                                            required
+                                            type="email" 
+                                            name="email"
+                                            value={formData.email}
+                                            onChange={handleChange}
+                                            className="w-full px-7 py-4 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300" 
+                                            placeholder="name@example.com" 
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Contact Number</label>
-                                        <input type="tel" className="w-full px-7 py-4 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300" placeholder="+91 98765 43210" />
+                                        <input 
+                                            required
+                                            type="tel" 
+                                            name="phone"
+                                            value={formData.phone}
+                                            onChange={handleChange}
+                                            className="w-full px-7 py-4 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300" 
+                                            placeholder="+91 98765 43210" 
+                                        />
                                     </div>
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Your Message</label>
-                                    <textarea rows="4" className="w-full px-7 py-4 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 resize-none" placeholder="Tell us how we can help..."></textarea>
+                                    <textarea 
+                                        name="message"
+                                        value={formData.message}
+                                        onChange={handleChange}
+                                        rows="4" 
+                                        className="w-full px-7 py-4 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 resize-none" 
+                                        placeholder="Tell us how we can help..."
+                                    ></textarea>
                                 </div>
-                                <button className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-1 transition-all active:scale-[0.98] uppercase tracking-widest text-sm flex items-center justify-center gap-3">
-                                    Send Message
-                                    <Send className="w-5 h-5" />
+                                <button 
+                                    disabled={isSubmitting}
+                                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-1 transition-all active:scale-[0.98] uppercase tracking-widest text-sm flex items-center justify-center gap-3 disabled:opacity-70"
+                                >
+                                    {isSubmitting ? 'Sending...' : 'Send Message'}
+                                    {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                                 </button>
                             </form>
                         </div>
                     </motion.div>
+
 
                     {/* Right: Quick Connect Box */}
                     <motion.div
