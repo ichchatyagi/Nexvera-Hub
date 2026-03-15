@@ -7,8 +7,36 @@ import { adminNotificationTemplate, userThankYouTemplateConsultancy, userThankYo
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+// ── CORS ────────────────────────────────────────────────────────────────────
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+    : ['http://localhost:5173', 'http://localhost:3000'];
+
+app.use(
+    cors({
+        origin: (origin, callback) => {
+            // Allow requests with no origin (e.g. curl / Postman / server-to-server)
+            if (!origin) return callback(null, true);
+            if (allowedOrigins.includes(origin)) return callback(null, true);
+            callback(new Error(`CORS: origin "${origin}" is not allowed`));
+        },
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+        credentials: true,
+    })
+);
+
 app.use(express.json());
+
+// ── Health check ─────────────────────────────────────────────────────────────
+app.get('/health', (_req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+    });
+});
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
