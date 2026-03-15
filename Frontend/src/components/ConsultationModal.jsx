@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, User, Mail, Phone, MessageSquare, Loader2 } from 'lucide-react';
 import { useConsultation } from '../context/ConsultationContext';
-import emailjs from '@emailjs/browser';
 
 const ConsultationModal = () => {
     const { isModalOpen, closeModal } = useConsultation();
@@ -19,29 +18,17 @@ const ConsultationModal = () => {
         setIsSubmitting(true);
 
         try {
-            // 1. Send Admin Notification
-            await emailjs.send(
-                import.meta.env.VITE_EMAILJS_SERVICE_ID,
-                import.meta.env.VITE_EMAILJS_TEMPLATE_ADMIN_ID,
-                {
-                    name: formData.name,
-                    email: formData.email,
-                    phone: formData.phone,
-                    message: formData.message,
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/consultancy`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
                 },
-                import.meta.env.VITE_EMAILJS_PUBLIC_KEY
-            );
+                body: JSON.stringify(formData),
+            });
 
-            // // 2. Send Thank You Mail to User
-            // await emailjs.send(
-            //     import.meta.env.VITE_EMAILJS_SERVICE_ID,
-            //     import.meta.env.VITE_EMAILJS_TEMPLATE_USER_ID,
-            //     {
-            //         name: formData.name,
-            //         email: formData.email,
-            //     },
-            //     import.meta.env.VITE_EMAILJS_PUBLIC_KEY
-            // );
+            if (!response.ok) throw new Error('Failed to send request');
+
+            await response.json();
 
             alert('Consultation request sent! Please check your email for details.');
             closeModal();
