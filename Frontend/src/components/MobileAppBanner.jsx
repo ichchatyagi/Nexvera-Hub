@@ -1,4 +1,5 @@
 import React from 'react';
+import appLogo from '../assets/applogo.webp';
 
 const MobileAppBanner = () => {
     return (
@@ -8,13 +9,21 @@ const MobileAppBanner = () => {
         >
             <div className="container mx-auto px-6 lg:px-12">
                 <div className="flex flex-col items-center justify-center text-center">
-                    {/* Simplified Centered Text Content */}
                     <h3 className="text-slate-900 font-black text-xl md:text-3xl lg:text-4xl tracking-tight uppercase">
                         Our Mobile App – <span className="text-blue-700">Coming Soon</span>
                     </h3>
-                    <p className="text-slate-700 font-semibold text-sm md:text-lg mt-3 tracking-tight">
-                        Android & iOS apps launching soon.
-                    </p>
+                    
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-4">
+                        <p className="text-slate-700 font-bold text-sm md:text-base lg:text-lg uppercase tracking-widest">
+                            Android & iOS apps launching soon on
+                        </p>
+                        
+                        <img 
+                            src={appLogo} 
+                            alt="Android and iOS apps launching soon" 
+                            className="h-8 md:h-10 lg:h-12 w-auto object-contain drop-shadow-lg transition-transform hover:scale-105"
+                        />
+                    </div>
                 </div>
             </div>
         </div>
