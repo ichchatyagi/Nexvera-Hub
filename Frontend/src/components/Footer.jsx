@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Instagram, Facebook } from 'lucide-react';
+import { Instagram, Facebook, Linkedin } from 'lucide-react';
 import logo from '../assets/logo.PNG';
 
 const Footer = () => {
@@ -16,8 +16,9 @@ const Footer = () => {
 
                         <div className="flex gap-4">
                             {[
-                                { Icon: Facebook, href: "https://www.facebook.com/share/1E8A9bTeyS/?mibextid=wwXIfr", brandColor: "bg-[#1877F2]", iconColor: "text-white" },
-                                { Icon: Instagram, href: "https://www.instagram.com/nexverahub", brandColor: "bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7]", iconColor: "text-white" }
+                                { Icon: Facebook, href: "https://www.facebook.com/share/189odEHLZR/?mibextid=wwXIfr", brandColor: "bg-[#1877F2]", iconColor: "text-white" },
+                                { Icon: Instagram, href: "https://www.instagram.com/nexverahub", brandColor: "bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7]", iconColor: "text-white" },
+                                { Icon: Linkedin, href: "https://www.linkedin.com/company/nexverahub/", brandColor: "bg-[#0A66C2]", iconColor: "text-white" }
                             ].map((social, idx) => (
                                 <a
                                     key={idx}
