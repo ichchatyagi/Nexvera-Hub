@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { NavLink } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Menu, X } from 'lucide-react';
+import { ChevronDown, Menu, X, Sparkles } from 'lucide-react';
 import logo from '../assets/logo.PNG';
 
 const NavDropdown = ({ title, items }) => {
@@ -90,6 +91,13 @@ const MobileNavDropdown = ({ title, items, closeMenu }) => {
 
 const Navbar = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [showPopup, setShowPopup] = useState(false);
+
+    const handleAuthClick = (e) => {
+        e.preventDefault();
+        if (isMobileMenuOpen) setIsMobileMenuOpen(false);
+        setShowPopup(true);
+    };
 
     const aboutItems = [
         { label: 'About Nexvera', path: '/about' },
@@ -133,10 +141,10 @@ const Navbar = () => {
                 {/* Right side: Auth + Hamburger */}
                 <div className="flex items-center gap-3 lg:gap-4 shrink-0">
                     <div className="flex items-center gap-2 lg:gap-4">
-                        <NavLink to="/login" className="hidden sm:block text-slate-700 font-semibold px-4 py-2 text-sm lg:text-base hover:text-blue-600 transition-colors">Log In</NavLink>
-                        <NavLink to="/signup" className="hidden sm:block bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-bold px-5 lg:px-6 py-2 rounded-full text-sm lg:text-base transition-all shadow-lg shadow-blue-200">
+                        <button onClick={handleAuthClick} className="hidden sm:block text-slate-700 font-semibold px-4 py-2 text-sm lg:text-base hover:text-blue-600 transition-colors cursor-pointer outline-none">Log In</button>
+                        <button onClick={handleAuthClick} className="hidden sm:block bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-bold px-5 lg:px-6 py-2 rounded-full text-sm lg:text-base transition-all shadow-lg shadow-blue-200 cursor-pointer outline-none">
                             Sign Up
-                        </NavLink>
+                        </button>
                     </div>
 
                     {/* Hamburger Button */}
@@ -191,15 +199,72 @@ const Navbar = () => {
 
                             {/* Mobile Auth Buttons */}
                             <div className="flex flex-col gap-4 sm:hidden mt-8 pb-10">
-                                <NavLink to="/login" onClick={closeMobileMenu} className="w-full text-center text-slate-700 font-semibold py-4 bg-slate-50 border border-slate-200 rounded-2xl active:scale-95 transition-transform">Log In</NavLink>
-                                <NavLink to="/signup" onClick={closeMobileMenu} className="w-full text-center bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold py-4 rounded-2xl shadow-xl shadow-blue-200 active:scale-95 transition-transform">
+                                <button onClick={handleAuthClick} className="w-full text-center text-slate-700 font-semibold py-4 bg-slate-50 border border-slate-200 rounded-2xl active:scale-95 transition-transform cursor-pointer outline-none">Log In</button>
+                                <button onClick={handleAuthClick} className="w-full text-center bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold py-4 rounded-2xl shadow-xl shadow-blue-200 active:scale-95 transition-transform cursor-pointer outline-none">
                                     Get Started
-                                </NavLink>
+                                </button>
                             </div>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Coming Soon Popup Overlay */}
+            {typeof document !== 'undefined' && createPortal(
+                <AnimatePresence>
+                    {showPopup && (
+                        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+                            <motion.div 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm cursor-pointer"
+                                onClick={() => setShowPopup(false)}
+                            />
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                className="bg-white rounded-3xl p-8 max-w-[340px] shadow-2xl relative z-10 flex flex-col items-center text-center overflow-hidden"
+                            >
+                                <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-blue-50/80 to-transparent -z-10" />
+                                
+                                <button 
+                                    onClick={() => setShowPopup(false)}
+                                    className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-full transition-colors cursor-pointer outline-none"
+                                >
+                                    <X size={20} />
+                                </button>
+                                
+                                <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-cyan-50 rounded-2xl flex items-center justify-center mb-6 text-blue-600 shadow-sm border border-blue-100/50">
+                                    <motion.div
+                                        animate={{ 
+                                            scale: [1, 1.1, 1],
+                                            rotate: [0, 5, -5, 0]
+                                        }}
+                                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                                    >
+                                        <Sparkles size={32} strokeWidth={1.5} className="fill-blue-100/50" />
+                                    </motion.div>
+                                </div>
+                                
+                                <h3 className="text-2xl font-bold text-slate-800 mb-2 tracking-tight">Coming Soon!</h3>
+                                <p className="text-slate-600 leading-relaxed mb-8 font-medium">
+                                    Something exciting is on the way. This feature will be unlocked soon—stay connected.
+                                </p>
+                                
+                                <button 
+                                    onClick={() => setShowPopup(false)}
+                                    className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-200 cursor-pointer outline-none"
+                                >
+                                    Got it 
+                                </button>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
         </header>
     );
 };
