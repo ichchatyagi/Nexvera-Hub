@@ -64,13 +64,18 @@ export const userThankYouTemplateConsultancy = (data) => `
 
 <!-- Header -->
 <tr>
-<td align="center" style="background:#0f172a; padding:25px 20px;">
-<h1 style="margin:0; color:#ffffff; font-size:26px; letter-spacing:1px;">
-NEXVERA HUB
-</h1>
-<p style="margin:6px 0 0 0; color:#cbd5f5; font-size:14px;">
+<td align="center" style=" padding:25px 20px;">
+<img style="width: 27vw;" src="https://nexverahub.com/assets/logo-B1jSTEFJ.PNG" alt="NEXVERAHUB"/>
+<p style="margin:6px 0 0 0; color:#3b82f6; font-size:14px;">
 Learn Smart. Build Your Future.
 </p>
+</td>
+</tr>
+
+<!-- Divider -->
+<tr>
+<td style="padding:10px 40px;">
+<hr style="border:0;border-top:2px solid #000000;margin:0;">
 </td>
 </tr>
 
@@ -236,9 +241,16 @@ export const userThankYouTemplateContact = (data) => `
 
 <!-- Header -->
 <tr>
-<td style="background:linear-gradient(135deg,#3b82f6,#6366f1);padding:30px;text-align:center;color:#ffffff;">
-<h1 style="margin:0;font-size:28px;letter-spacing:1px;">NEXVERA HUB</h1>
-<p style="margin:8px 0 0 0;font-size:14px;opacity:0.9;">Empowering Learning Through Technology</p>
+<td style="padding:30px;text-align:center;color:#ffffff;">
+<img style="width: 27vw;" src="https://nexverahub.com/assets/logo-B1jSTEFJ.PNG" alt="NEXVERAHUB"/>
+<p style="margin:8px 0 0 0;font-size:14px;opacity:0.9;color:#3b82f6">Empowering Learning Through Technology</p>
+</td>
+</tr>
+
+<!-- Divider -->
+<tr>
+<td style="padding:10px 40px;">
+<hr style="border:0;border-top:2px solid #000000;margin:0;">
 </td>
 </tr>
 
