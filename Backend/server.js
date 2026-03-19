@@ -51,6 +51,19 @@ const transporter = nodemailer.createTransport({
     }
 });
 
+const transporter_Thankyou = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+        user: process.env.SENDER_EMAIL,
+        pass: process.env.SENDER_PASS,
+    },
+    tls: {
+        rejectUnauthorized: false
+    }
+});
+
 app.post('/api/consultancy', async (req, res) => {
     const { name, email, phone, message } = req.body;
 
@@ -74,7 +87,7 @@ app.post('/api/consultancy', async (req, res) => {
         // Send both emails
         await Promise.all([
             transporter.sendMail(adminMailOptions),
-            transporter.sendMail(userMailOptions)
+            transporter_Thankyou.sendMail(userMailOptions)
         ]);
 
         res.status(200).json({ success: true, message: 'Emails sent successfully' });
@@ -107,7 +120,7 @@ app.post('/api/contact', async (req, res) => {
         // Send both emails
         await Promise.all([
             transporter.sendMail(adminMailOptions),
-            transporter.sendMail(userMailOptions)
+            transporter_Thankyou.sendMail(userMailOptions)
         ]);
 
         res.status(200).json({ success: true, message: 'Emails sent successfully' });
