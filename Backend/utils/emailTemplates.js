@@ -15,9 +15,23 @@ export const adminNotificationTemplate = (data) => `
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h2>New Inquiry Received</h2>
-        </div>
+        <!-- Header -->
+        <tr>
+        <td align="center" style=" padding:25px 20px;">
+        <img style="width: 27vw;" src="https://nexverahub.com/assets/logo-B1jSTEFJ.PNG" alt="NEXVERAHUB"/>
+        <p style="margin:6px 0 0 0; color:#3b82f6; font-size:14px;">
+        Learn Smart. Build Your Future.
+        </p>
+        </td>
+        </tr>
+        
+        <!-- Divider -->
+        <tr>
+        <td style="padding:10px 40px;">
+        <hr style="border:0;border-top:2px solid #000000;margin:0;">
+        </td>
+        </tr>
+        
         <div class="content">
             <div class="field">
                 <div class="label">Name</div>
