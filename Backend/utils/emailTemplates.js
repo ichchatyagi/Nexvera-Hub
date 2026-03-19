@@ -152,52 +152,43 @@ Explore Courses
 
 <!-- Social Media -->
 <tr>
-<td align="center" style="padding:20px 40px;">
-<p style="margin:0 0 16px 0; color:#374151; font-size:14px;">
-Stay connected with us
-</p>
+<td align="center" style="padding:10px 20px 20px 20px;font-size:14px;color:#555555;">
+
+<p style="margin:0 0 16px 0;"><strong>Connect With Us</strong></p>
+
+<table border="0" cellspacing="0" cellpadding="0">
+<tr>
 
 <!-- Instagram -->
-<a href="https://www.instagram.com/nexverahub?igsh=MW9jNGkwaDZkdjEybQ==" style="display:inline-block;margin:0 6px;text-decoration:none;">
-<span style="display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;background:#E1306C;">
-<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-<rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-<circle cx="12" cy="12" r="4"/>
-<circle cx="17.5" cy="6.5" r="1" fill="#ffffff" stroke="none"/>
-</svg>
-</span>
+<td align="center" style="padding:0 6px;">
+<a href="https://www.instagram.com/nexverahub?igsh=MW9jNGkwaDZkdjEybQ==" target="_blank">
+<img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" width="38" height="38" style="display:block;border-radius:50%;background-color:#E1306C;padding:8px;">
 </a>
+</td>
 
 <!-- Facebook -->
-<a href="https://www.facebook.com/share/189odEHLZR/?mibextid=wwXIfr" style="display:inline-block;margin:0 6px;text-decoration:none;">
-<span style="display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;background:#1877F2;">
-<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#ffffff">
-<path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
-</svg>
-</span>
+<td align="center" style="padding:0 6px;">
+<a href="https://www.facebook.com/share/189odEHLZR/?mibextid=wwXIfr" target="_blank">
+<img src="https://cdn-icons-png.flaticon.com/512/733/733547.png" width="38" height="38" style="display:block;border-radius:50%;background-color:#1877F2;padding:8px;">
 </a>
+</td>
 
 <!-- LinkedIn -->
-<a href="https://www.linkedin.com/company/nexverahub/" style="display:inline-block;margin:0 6px;text-decoration:none;">
-<span style="display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;background:#0A66C2;">
-<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#ffffff">
-<path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-<rect x="2" y="9" width="4" height="12"/>
-<circle cx="4" cy="4" r="2"/>
-</svg>
-</span>
+<td align="center" style="padding:0 6px;">
+<a href="https://www.linkedin.com/company/nexverahub/" target="_blank">
+<img src="https://cdn-icons-png.flaticon.com/512/3536/3536505.png" width="38" height="38" style="display:block;border-radius:50%;background-color:#0A66C2;padding:8px;">
 </a>
+</td>
 
 <!-- Website -->
-<a href="https://nexverahub.com" style="display:inline-block;margin:0 6px;text-decoration:none;">
-<span style="display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;background:#2563eb;">
-<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-<circle cx="12" cy="12" r="10"/>
-<line x1="2" y1="12" x2="22" y2="12"/>
-<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-</svg>
-</span>
+<td align="center" style="padding:0 6px;">
+<a href="https://nexverahub.com" target="_blank">
+<img src="https://cdn-icons-png.flaticon.com/512/1006/1006771.png" width="38" height="38" style="display:block;border-radius:50%;background-color:#2563eb;padding:8px;">
 </a>
+</td>
+
+</tr>
+</table>
 
 </td>
 </tr>
@@ -328,50 +319,43 @@ Explore Courses
 
 <!-- Social Media -->
 <tr>
-<td align="center" style="padding:10px 40px 20px 40px;font-size:14px;color:#555555;">
-<p style="margin-bottom:16px;"><strong>Connect With Us</strong></p>
+<td align="center" style="padding:10px 20px 20px 20px;font-size:14px;color:#555555;">
+
+<p style="margin:0 0 16px 0;"><strong>Connect With Us</strong></p>
+
+<table border="0" cellspacing="0" cellpadding="0">
+<tr>
 
 <!-- Instagram -->
-<a href="https://www.instagram.com/nexverahub?igsh=MW9jNGkwaDZkdjEybQ==" style="display:inline-block;margin:0 6px;text-decoration:none;">
-<span style="display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;background:#E1306C;">
-<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-<rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-<circle cx="12" cy="12" r="4"/>
-<circle cx="17.5" cy="6.5" r="1" fill="#ffffff" stroke="none"/>
-</svg>
-</span>
+<td align="center" style="padding:0 6px;">
+<a href="https://www.instagram.com/nexverahub?igsh=MW9jNGkwaDZkdjEybQ==" target="_blank">
+<img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" width="38" height="38" style="display:block;border-radius:50%;background-color:#E1306C;padding:8px;">
 </a>
+</td>
 
 <!-- Facebook -->
-<a href="https://www.facebook.com/share/189odEHLZR/?mibextid=wwXIfr" style="display:inline-block;margin:0 6px;text-decoration:none;">
-<span style="display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;background:#1877F2;">
-<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#ffffff">
-<path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
-</svg>
-</span>
+<td align="center" style="padding:0 6px;">
+<a href="https://www.facebook.com/share/189odEHLZR/?mibextid=wwXIfr" target="_blank">
+<img src="https://cdn-icons-png.flaticon.com/512/733/733547.png" width="38" height="38" style="display:block;border-radius:50%;background-color:#1877F2;padding:8px;">
 </a>
+</td>
 
 <!-- LinkedIn -->
-<a href="https://www.linkedin.com/company/nexverahub/" style="display:inline-block;margin:0 6px;text-decoration:none;">
-<span style="display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;background:#0A66C2;">
-<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#ffffff">
-<path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-<rect x="2" y="9" width="4" height="12"/>
-<circle cx="4" cy="4" r="2"/>
-</svg>
-</span>
+<td align="center" style="padding:0 6px;">
+<a href="https://www.linkedin.com/company/nexverahub/" target="_blank">
+<img src="https://cdn-icons-png.flaticon.com/512/3536/3536505.png" width="38" height="38" style="display:block;border-radius:50%;background-color:#0A66C2;padding:8px;">
 </a>
+</td>
 
 <!-- Website -->
-<a href="https://nexverahub.com" style="display:inline-block;margin:0 6px;text-decoration:none;">
-<span style="display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;background:#2563eb;">
-<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-<circle cx="12" cy="12" r="10"/>
-<line x1="2" y1="12" x2="22" y2="12"/>
-<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-</svg>
-</span>
+<td align="center" style="padding:0 6px;">
+<a href="https://nexverahub.com" target="_blank">
+<img src="https://cdn-icons-png.flaticon.com/512/1006/1006771.png" width="38" height="38" style="display:block;border-radius:50%;background-color:#2563eb;padding:8px;">
 </a>
+</td>
+
+</tr>
+</table>
 
 </td>
 </tr>
