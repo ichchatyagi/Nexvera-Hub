@@ -76,6 +76,15 @@ export class AppConfigService {
     return this.configService.get<string>('AWS_S3_BUCKET') || '';
   }
 
+  // Google OAuth Config
+  get googleClientId(): string {
+    return this.configService.get<string>('GOOGLE_CLIENT_ID') || '';
+  }
+
+  get googleClientSecret(): string {
+    return this.configService.get<string>('GOOGLE_CLIENT_SECRET') || '';
+  }
+
   // CORS Config
   get corsOrigins(): string[] {
     const origins = this.configService.get<string>('CORS_ORIGINS') || '*';

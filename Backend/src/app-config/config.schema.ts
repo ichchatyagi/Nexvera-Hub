@@ -25,4 +25,8 @@ export const configValidationSchema = Joi.object({
   AGORA_APP_ID: Joi.string().optional(),
   AGORA_APP_CERTIFICATE: Joi.string().optional(),
   AWS_S3_BUCKET: Joi.string().optional(),
+  
+  // Google OAuth Config
+  GOOGLE_CLIENT_ID: Joi.string().optional(),
+  GOOGLE_CLIENT_SECRET: Joi.string().optional(),
 });
