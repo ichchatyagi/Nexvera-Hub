@@ -25,4 +25,13 @@ export const configValidationSchema = Joi.object({
   AGORA_APP_ID: Joi.string().optional(),
   AGORA_APP_CERTIFICATE: Joi.string().optional(),
   AWS_S3_BUCKET: Joi.string().optional(),
+
+  // Video pipeline – S3 raw upload bucket (may differ from generic AWS_S3_BUCKET)
+  // See IMPLEMENTATION_PLAN_PART3.md §7 – Step 1: Upload
+  AWS_S3_VIDEO_BUCKET: Joi.string().optional(),
+
+  // CloudFront distribution domain for serving processed HLS + thumbnails
+  // See IMPLEMENTATION_PLAN_PART3.md §7 – Step 5: CDN Distribution
+  // Format: d1234abcde.cloudfront.net  (no https:// prefix)
+  CLOUDFRONT_VIDEO_DOMAIN: Joi.string().optional(),
 });
