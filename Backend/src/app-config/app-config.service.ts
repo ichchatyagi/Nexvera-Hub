@@ -76,6 +76,25 @@ export class AppConfigService {
     return this.configService.get<string>('AWS_S3_BUCKET') || '';
   }
 
+  /** Dedicated S3 bucket for raw video uploads. Falls back to awsS3Bucket. */
+  get awsS3VideoBucket(): string {
+    return (
+      this.configService.get<string>('AWS_S3_VIDEO_BUCKET') ||
+      this.awsS3Bucket ||
+      ''
+    );
+  }
+
+  /**
+   * CloudFront distribution hostname for video delivery (HLS + thumbnails).
+   * Format: d1234abcde.cloudfront.net  (no https:// prefix).
+   *
+   * See IMPLEMENTATION_PLAN_PART3.md §7 – Step 5: CDN Distribution.
+   */
+  get cloudfrontVideoDomain(): string {
+    return this.configService.get<string>('CLOUDFRONT_VIDEO_DOMAIN') || '';
+  }
+
   // CORS Config
   get corsOrigins(): string[] {
     const origins = this.configService.get<string>('CORS_ORIGINS') || '*';
