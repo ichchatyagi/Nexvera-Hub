@@ -196,7 +196,7 @@ const FAQDetail = () => {
     return (
         <div className="bg-white overflow-hidden min-h-screen">
             {/* Header Section */}
-            <section className="relative pt-32 lg:pt-40 pb-16 px-6 lg:px-12 overflow-hidden bg-slate-50/50 border-b border-slate-200/50">
+            <section className="relative pt-6 lg:pt-12 pb-16 px-6 lg:px-12 overflow-hidden bg-slate-50/50 border-b border-slate-200/50">
                 <div className={`absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-br ${faq.color} opacity-[0.05] rounded-full blur-3xl -mr-96 -mt-96 pointer-events-none`}></div>
 
                 <div className="container mx-auto relative z-10 max-w-4xl">

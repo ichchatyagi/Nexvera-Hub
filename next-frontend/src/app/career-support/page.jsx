@@ -145,7 +145,7 @@ const CareerSupport = () => {
     return (
         <div className="min-h-screen bg-transparent">
             {/* Hero Section */}
-            <section className="relative pt-32 pb-20 overflow-hidden">
+            <section className="relative pt-6 lg:pt-12 pb-20 overflow-hidden">
                 <div className="container mx-auto px-6 lg:px-12 relative z-10">
                     <div className="flex flex-col lg:flex-row items-center gap-12">
                         <div className="lg:w-1/2 text-center lg:text-left">

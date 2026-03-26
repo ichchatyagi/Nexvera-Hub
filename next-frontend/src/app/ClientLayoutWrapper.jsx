@@ -25,6 +25,7 @@ export default function ClientLayoutWrapper({ children }) {
                          pathname.startsWith('/faq/');
 
   const isAuthPage = ['/login', '/signup'].includes(pathname);
+  const isCourseDetailPage = pathname.startsWith('/course/') && pathname.split('/').filter(Boolean).length >= 3;
 
   return (
     <ConsultationProvider>
@@ -33,8 +34,8 @@ export default function ClientLayoutWrapper({ children }) {
         {showBackground && <PageBackground />}
         {!isAuthPage && <Navbar />}
         <main className="relative z-10">{children}</main>
-        {!isAuthPage && <MobileAppBanner />}
-        {!isAuthPage && <Footer />}
+        {!isAuthPage && !isCourseDetailPage && <MobileAppBanner />}
+        {!isAuthPage && !isCourseDetailPage && <Footer />}
         <ConsultationModal />
       </div>
     </ConsultationProvider>

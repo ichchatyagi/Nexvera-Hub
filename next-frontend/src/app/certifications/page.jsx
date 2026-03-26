@@ -177,7 +177,7 @@ const Certifications = () => {
     return (
         <div className="bg-transparent overflow-hidden">
             {/* Hero Section */}
-            <section className="relative pt-32 pb-20 px-6 lg:px-12 overflow-hidden">
+            <section className="relative pt-6 lg:pt-12 pb-20 px-6 lg:px-12 overflow-hidden">
                 <div className="container mx-auto relative z-10 flex flex-col lg:flex-row items-center gap-16">
                     <div className="flex-1 text-center lg:text-left order-2 lg:order-1">
                         <motion.div

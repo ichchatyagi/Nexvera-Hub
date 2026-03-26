@@ -25,7 +25,7 @@ const Home = () => {
     return (
         <div className="relative min-h-screen bg-transparent">
             {/* Hero Section */}
-            <section className="relative pt-12 lg:pt-32 pb-24 overflow-hidden border-b border-slate-50">
+            <section className="relative pt-6 lg:pt-12 pb-24 overflow-hidden border-b border-slate-50">
                 <div className="container mx-auto px-6 lg:px-12 flex flex-col lg:flex-row items-center gap-20">
                     <div className="flex-1 z-10">
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-[0.4em] mb-10">

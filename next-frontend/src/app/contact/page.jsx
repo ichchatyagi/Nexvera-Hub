@@ -45,94 +45,90 @@ const Contact = () => {
     };
 
     return (
-        <div className="pt-32 pb-24 bg-white overflow-hidden selection:bg-blue-100 selection:text-blue-900">
+        <div className="pt-6 lg:pt-12 pb-24 bg-transparent overflow-hidden selection:bg-blue-100 selection:text-blue-900">
             <div className="container mx-auto px-6 lg:px-12">
                 {/* Header Section */}
-                <div className="max-w-4xl mb-20 text-center lg:text-left mx-auto lg:mx-0">
+                <div className="max-w-4xl mb-12 text-center lg:text-left mx-auto lg:mx-0 flex flex-col items-center lg:items-start">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.8 }}
                         whileInView={{ opacity: 1, scale: 1 }}
                         viewport={{ once: true }}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-[0.3em] mb-8 border border-blue-100 shadow-sm"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-[0.3em] mb-4 border border-blue-100 shadow-sm"
                     >
                         <MessageCircle size={14} strokeWidth={3} />
                         Direct Support
                     </motion.div>
-                    <h1 className="text-4xl md:text-5xl lg:text-8xl font-black text-slate-950 leading-[0.9] mb-8 tracking-tighter uppercase mb-10">
-                        Let's Start Your <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Nexvera</span> Journey
+                    <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-slate-950 leading-tight tracking-tighter uppercase text-center lg:text-left">
+                        Let's Start Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Nexvera</span> Journey
                     </h1>
-                    <p className="text-lg text-slate-500 leading-relaxed font-bold max-w-2xl uppercase tracking-tight">
-                        Have questions about our programs, certifications, or career support? Our dedicated team is here to guide you every step of the way.
-                    </p>
                 </div>
 
                 {/* Top Section: Compact Form & Quick Connect */}
-                <div className="grid lg:grid-cols-12 gap-12 items-stretch mb-12">
+                <div className="grid lg:grid-cols-2 gap-12 items-stretch mb-12">
                     {/* Left: Contact Form */}
                     <motion.div
                         initial={{ opacity: 0, x: -30 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
-                        className="lg:col-span-7 relative p-[2px] rounded-[3.5rem] bg-gradient-to-br from-slate-200 via-white to-slate-200 shadow-2xl"
+                        className="relative p-[2px] rounded-[3.5rem] bg-gradient-to-br from-slate-200 via-white to-slate-200 shadow-2xl"
                     >
                         <div className="bg-white p-8 lg:p-16 rounded-[3.4rem] relative overflow-hidden h-full">
-                            <h2 className="text-3xl lg:text-4xl font-black text-slate-950 mb-10 uppercase tracking-tighter">Transmission <span className="text-blue-600">Portal</span></h2>
+                            <h2 className="text-3xl lg:text-4xl font-black text-slate-950 mb-10 uppercase tracking-tighter">Contact <span className="text-blue-600">Us</span></h2>
                             <form onSubmit={handleSubmit} className="space-y-8">
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
-                                    <input 
+                                    <input
                                         required
-                                        type="text" 
+                                        type="text"
                                         name="name"
                                         value={formData.name}
                                         onChange={handleChange}
-                                        className="w-full px-8 py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 text-sm" 
-                                        placeholder="Identification Entry..." 
+                                        className="w-full px-8 py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 text-sm"
+                                        placeholder="Identification Entry..."
                                     />
                                 </div>
                                 <div className="grid md:grid-cols-2 gap-8">
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
-                                        <input 
+                                        <input
                                             required
-                                            type="email" 
+                                            type="email"
                                             name="email"
                                             value={formData.email}
                                             onChange={handleChange}
-                                            className="w-full px-8 py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 text-sm" 
-                                            placeholder="name@nexus.com" 
+                                            className="w-full px-8 py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 text-sm"
+                                            placeholder="name@nexus.com"
                                         />
                                     </div>
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Contact Number</label>
-                                        <input 
+                                        <input
                                             required
-                                            type="tel" 
+                                            type="tel"
                                             name="phone"
                                             value={formData.phone}
                                             onChange={handleChange}
-                                            className="w-full px-8 py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 text-sm" 
-                                            placeholder="+91 00000 00000" 
+                                            className="w-full px-8 py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 text-sm"
+                                            placeholder="+91 00000 00000"
                                         />
                                     </div>
                                 </div>
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Query Payload</label>
-                                    <textarea 
+                                    <textarea
                                         name="message"
                                         value={formData.message}
                                         onChange={handleChange}
-                                        rows="4" 
-                                        className="w-full px-8 py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 resize-none text-sm" 
+                                        rows="4"
+                                        className="w-full px-8 py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 resize-none text-sm"
                                         placeholder="Initiate message broadcast..."
                                     ></textarea>
                                 </div>
-                                <button 
+                                <button
                                     disabled={isSubmitting}
-                                    className="w-full bg-slate-950 text-white font-black py-6 rounded-2xl shadow-xl shadow-slate-950/10 hover:bg-black hover:-translate-y-1 transition-all active:scale-[0.98] uppercase tracking-[0.3em] text-[10px] flex items-center justify-center gap-3 disabled:opacity-70"
+                                    className="w-full bg-blue-600 text-white font-black py-6 rounded-2xl shadow-xl shadow-blue-500/20 hover:bg-blue-700 hover:-translate-y-1 transition-all active:scale-[0.98] uppercase tracking-[0.3em] text-[10px] flex items-center justify-center gap-3 disabled:opacity-70"
                                 >
-                                    {isSubmitting ? 'Transmitting...' : 'Initialize Transmission'}
+                                    {isSubmitting ? 'Sending...' : 'Send Message'}
                                     {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                                 </button>
                             </form>
@@ -145,7 +141,7 @@ const Contact = () => {
                         initial={{ opacity: 0, x: 30 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
-                        className="lg:col-span-5 bg-white p-10 lg:p-16 rounded-[3.5rem] border-2 border-slate-100 shadow-2xl relative overflow-hidden group h-full flex flex-col justify-center"
+                        className="bg-white p-10 lg:p-16 rounded-[3.5rem] border-2 border-slate-100 shadow-2xl relative overflow-hidden group h-full flex flex-col justify-center"
                     >
                         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full -mr-32 -mt-32 blur-3xl group-hover:scale-150 transition-transform duration-1000"></div>
 
@@ -225,7 +221,7 @@ const Contact = () => {
                                         <MapPin size={30} />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl font-black text-slate-950 mb-2 tracking-tighter uppercase">Main Headquarters</h3>
+                                        <h3 className="text-xl font-black text-slate-950 mb-2 tracking-tighter uppercase">INDIA</h3>
                                         <p className="text-slate-500 font-bold leading-relaxed text-sm uppercase tracking-tight">
                                             Level - 16th & 17th DND Flyway, Plot No.C-001A, <br />
                                             Sector 16B, Noida, Uttar Pradesh 201301
@@ -239,7 +235,7 @@ const Contact = () => {
                                         <MapPin size={30} />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl font-black text-slate-950 mb-2 tracking-tighter uppercase">New York Node</h3>
+                                        <h3 className="text-xl font-black text-slate-950 mb-2 tracking-tighter uppercase">UNITED STATES</h3>
                                         <p className="text-slate-500 font-bold leading-relaxed text-sm uppercase tracking-tight">
                                             845 3rd Ave 6th floor, New York, NY 10022
                                         </p>
@@ -252,7 +248,7 @@ const Contact = () => {
                                         <MapPin size={30} />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl font-black text-slate-950 mb-2 tracking-tighter uppercase">London Satellite</h3>
+                                        <h3 className="text-xl font-black text-slate-950 mb-2 tracking-tighter uppercase">UNITED KINGDOM</h3>
                                         <p className="text-slate-500 font-bold leading-relaxed text-sm uppercase tracking-tight">
                                             1st Floor, 239 Kensington High St, London W8 6SN
                                         </p>

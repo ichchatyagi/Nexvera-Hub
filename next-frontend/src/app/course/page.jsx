@@ -6,11 +6,12 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ChevronRight, Star, BookOpen, Layout, Users, Monitor, UserCheck, Lightbulb, Search } from 'lucide-react';
 import { categoryData } from '@/data/categoryData';
+import coursesPricing from '@/data/coursePricingData';
 import ConsultancyCTA from '@/components/ConsultancyCTA';
 
 const CourseHero = ({ onCategoryChange, onLevelChange }) => {
     return (
-        <section className="relative pt-12 pb-20 overflow-hidden bg-transparent">
+        <section className="relative pt-6 lg:pt-12 pb-20 overflow-hidden bg-transparent">
             <div className="absolute top-0 right-0 w-1/2 h-full opacity-10 pointer-events-none">
                 <svg viewBox="0 0 500 500" className="w-full h-full text-blue-400">
                     <path d="M0,100 C150,200 350,0 500,100 L500,0 L0,0 Z" fill="currentColor" />
@@ -45,33 +46,6 @@ const CourseHero = ({ onCategoryChange, onLevelChange }) => {
                             </button>
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 text-slate-600 text-[10px] font-black uppercase tracking-widest">
-                            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-6 py-3 rounded-full hover:bg-white transition-all cursor-pointer">
-                                <span className="text-slate-400">DOMAIN:</span>
-                                <select
-                                    className="bg-transparent border-none outline-none cursor-pointer font-black text-slate-900"
-                                    onChange={(e) => onCategoryChange(e.target.value)}
-                                >
-                                    <option value="">All Categories</option>
-                                    {categoryData.map((cat, idx) => (
-                                        <option key={idx} value={cat.name}>{cat.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-6 py-3 rounded-full hover:bg-white transition-all cursor-pointer">
-                                <span className="text-slate-400">DIFFICULTY:</span>
-                                <select
-                                    className="bg-transparent border-none outline-none cursor-pointer font-black text-slate-900"
-                                    onChange={(e) => onLevelChange(e.target.value)}
-                                >
-                                    <option value="">All Levels</option>
-                                    <option value="Beginner">Beginner</option>
-                                    <option value="Intermediate">Intermediate</option>
-                                    <option value="Advanced">Advanced</option>
-                                </select>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -310,11 +284,18 @@ const TuitionSection = () => {
     );
 };
 
-const CourseCard = ({ category, title, instructor, lessons, rating, reviews, color, icon, level = "Beginner" }) => {
+const CourseCard = ({ category, title, instructor, lessons, rating, reviews, color, icon, image }) => {
+    const [selectedLevel, setSelectedLevel] = useState("Beginner");
+    
+    // Fetch dynamic pricing
+    const pricingInfo = coursesPricing.find(p => p.title === title);
+    const dynamicPrices = pricingInfo ? pricingInfo.pricing : { "Beginner": 699, "Intermediate": 1299, "Advanced": 1799 };
+    
     const slug = title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]/g, '');
+
     return (
-        <Link href={`/course/${encodeURIComponent(category)}/${slug}`} className="bg-white rounded-[2.5rem] overflow-hidden shadow-sm border border-slate-100 flex flex-col hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 group h-full">
-            <div className={`h-48 bg-gradient-to-br ${color} p-8 flex flex-col justify-between relative overflow-hidden`}>
+        <div className="bg-white rounded-[2.5rem] overflow-hidden shadow-sm border border-slate-100 flex flex-col hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 group h-full relative">
+            <div className={`h-48 bg-gradient-to-br ${color} p-8 flex flex-col justify-between relative overflow-hidden pointer-events-none`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl -mr-16 -mt-16 rounded-full"></div>
                 <div className="flex justify-between items-start relative z-10">
                     <div className="flex flex-col gap-2">
@@ -322,42 +303,79 @@ const CourseCard = ({ category, title, instructor, lessons, rating, reviews, col
                             {category}
                         </span>
                         <span className="bg-slate-900/40 backdrop-blur-md px-3 py-1 rounded-lg text-white text-[8px] font-black uppercase tracking-widest border border-white/10 w-max">
-                            {level}
+                            {selectedLevel}
                         </span>
                     </div>
-                    <span className="text-4xl filter drop-shadow-2xl group-hover:scale-110 transition-transform duration-500">{icon}</span>
+                    {image ? (
+                        <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-2xl group-hover:scale-110 transition-transform duration-500 border border-white/20">
+                            <img src={image} alt={title} className="w-full h-full object-cover" />
+                        </div>
+                    ) : (
+                        <span className="text-4xl filter drop-shadow-2xl group-hover:scale-110 transition-transform duration-500">{icon}</span>
+                    )}
                 </div>
                 <h3 className="text-xl lg:text-2xl font-black text-white leading-[1.1] uppercase tracking-tight relative z-10 tracking-tighter">
                     {title}
                 </h3>
             </div>
 
-            <div className="p-6 flex-1 flex flex-col">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center text-blue-600 font-black">
-                        {instructor.charAt(0)}
+            <div className="p-6 flex-1 flex flex-col relative z-20">
+                <div className="pointer-events-none">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-blue-600 font-black shrink-0">
+                            {instructor.charAt(0)}
+                        </div>
+                        <div>
+                            <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{instructor}</p>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{lessons} Lessons</p>
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{instructor}</p>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{lessons} Lessons</p>
+                </div>
+
+                {/* Interactive Level & Price Selector */}
+                <div className="mt-2 mb-6 relative z-30">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-1">Expertise Configuration</label>
+                    <div className="flex items-center justify-between gap-4 p-1.5 bg-slate-50 rounded-2xl border border-slate-100 group-hover:bg-white transition-colors">
+                        <select 
+                            value={selectedLevel} 
+                            onChange={(e) => setSelectedLevel(e.target.value)}
+                            className="flex-1 bg-transparent text-[10px] font-black uppercase tracking-wider outline-none cursor-pointer py-1.5 px-2"
+                        >
+                            <option value="Beginner">Beginner</option>
+                            <option value="Intermediate">Intermediate</option>
+                            <option value="Advanced">Advanced</option>
+                        </select>
+                        <div className="text-right pr-2">
+                             <span className="text-slate-400 text-[9px] font-black line-through block leading-none mb-0.5 opacity-60">₹2,999</span>
+                             <span className={`text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 font-black text-sm tracking-tighter leading-none`}>₹{dynamicPrices[selectedLevel.toLowerCase()] || dynamicPrices[selectedLevel]}</span>
+                        </div>
                     </div>
                 </div>
 
                 <div className="mt-auto pt-4 border-t border-slate-50 flex items-center justify-between">
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 pointer-events-none">
                         {[1, 2, 3, 4, 5].map((s) => (
                             <span key={s} className="text-orange-400 text-xs">★</span>
                         ))}
                         <span className="text-slate-900 font-black text-xs ml-1">{rating}</span>
                         <span className="text-slate-400 text-[10px] font-black ml-1">/ {reviews}</span>
                     </div>
-                    <div className="flex items-center gap-1 text-slate-400 group-hover:text-blue-600 transition-all uppercase tracking-widest text-[8px] font-black underline underline-offset-4">
+                    <Link 
+                        href={`/course/${encodeURIComponent(category)}/${slug}?level=${selectedLevel}`}
+                        className="flex items-center gap-1 text-slate-400 hover:text-blue-600 transition-all uppercase tracking-widest text-[8px] font-black underline underline-offset-4 relative z-30"
+                    >
                         Explore
                         <ChevronRight size={12} strokeWidth={3} />
-                    </div>
+                    </Link>
                 </div>
             </div>
-        </Link>
+            {/* Background link for the whole card */}
+            <Link 
+                href={`/course/${encodeURIComponent(category)}/${slug}?level=${selectedLevel}`}
+                className="absolute inset-0 z-10"
+                aria-label={`View details for ${title}`}
+            ></Link>
+        </div>
     );
 };
 
@@ -392,7 +410,6 @@ const StatsSection = () => {
 const CoursesContent = () => {
     const searchParams = useSearchParams();
     const [activeCategory, setActiveCategory] = useState(searchParams.get('category') || 'IT & Technology');
-    const [activeLevel, setActiveLevel] = useState('');
     const [showAll, setShowAll] = useState(false);
 
     useEffect(() => {
@@ -404,26 +421,15 @@ const CoursesContent = () => {
 
     const handleCategoryChange = (category) => {
         setActiveCategory(category);
-        setActiveLevel('');
         setShowAll(false);
     };
 
-    const handleLevelChange = (level) => {
-        setActiveLevel(level);
-        setShowAll(false);
-    };
-
-    const rawCourses = categoryData.find(cat => cat.name === activeCategory)?.courses || [];
-    const allActiveCourses = rawCourses.map((c, i) => ({
-        ...c,
-        level: i % 3 === 0 ? "Beginner" : i % 3 === 1 ? "Intermediate" : "Advanced"
-    })).filter(c => !activeLevel || c.level === activeLevel);
-
+    const allActiveCourses = categoryData.find(cat => cat.name === activeCategory)?.courses || [];
     const activeCourses = showAll ? allActiveCourses : allActiveCourses.slice(0, 10);
 
     return (
         <div className="bg-transparent">
-            <CourseHero onCategoryChange={handleCategoryChange} onLevelChange={handleLevelChange} />
+            <CourseHero onCategoryChange={handleCategoryChange} />
             <ExploreCourses activeCategory={activeCategory} onCategoryChange={handleCategoryChange} />
 
             <section className="pb-20">

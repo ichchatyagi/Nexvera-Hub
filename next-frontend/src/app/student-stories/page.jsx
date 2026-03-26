@@ -269,7 +269,7 @@ const StudentStories = () => {
     return (
         <div className="bg-transparent overflow-hidden">
             {/* Hero Section */}
-            <section className="relative pt-32 lg:pt-40 pb-24 px-6 lg:px-12 overflow-hidden">
+            <section className="relative pt-6 lg:pt-12 pb-24 px-6 lg:px-12 overflow-hidden">
                 <div className="absolute top-0 right-0 w-1/2 h-full opacity-10 pointer-events-none">
                     <svg viewBox="0 0 500 500" className="w-full h-full text-blue-400">
                         <path d="M0,100 C150,200 350,0 500,100 L500,0 L0,0 Z" fill="currentColor" />

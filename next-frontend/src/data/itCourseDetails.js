@@ -1,8 +1,53 @@
-﻿export const itCoursesDetails = [
+export const itCoursesDetails = [
     {
         title: "Python Programming Fundamentals",
-        overview:
-            "This course provides a comprehensive introduction to Python programming, covering everything from basic syntax to advanced concepts like object-oriented programming. Python is one of the most versatile and highly demanded programming languages in the tech industry today, powering web applications, data analysis, artificial intelligence, and automation.",
+        overview: {
+            beginner: {
+                hook: "Stop writing code. Start engineering solutions from day one.",
+                problem: "Most Python courses focus on boring syntax and dry theory, leaving you stuck in 'Tutorial Hell' without the ability to build anything real.",
+                transformation: "We turn you into a logical thinker. You won't just learn 'how' to write code; you'll understand 'why' it works, shifting from a passive learner to a proactive problem-solver.",
+                whatYouWillLearn: [
+                    "8 Core Building Blocks of Professional Python Syntax",
+                    "Building 5 High-Utility Automation Scripts for Real Tasks",
+                    "Deep Understanding of Memory Management and Dynamic Typing",
+                    "Mastering the 'Logic of Architecture'—Loops, Branches, and Modules"
+                ],
+                whyChoose: "Designed by senior engineers, focusing on 'Industrial-grade' Python that companies actually pay for.",
+                learningMethod: "100% Hands-on Lab environment with Active Recall—not just videos, but victory-driven coding.",
+                outcomes: "Ready to automate complex workflows and pass entry-level engineering technical interviews.",
+                closing: "Your first line of code is the starting point of your new career. Let's write it together."
+            },
+            intermediate: {
+                hook: "Bridge the gap between scripting and software engineering.",
+                problem: "You know the basics, but your code feels 'messy' and isn't ready for a professional production environment.",
+                transformation: "We refine your craft. Master clean code principles, professional file systems, and modular architectures used in real tech companies.",
+                whatYouWillLearn: [
+                    "Object-Oriented Programming (OOP) and Class Architectures",
+                    "Professional Exception Handling and Logging Frameworks",
+                    "Advanced Data Structures: Sets, Tuples, and Custom Lists",
+                    "Building Modular Applications with Professional File Handling"
+                ],
+                whyChoose: "Move beyond 'scripts' to 'systems.' We teach you the industrial standards of the world's top 1% developers.",
+                learningMethod: "Case-based learning. We take real-world messy code and refactor it into high-performance software.",
+                outcomes: "Confident in architecting scalable modules and contributing to enterprise-level Python codebases.",
+                closing: "Scale your skills. Scale your career. Python is your engine."
+            },
+            advanced: {
+                hook: "Master the Python engine. Engineer at the highest level of performance.",
+                problem: "Your applications slow down at scale, and you struggle with complex multi-threaded or distributed systems.",
+                transformation: "We dive into the 'Black Box.' Master advanced decorators, concurrency, and performance optimization techniques for high-traffic environments.",
+                whatYouWillLearn: [
+                    "High-Performance Concurrency: Multi-threading vs Multi-processing",
+                    "Metaprogramming, Decorators, and Advanced Context Managers",
+                    "API Architectures and High-Speed Database Integrations",
+                    "System Optimization: Profiling and Benchmarking Production Code"
+                ],
+                whyChoose: "This is for the elite. We cover the topics that only senior staff engineers handle in global tech giants.",
+                learningMethod: "Deep-dive technical sessions and performance-tuning challenges on large-scale datasets.",
+                outcomes: "Capable of leading technical teams and architecting high-frequency, mission-critical Python systems.",
+                closing: "Expertise isn't a destination; it's a mastery of the invisible details. Let's master Python."
+            }
+        },
         whatYouWillLearn: [
             "Understand and implement core Python syntax and concepts",
             "Work with data types, variables, loops, and conditional statements",
@@ -49,8 +94,53 @@
     },
     {
         title: "Web Development Bootcamp",
-        overview:
-            "This comprehensive bootcamp takes you from an absolute beginner to a confident web developer capable of building modern, responsive websites. With the internet being the foundation of global business and communication, learning web development equips you with foundational tech skills required by startups and large corporations alike.",
+        overview: {
+            beginner: {
+                hook: "The Internet is your canvas. Learn to build the digital world.",
+                problem: "The web looks complicated from the outside, but most bootcamps overwhelm you with frameworks before you master the foundations.",
+                transformation: "We simplify the complex. By mastering the core trinity—HTML, CSS, and JS—you gain the power to turn any idea into a live, responsive reality.",
+                whatYouWillLearn: [
+                    "Semantic HTML5: Building the skeleton of the modern web",
+                    "Modern CSS3 Mastery: Flexbox, Grid, and Responsive Design",
+                    "JavaScript Fundamentals: Making your first page truly interactive",
+                    "Professional Local Development Workflows and Browser DevTools"
+                ],
+                whyChoose: "We focus on 'Pixel-Perfection.' You won't just make things work; you'll make them stunning.",
+                learningMethod: "Build as you learn. Every lesson adds a new component to your professional portfolio.",
+                outcomes: "Confident in creating your own live, responsive websites from scratch and hosting them online.",
+                closing: "Your journey into the billion-dollar web industry starts with a single 'div'. Let's build."
+            },
+            intermediate: {
+                hook: "From 'Web Pages' to 'Web Applications'. Master the Dynamic Web.",
+                problem: "Static sites are easy, but building interactive, data-driven applications requires a shift in mindset and technical depth.",
+                transformation: "We upgrade your logic. Transition from styling to engineering with advanced DOM manipulation and modern JS patterns.",
+                whatYouWillLearn: [
+                    "Advanced JavaScript Mastery: Async/Await, Fetch, and Promises",
+                    "Modern CSS Architectures: SASS/PostCSS and Utility-first logic",
+                    "Version Control with Git: Professional team collaboration flows",
+                    "Introduction to Component Architecture and State Management"
+                ],
+                whyChoose: "Industry-standard practices. We teach you the same workflows used at top-tier design and dev agencies.",
+                learningMethod: "Application-centric learning. You'll build a live, data-fetching dashboard as your cornerstone project.",
+                outcomes: "Ready for Junior Web Developer roles and capable of handling complex interactive web features.",
+                closing: "Stop building for yourself. Start building for the world. Level up your web game."
+            },
+            advanced: {
+                hook: "Master the Modern Stack. Architect Scalable Web Ecosystems.",
+                problem: "Performance, accessibility, and SEO are often overlooked, leading to slow and inaccessible 'janky' web apps.",
+                transformation: "We focus on excellence. Master high-performance optimization, advanced security headers, and industrial deployment pipelines.",
+                whatYouWillLearn: [
+                    "Full-Stack Integration: Building and Consuming REST and GraphQL APIs",
+                    "Advanced React/Next.js Patterns: Server Components and Hydration",
+                    "Performance Tuning: Lighthouse auditing, Caching, and Core Web Vitals",
+                    "Cloud Deployment: CI/CD Pipelines and Serverless Architectures"
+                ],
+                whyChoose: "We don't teach 'how to code'; we teach 'how to engineer.' Focus on speed, security, and scale.",
+                learningMethod: "Architecture-first approach. We start with system design and end with a globally distributed app.",
+                outcomes: "Senior-ready engineering skills. Capable of leading full-stack projects from concept to scale.",
+                closing: "The web is evolving fast. Ensure you are the one driving the change."
+            }
+        },
         whatYouWillLearn: [
             "Structure web pages using semantic HTML5",
             "Style modern websites with CSS3 and Flexbox/Grid",
@@ -97,8 +187,53 @@
     },
     {
         title: "Cybersecurity Essentials",
-        overview:
-            "This course introduces the core principles of cybersecurity, teaching you how to protect networks, devices, and data from unauthorized access or criminal use. In an increasingly digital world marked by rising cyber threats, understanding how to secure systems is a mission-critical skill for any IT professional.",
+        overview: {
+            beginner: {
+                hook: "The digital world is under attack. Become the shield.",
+                problem: "Most people think strong passwords are enough, but real cyber threats are complex, silent, and potentially devastating to businesses and individuals alike.",
+                transformation: "We build your defensive mindset. Learn to see the world through a security lens, identifying vulnerabilities before they become catastrophes.",
+                whatYouWillLearn: [
+                    "Fundamentals of Digital Defense and Network Protocols",
+                    "Identifying and Mitigating Common Malware and Phishing Attacks",
+                    "Securing Personal and Small-Business Infrastructure",
+                    "Basics of Cryptography and Data Protection Standards"
+                ],
+                whyChoose: "Practical, real-world focus. We teach you how to defend against the attacks happening right now, not just theoretical concepts.",
+                learningMethod: "Simulation-based learning. Experience real attack scenarios in a safe, controlled lab environment.",
+                outcomes: "Equipped with a core security foundation to protect your career and launch into the cybersecurity field.",
+                closing: "Security isn't an option; it's a necessity. Start your mission today."
+            },
+            intermediate: {
+                hook: "From 'Passive Defense' to 'Active SecOps'. Control the Perimeter.",
+                problem: "You understand basics, but managing enterprise-level security requires deep technical knowledge of firewalls, IDS, and encryption at scale.",
+                transformation: "We technical-harden your skills. Master the configuration of resilient network architectures and understand the internal mechanics of complex exploits.",
+                whatYouWillLearn: [
+                    "Technical Configuration of Firewalls and Honeypots",
+                    "Deep-packet Analysis and Network Traffic Monitoring",
+                    "Managing Enterprise Identity and Access (IAM) Frameworks",
+                    "Security Patch Management and Vulnerability Assessment Workflows"
+                ],
+                whyChoose: "Hand-on technical depth. Moving beyond theory into the actual configuration of enterprise security tools.",
+                learningMethod: "Scenario-based hardening. Take a vulnerable network and transform it into a fortress.",
+                outcomes: "Ready for Security Analyst roles. Capable of implementing multi-layered security for corporate environments.",
+                closing: "The best defense is a deep understanding of the attack. Let's harden your skills."
+            },
+            advanced: {
+                hook: "Master the Art of Cyber Warfare. Lead the Digital Frontline.",
+                problem: "Advanced Persistent Threats (APTs) bypass traditional security. Responding to them requires elite-level forensic analysis and incident response.",
+                transformation: "We transform you into a Security Architect. Master the strategic and technical coordination required to lead enterprise-grade security operations.",
+                whatYouWillLearn: [
+                    "Advanced Penetration Testing and Red-Teaming Methodologies",
+                    "Digital Forensics and Post-Breach Incident Response",
+                    "Security Orchestration, Automation, and Response (SOAR)",
+                    "Architecting Zero-Trust Enterprise Security Ecosystems"
+                ],
+                whyChoose: "Elite-level curriculum. We cover the high-stakes coordination required by global security leadership teams.",
+                learningMethod: "Real-world incident drills. Lead a team through a simulated global-scale security breach.",
+                outcomes: "Senior-level security engineering competencies. Prepared for lead roles in Security Operations Centers (SOC).",
+                closing: "Leadership in security is about calm in the chaos. Master the frontline."
+            }
+        },
         whatYouWillLearn: [
             "Identify common cybersecurity threats and vulnerabilities",
             "Understand the principles of network security and firewalls",
@@ -145,8 +280,53 @@
     },
     {
         title: "Cloud Computing with AWS",
-        overview:
-            "This course acts as a gateway into cloud computing by focusing on Amazon Web Services (AWS), the world's leading cloud platform. As organizations move away from traditional hardware servers to scalable, flexible, and cost-effective cloud architectures, navigating and leveraging AWS is an indispensable asset for developers and IT administrators.",
+        overview: {
+            beginner: {
+                hook: "The Cloud is no longer the future—it's the present. Own the AWS ecosystem.",
+                problem: "Provisioning hardware is slow and expensive. Modern businesses need the agility of the cloud, but the AWS Console can be overwhelming for newcomers.",
+                transformation: "We demystify the cloud. Move from hardware thinking to on-demand resource provisioning, building your first scalable infrastructure in minutes.",
+                whatYouWillLearn: [
+                    "AWS Global Infrastructure: Regions, AZs, and Edge Locations",
+                    "Computing in the Cloud: Launching and Managing EC2 Instances",
+                    "Storage Mastery: S3 Buckets, EBS, and Glacier Architectures",
+                    "Cloud Security Basics: IAM Roles, Groups, and Security Policies"
+                ],
+                whyChoose: "Directly aligned with AWS certification paths but focused on 'What actually gets deployed' in real startups.",
+                learningMethod: "Lab-first pedagogy. You'll spend more time in the AWS Console than in a textbook.",
+                outcomes: "Capable of hosting and managing basic web applications in the world's most popular cloud platform.",
+                closing: "Stop waiting for hardware. Start launching at the speed of thought. The sky is the limit."
+            },
+            intermediate: {
+                hook: "Architecture is everything. Build Resilient, High-Availability Cloud Systems.",
+                problem: "Single-server setups fail. Building reliable systems requires mastering load balancing, auto-scaling, and complex VPC networking.",
+                transformation: "We upgrade your architecture. Learn to build systems that automatically heal, scale with traffic, and survive regional outages.",
+                whatYouWillLearn: [
+                    "Advanced VPC Design: Subnets, Gateways, and Peering",
+                    "High Availability: ELB (Load Balancers) and Auto-Scaling Groups",
+                    "Database Services: Managed RDS, DynamoDB, and Caching with ElastiCache",
+                    "Cost Optimization and Resource Monitoring with CloudWatch"
+                ],
+                whyChoose: "Architectural focus. We teach you how to save companies thousands of dollars through efficient cloud design.",
+                learningMethod: "Design and Deploy challenges. Build a multi-AZ infrastructure from a blank architectural diagram.",
+                outcomes: "Ready for Cloud Developer roles. Capable of architecting high-availability systems for growing businesses.",
+                closing: "Scale isn't just a number; it's a design choice. Let's architect for success."
+            },
+            advanced: {
+                hook: "Master the Serverless Future. Enterprise Cloud Orchestration.",
+                problem: "Managing servers is overhead. The next generation of apps are serverless, event-driven, and globally distributed across multiple regions.",
+                transformation: "We turn you into a Cloud Architect. Master serverless logic, multi-region disaster recovery, and infrastructure-as-code automation.",
+                whatYouWillLearn: [
+                    "Serverless Architecture: AWS Lambda, API Gateway, and Step Functions",
+                    "Infrastructure as Code (IaC): Automating deployments with CloudFormation",
+                    "Global Scale: Multi-region Replication and Global Accelerator Design",
+                    "Enterprise Compliance: AWS Config, CloudTrail, and GuardDuty Governance"
+                ],
+                whyChoose: "Cutting-edge curriculum. We focus on the automated, serverless future that the top 5% of tech companies are building now.",
+                learningMethod: "Automation-driven labs. Build and destroy entire enterprise infrastructures with a single code command.",
+                outcomes: "Senior Cloud Architect competencies. Prepared to lead global-scale AWS migration and modernization projects.",
+                closing: "The ultimate cloud setup is the one you never have to manually touch. Master automation."
+            }
+        },
         whatYouWillLearn: [
             "Understand core cloud computing concepts (IaaS, PaaS, SaaS)",
             "Navigate the AWS Management Console securely",
@@ -193,8 +373,53 @@
     },
     {
         title: "Data Structures & Algorithms",
-        overview:
-            "This crucial course dives deep into understanding data structures and algorithms, which form the bedrock of efficient software design. The ability to write optimized code and design clever algorithmic solutions separates average programmers from great software engineers, and is a key requirement in most technical interviews.",
+        overview: {
+            beginner: {
+                hook: "Code that works isn't enough. Code that scales is the goal.",
+                problem: "Most beginners write code that becomes slow and unmanageable as data grows, because they don't understand how the machine actually organizes information.",
+                transformation: "We unlock the engine room. Learn the core structures—Arrays and Lists—to write code that isn't just functional, but fundamentally efficient and professional.",
+                whatYouWillLearn: [
+                    "Big O Notation: Measuring the Speed of your Logic",
+                    "Mastering Arrays and Dynamic Lists from a Memory Perspective",
+                    "Basic Searching and Sorting: How the Internet finds Information",
+                    "Understanding Stacks and Queues in Real-world Applications"
+                ],
+                whyChoose: "We focus on 'Interview-ready' logic. We teach you to explain your code as well as you write it.",
+                learningMethod: "Visual-first learning. We use diagrams before we touch a single line of code.",
+                outcomes: "Confident in choosing the right data structure for simple tasks and ready for intermediate algorithmic challenges.",
+                closing: "Efficiency is the difference between a coder and a computer scientist. Let's optimize."
+            },
+            intermediate: {
+                hook: "Master the Logic of High-Performance Systems.",
+                problem: "Linear logic fails at scale. To build professional software, you need to master non-linear structures like Trees and Graphs.",
+                transformation: "We expand your toolkit. Master complex recursive thinking and advanced organizational patterns used in enterprise-level databases and search engines.",
+                whatYouWillLearn: [
+                    "Trees and Binary Search Architectures: Organizing Hierarchy",
+                    "Graph Theory: Understanding Social Networks and Map Routing",
+                    "Hashing and Hash Tables: Achieving Zero-latency Data Retrieval",
+                    "Advanced Recursion and Divide & Conquer Methodologies"
+                ],
+                whyChoose: "Focused on 'Technical Excellence.' We bridge the gap between building apps and engineering high-load systems.",
+                learningMethod: "Implementation-heavy labs. You won't just use these structures; you'll build them from scratch.",
+                outcomes: "Prepared for mid-level technical interviews and capable of optimizing data layers for modern web apps.",
+                closing: "Non-linear thinking is the key to unlimited scale. Let's branch out."
+            },
+            advanced: {
+                hook: "Engineer World-Class Algorithmic Solutions.",
+                problem: "The hardest problems in tech—routing, optimization, and AI—require more than just data structures; they require elite algorithmic strategy.",
+                transformation: "We turn you into an Algorithmic Authority. Master Dynamic Programming and Heuristics to solve the most complex computational challenges in the industry.",
+                whatYouWillLearn: [
+                    "Dynamic Programming: Breaking Down Impossible Problems",
+                    "Greedy Algorithms and Heuristic Optimization Strategies",
+                    "Advanced Graph Algorithms: Dijkstra, A*, and Network Flow",
+                    "Complexity Theory and NP-Complete Problem Identification"
+                ],
+                whyChoose: "This is the elite level. We cover the math and logic that powers companies like Google, Meta, and Amazon.",
+                learningMethod: "Competitive-programming style challenges and deep research on optimization paper logic.",
+                outcomes: "Senior-level algorithmic competencies. Capable of leading technical architecture for high-frequency, complex systems.",
+                closing: "At the highest level, engineering is just pure logic. Let's master the math of code."
+            }
+        },
         whatYouWillLearn: [
             "Analyze algorithm efficiency using Big O Notation",
             "Implement and manage Arrays, Linked Lists, and Stacks",
@@ -243,8 +468,53 @@
 export const itCoursesDetailsPart2 = [
     {
         title: "Mobile App Development",
-        overview:
-            "Dive into the booming world of mobile applications by learning how to build rich, dynamic, and native-feeling apps for both iOS and Android. Mobile devices are now the primary way people access the internet and services, making mobile development one of the most highly sought-after capabilities for modern tech teams.",
+        overview: {
+            beginner: {
+                hook: "The world is mobile. Learn to build the apps that power it.",
+                problem: "Mobile development can feel fragmented and overwhelming with too many platforms, languages, and tools to choose from.",
+                transformation: "We unify your path. Master cross-platform development with modern frameworks to build high-performance, native-feeling apps for both iOS and Android.",
+                whatYouWillLearn: [
+                    "Mobile UI/UX Fundamentals: Designing for the Small Screen",
+                    "Cross-Platform Development Architecture and State Management",
+                    "Working with Device Hardware: Camera, GPS, and Notifications",
+                    "Basic API Integration: Connecting your App to the World"
+                ],
+                whyChoose: "Practical, project-centric focus. You'll build a functional portfolio app from the very first module.",
+                learningMethod: "Build-as-you-learn. Every lesson adds a new feature to your live mobile project.",
+                outcomes: "Confident in designing and building functional mobile interfaces for modern smartphones.",
+                closing: "Your first app is closer than you think. Let's start coding."
+            },
+            intermediate: {
+                hook: "Master the Mobile Ecosystem. From 'Apps' to 'Industrial Solutions'.",
+                problem: "Basic apps are easy, but building professional-grade mobile experiences requires deep knowledge of state, navigation, and API security.",
+                transformation: "We upgrade your logic. Master complex state management, professional navigation patterns, and secure data sync for real-world deployments.",
+                whatYouWillLearn: [
+                    "Advanced State Management and Data Persistence",
+                    "Professional Navigation Architectures and Deep Linking",
+                    "Secure API Authentication and Real-time Data Sync",
+                    "Optimizing Mobile Performance and Battery Efficiency"
+                ],
+                whyChoose: "Industry-standard workflows. We teach you the same patterns used by top-tier app development agencies.",
+                learningMethod: "Problem-solving labs. We take common mobile UI challenges and solve them with professional logic.",
+                outcomes: "Ready for Junior Mobile Developer roles. Capable of building multi-screen, data-driven mobile applications.",
+                closing: "Mobile is the ultimate platform for reach. Scale your skills today."
+            },
+            advanced: {
+                hook: "Architect the Future of Mobile. Master Enterprise Deployment.",
+                problem: "Scaling a mobile app to millions of users requires native performance optimization, complex offline logic, and robust CI/CD.",
+                transformation: "We turn you into a Mobile Architect. Master the high-level orchestration required to lead enterprise-grade mobile development teams.",
+                whatYouWillLearn: [
+                    "Native Performance Optimization and Profile-driven Tuning",
+                    "Enterprise Cloud Integration and Offline-first Architecture",
+                    "Automated Mobile Testing and CI/CD Release Pipelines",
+                    "App Store Optimization (ASO) and Global Deployment Strategies"
+                ],
+                whyChoose: "Elite-level curriculum. We focus on the automated, high-scale future of professional mobile engineering.",
+                learningMethod: "Scale-simulation drills. Build and deploy an enterprise-ready mobile app to a global audience.",
+                outcomes: "Senior-level mobile engineering competencies. Prepared to lead mobile projects for global tech brands.",
+                closing: "At the highest level, mobile engineering is about seamless scale. Master the app."
+            }
+        },
         whatYouWillLearn: [
             "Understand the fundamentals of mobile application architecture",
             "Design intuitive, user-friendly mobile interfaces and experiences",
@@ -291,8 +561,53 @@ export const itCoursesDetailsPart2 = [
     },
     {
         title: "DevOps & CI/CD Practices",
-        overview:
-            "This course bridges the gap between software development and IT operations, teaching the core DevOps practices that enable organizations to deliver applications rapidly. Continuous Integration and Continuous Deployment (CI/CD) pipelines dramatically improve software quality and reduce deployment times, making DevOps engineers highly valuable in any modern software project.",
+        overview: {
+            beginner: {
+                hook: "Stop manually deploying. Start Automating the Future.",
+                problem: "The wall between developers and operations leads to slow releases, manual errors, and 'it works on my machine' syndrome.",
+                transformation: "We break the wall. Learn the DevOps mindset and master Linux fundamentals to build the bridge between code and infrastructure.",
+                whatYouWillLearn: [
+                    "DevOps Culture: Why Speed and Stability aren't trade-offs",
+                    "Linux Command Line Mastery for System Operations",
+                    "Version Control with Git: The Heart of the Pipeline",
+                    "Introduction to Virtualization and Environment Isolation"
+                ],
+                whyChoose: "Practical and cultural focus. We don't just teach tools; we teach the philosophy of high-velocity delivery.",
+                learningMethod: "Operation-first training. You'll manage your own cloud instances from day one.",
+                outcomes: "Solid foundation in infrastructure management and ready to start building automated pipelines.",
+                closing: "Automation isn't just about efficiency; it's about reliability. Let's automate."
+            },
+            intermediate: {
+                hook: "Master the Pipeline. Automate everything from Code to Cloud.",
+                problem: "Manual testing and deployment are the biggest bottlenecks in modern software. Scaling requires automated CI/CD workflows.",
+                transformation: "We build your factory. Master Docker containerization and Jenkins/GitHub Actions to create self-healing, automated delivery systems.",
+                whatYouWillLearn: [
+                    "Docker Containerization: Consistency from Dev to Prod",
+                    "Building CI/CD Pipelines with GitHub Actions/Jenkins",
+                    "Automated Testing Integration into the Release Cycle",
+                    "Monitoring and Alerting: Seeing problems before users do"
+                ],
+                whyChoose: "Industrial-grade tooling. We use the same stack that powers the most reliable systems on earth.",
+                learningMethod: "Pipeline-building labs. You'll build a 'Zero-Touch' deployment system for a live web app.",
+                outcomes: "Ready for DevOps Engineer roles. Capable of automating delivery for professional development teams.",
+                closing: "The best deployment is the one you never have to think about. Master the flow."
+            },
+            advanced: {
+                hook: "Architect Global-Scale Infrastructure. Master Orchestration.",
+                problem: "Managing hundreds of containers manually is impossible. Cloud-scale systems require Kubernetes orchestration and Infrastructure-as-Code.",
+                transformation: "We turn you into a Site Reliability Engineer (SRE). Master Kubernetes and Terraform to manage massive, complex cloud ecosystems with code.",
+                whatYouWillLearn: [
+                    "Kubernetes Orchestration: Managing Scale at the Enterprise Level",
+                    "Infrastructure as Code (IaC) with Terraform and Ansible",
+                    "DevSecOps: Integrating Security into the Heart of the Pipeline",
+                    "Site Reliability Engineering (SRE) Principles for 99.99% Uptime"
+                ],
+                whyChoose: "Systems-thinking focus. This is for those who want to architect the infrastructure of the next unicorn.",
+                learningMethod: "Scale-simulation drills. Deploy and manage a multi-cluster system under high-load scenarios.",
+                outcomes: "Senior SRE competencies. Prepared to lead infrastructure and platform engineering teams.",
+                closing: "At scale, everything is code. Master the architecture of the cloud."
+            }
+        },
         whatYouWillLearn: [
             "Understand the principles and culture of DevOps",
             "Utilize Version Control effectively in a team environment",
@@ -339,8 +654,53 @@ export const itCoursesDetailsPart2 = [
     },
     {
         title: "Networking and System Administration",
-        overview:
-            "Gain the foundational knowledge needed to construct, manage, and maintain robust IT networks and operating systems. Every organization relies on secure and stable networks to function; this course provides the critical hands-on knowledge to analyze, configure, and troubleshoot corporate infrastructure.",
+        overview: {
+            beginner: {
+                hook: "The Digital World is Connected. Learn the Rules of the Road.",
+                problem: "Networking feels like 'magic' to most, but without understanding the core protocols, you'll always struggle to troubleshoot IT issues.",
+                transformation: "We demystify the wire. Master the OSI model and IP addressing to understand exactly how data moves across the global internet.",
+                whatYouWillLearn: [
+                    "The OSI Model and TCP/IP: The Language of the Internet",
+                    "IP Addressing, Subnetting, and Network Segmentation",
+                    "Basic Routing and Switching: How Data Finds Its Way",
+                    "Introduction to Network Hardware and Cable Standards"
+                ],
+                whyChoose: "Practical, hardware-centric focus. We teach you the rules that govern every connected device on earth.",
+                learningMethod: "Visual labs. We map out data journeys to see the invisible rules of networking in action.",
+                outcomes: "Confident in understanding how networks function and ready for entry-level IT support roles.",
+                closing: "Connection is everything. Learn to speak the language of the web."
+            },
+            intermediate: {
+                hook: "Master the Corporate Network. Control the Flow.",
+                problem: "Home networks are simple, but managing enterprise-grade infrastructure requires deep knowledge of VLANs, Security, and SysAdmin.",
+                transformation: "We technical-harden your skills. Master the configuration of routers, switches, and server environments to manage professional IT stacks.",
+                whatYouWillLearn: [
+                    "Configuring Corporate VLANs and Secure Network Segments",
+                    "Advanced Routing Protocols: Moving Data at Enterprise Scale",
+                    "Windows and Linux Server Administration Fundamentals",
+                    "Active Directory and Identity Management Configuration"
+                ],
+                whyChoose: "Hands-on technical depth. Moving beyond theory into the actual configuration of corporate hardware.",
+                learningMethod: "Infrastructure-building labs. Take a pile of hardware and transform it into a secure corporate network.",
+                outcomes: "Ready for System Administrator roles. Capable of managing multi-user, multi-server corporate environments.",
+                closing: "Control at the wire level is the ultimate power in IT. Master the network."
+            },
+            advanced: {
+                hook: "Architect Global Infrastructures. Master the Invisible Grid.",
+                problem: "Modern enterprises transcend physical borders. Managing them requires cloud-hybrid networking, high availability, and elite security.",
+                transformation: "We turn you into a Network Architect. Master the strategic and technical coordination required to lead global-scale IT infrastructure.",
+                whatYouWillLearn: [
+                    "Cloud-Hybrid Networking and SD-WAN Architectures",
+                    "High-Availability and Disaster Recovery for Global Systems",
+                    "Advanced Security Orchestration at the Network Edge",
+                    "Network Virtualization and Software-Defined Data Centers"
+                ],
+                whyChoose: "Elite-level curriculum. We focus on the high-stakes coordination required by global IT leadership teams.",
+                learningMethod: "Architecture-first pedagogy. Design and manage a multi-regional enterprise network simulation.",
+                outcomes: "Senior-level infrastructure engineering competencies. Prepared for lead NetAdmin and CloudOps roles.",
+                closing: "The most robust network is the one you never see fail. Master the architecture."
+            }
+        },
         whatYouWillLearn: [
             "Understand the OSI model, TCP/IP, and networking fundamentals",
             "Configure and manage networking hardware like routers and switches",
@@ -387,8 +747,53 @@ export const itCoursesDetailsPart2 = [
     },
     {
         title: "Database Design & SQL",
-        overview:
-            "Data is the new oil, and databases are the refineries. This course teaches the essential skills required to design structured, efficient relational databases and query them successfully using SQL. Understanding how to store, retrieve, and manipulate data securely is vital for backend developers, data analysts, and IT professionals.",
+        overview: {
+            beginner: {
+                hook: "Data is the New Oil. Learn to Refine it.",
+                problem: "Information is useless if it's stuck in messy files. Businesses need structured data to make decisions, but databases feel intimidating.",
+                transformation: "We simplify the structure. Master the language of SQL to extract, manipulate, and organize information like a pro from day one.",
+                 whatYouWillLearn: [
+                    "Relational Database Fundamentals: Tables, Rows, and Keys",
+                    "Mastering SQL Syntax: SELECT, FROM, WHERE, and beyond",
+                    "Data Manipulation basics: INSERT, UPDATE, and DELETE",
+                    "Understanding Data Types and Basic Schema Design"
+                ],
+                whyChoose: "Direct, practical focus. We teach you the language that powers every major company on the planet.",
+                learningMethod: "Query-first learning. You'll be writing SQL within the first 10 minutes of the course.",
+                outcomes: "Capable of querying and managing simple datasets for reports and basic applications.",
+                closing: "The power of data is at your fingertips. Let's write your first query."
+            },
+            intermediate: {
+                hook: "Master the Logic of Data. Architect Efficient Systems.",
+                problem: "Slow queries kill applications. Designing high-performance databases requires mastering JOINs, Normalization, and Indexes.",
+                transformation: "We optimize your logic. Learn to design databases that are structured for speed, integrity, and industrial-scale reliability.",
+                whatYouWillLearn: [
+                    "Advanced JOIN Operations and Complex Query Architecture",
+                    "Database Normalization: Achieving Zero-Redundancy Design",
+                    "Performance Tuning with Indexes and Query Optimization",
+                    "Implementing Constraints and Triggers for Data Integrity"
+                ],
+                whyChoose: "Efficiency-centric curriculum. We don't just teach SQL; we teach how to make it fast and scalable.",
+                learningMethod: "Architecture challenges. Take a messy dataset and normalize it into a high-performance database.",
+                outcomes: "Ready for Database Administrator roles. Capable of designing robust data layers for modern software.",
+                closing: "At scale, data structure is destiny. Level up your data game."
+            },
+            advanced: {
+                hook: "Engineer World-Class Data Ecosystems. Master the Petabyte.",
+                problem: "Massive scale breaks traditional relational logic. Managing high-frequency, global data requires mastering procedures, NoSQL, and shards.",
+                transformation: "We turn you into a Data Architect. Master the elite-level orchestration required to lead enterprise-grade data engineering teams.",
+                whatYouWillLearn: [
+                    "Stored Procedures, Functions, and Complex Database Logic",
+                    "Enterprise Scaling: Partitioning, Sharding, and Replication",
+                    "Integrating SQL with NoSQL and Modern Data Lake Architectures",
+                    "Database Security, Auditing, and Global Compliance Standards"
+                ],
+                whyChoose: "Scale-focused curriculum. We focus on the high-load data challenges that only the top 1% of engineers solve.",
+                learningMethod: "Performance-tuning lab. Optimize a massive, slow dataset into a high-speed production engine.",
+                outcomes: "Senior-level data engineering competencies. Prepared for lead DBA and Data Architect roles.",
+                closing: "Mastering data is the key to mastering the digital future. Let's architect."
+            }
+        },
         whatYouWillLearn: [
             "Design normalized relational databases from scratch",
             "Write basic to advanced SQL queries to manipulate data",
@@ -435,8 +840,53 @@ export const itCoursesDetailsPart2 = [
     },
     {
         title: "Ethical Hacking and Penetration Testing",
-        overview:
-            "Step into the shoes of a hacker to learn how to secure systems against them. This course teaches the methodologies of penetration testing and ethical hacking, equipping you with the practical skills needed to uncover vulnerabilities in networks, applications, and operating systems before malicious actors exploit them.",
+        overview: {
+            beginner: {
+                hook: "In a world of hackers, be the Ethical Shield.",
+                problem: "Cybersecurity is often seen as a mystery. Without understanding the attacker's tools, your defenses are just guesswork.",
+                transformation: "We demystify the exploit. Learn the ethical framework and basic reconnaissance techniques to understand how hackers think and how to stop them.",
+                whatYouWillLearn: [
+                    "The Ethical Hacking Mindset and Legal Frameworks",
+                    "Passive Reconnaissance and Intellectual Gathering",
+                    "Vulnerability Assessment Basics: Finding the Weak Links",
+                    "Introduction to Kali Linux and the Security Toolset"
+                ],
+                whyChoose: "Moral-first training. We build highly skilled professionals who operate with the highest integrity.",
+                learningMethod: "Guided exploration. Explore the security landscape in a strictly controlled, legal lab environment.",
+                outcomes: "Foundational security mindset and ready to pursue entry-level ethical hacking certifications.",
+                closing: "To catch a hacker, you must think like one. Let's start the hunt."
+            },
+            intermediate: {
+                hook: "Master the Tools of the Trade. Break the Perimeter.",
+                problem: "Knowing theory isn't enough to stop an active breach. You need hands-on technical proficiency in network and system exploitation.",
+                transformation: "We sharpen your technical edge. Master Nmap, Metasploit, and manual exploitation techniques to uncover deep-seated vulnerabilities.",
+                whatYouWillLearn: [
+                    "Network Scanning and Enumeration Techniques",
+                    "System Hacking: Gaining and Maintaining Access",
+                    "Password Cracking and Credential Theft Methodologies",
+                    "Wireless Network Security and Exploitation"
+                ],
+                whyChoose: "Offensive technical depth. We focus on the most common and dangerous attack vectors used today.",
+                learningMethod: "Vulnerability-capture labs. Gain access to increasingly secure simulated environments.",
+                outcomes: "Technically proficient in penetration testing and ready for Junior Pen-Tester roles.",
+                closing: "Access is earned through curiosity and persistence. Master the exploit."
+            },
+            advanced: {
+                hook: "Become a Master Pen-Tester. Lead Elite Security Assessments.",
+                problem: "Modern enterprise security is multi-layered. Bypassing state-of-the-art defenses requires advanced malware analysis and custom exploit development.",
+                transformation: "We turn you into a Red-Team Lead. Master advanced web app attacks, binary exploitation, and professional security reporting.",
+                whatYouWillLearn: [
+                    "Advanced Web Application Attacks and SQL Injection",
+                    "Exploit Development and Buffer Overflows",
+                    "Post-Exploitation, Pivoting, and Lateral Movement",
+                    "Professional Reporting and Client Security Consultation"
+                ],
+                whyChoose: "Elite-level focus. This is for experts who want to perform high-stakes security audits for global enterprises.",
+                learningMethod: "Full-scale Red-Team exercise. Conduct a complete, simulated security assessment from start to report.",
+                outcomes: "Senior-level penetration testing skills. Prepared to lead complex security consultancy projects.",
+                closing: "The ultimate security is a system that has been tested by the best. Be the best."
+            }
+        },
         whatYouWillLearn: [
             "Understand the ethical hacking methodology and legal constraints",
             "Conduct passive and active footprinting and reconnaissance",
