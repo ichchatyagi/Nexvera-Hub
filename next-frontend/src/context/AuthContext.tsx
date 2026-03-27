@@ -37,8 +37,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const accessToken = getCookie('access_token') || localStorage.getItem('access_token');
       if (accessToken) {
         try {
-          const response = await api.get('/users/me');
-          setUser(response.data);
+          // api.ts interceptor now unwraps this to return the user directly
+          const userData: any = await api.get('/users/me');
+          
+          // Fallback for missing name field
+          if (!userData.name && userData.email) {
+            userData.name = userData.email.split('@')[0];
+          }
+          
+          setUser(userData);
         } catch (error) {
           console.error('Auth initialization failed:', error);
           logout();
@@ -53,11 +60,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (data: any) => {
     try {
       setIsLoading(true);
-      const response = await api.post('/auth/login', data);
-      const { access_token, user: userData } = response.data;
+      // api.ts interceptor unwraps {success, data}
+      const authData: any = await api.post('/auth/login', data);
+      const { accessToken, refreshToken, user: userData } = authData;
       
-      setCookie('access_token', access_token);
-      localStorage.setItem('access_token', access_token);
+      setCookie('access_token', accessToken);
+      setCookie('refresh_token', refreshToken);
+      localStorage.setItem('access_token', accessToken);
+      localStorage.setItem('refresh_token', refreshToken);
+      
+      // Fallback for missing name field
+      if (!userData.name && userData.email) {
+        userData.name = userData.email.split('@')[0];
+      }
       
       setUser(userData);
       toast.success('Successfully logged in!');
@@ -73,11 +88,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (data: any) => {
     try {
       setIsLoading(true);
-      const response = await api.post('/auth/register', data);
-      const { access_token, user: userData } = response.data;
+      // api.ts interceptor unwraps {success, data}
+      const authData: any = await api.post('/auth/register', data);
+      const { accessToken, refreshToken, user: userData } = authData;
       
-      setCookie('access_token', access_token);
-      localStorage.setItem('access_token', access_token);
+      setCookie('access_token', accessToken);
+      setCookie('refresh_token', refreshToken);
+      localStorage.setItem('access_token', accessToken);
+      localStorage.setItem('refresh_token', refreshToken);
+      
+      // Fallback for missing name field
+      if (!userData.name && userData.email) {
+        userData.name = userData.email.split('@')[0];
+      }
       
       setUser(userData);
       toast.success('Registration successful!');
@@ -92,7 +115,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     deleteCookie('access_token');
+    deleteCookie('refresh_token');
     localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     setUser(null);
     router.push('/login');
     toast.success('Logged out');

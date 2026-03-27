@@ -26,7 +26,18 @@ api.interceptors.request.use(
 
 // Response interceptor to handle token refresh / expired tokens
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // If backend returns a {success: true, data: ...} wrapper, 
+    // we want to return response.data.data for convenience in components
+    // Note: We check if it's already unwrapped by seeing if success field exists
+    if (response.data && response.data.success === true && response.data.data !== undefined) {
+      return {
+        ...response,
+        data: response.data.data
+      };
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
     
@@ -37,15 +48,20 @@ api.interceptors.response.use(
       try {
         const refreshToken = getCookie('refresh_token') || (typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null);
         if (refreshToken) {
-          const resp = await axios.post(`${API_BASE_URL}/auth/refresh`, { refresh_token: refreshToken });
-          const { access_token } = resp.data;
+          // Send as refreshToken (camelCase) as backend expects
+          const resp = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken: refreshToken });
           
-          setCookie('access_token', access_token);
+          // NestJS returns tokens under data envelope
+          const { accessToken, refreshToken: newRefreshToken } = resp.data.data;
+          
+          setCookie('access_token', accessToken);
+          setCookie('refresh_token', newRefreshToken);
           if (typeof window !== 'undefined') {
-            localStorage.setItem('access_token', access_token);
+            localStorage.setItem('access_token', accessToken);
+            localStorage.setItem('refresh_token', newRefreshToken);
           }
           
-          originalRequest.headers.Authorization = `Bearer ${access_token}`;
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return api(originalRequest);
         }
       } catch (refreshError) {
