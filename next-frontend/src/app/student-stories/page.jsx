@@ -269,52 +269,74 @@ const StudentStories = () => {
     return (
         <div className="bg-transparent overflow-hidden">
             {/* Hero Section */}
+            {/* Hero Section */}
             <section className="relative pt-6 lg:pt-12 pb-24 px-6 lg:px-12 overflow-hidden">
+                <div className="container mx-auto relative z-10">
+                    <div className="flex flex-col lg:flex-row items-center gap-16">
+                        <div className="flex-1 text-center lg:text-left">
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-xs font-black uppercase tracking-widest mb-8 border border-blue-100"
+                            >
+                                <Trophy className="w-4 h-4" />
+                                Student Success Center
+                            </motion.div>
+
+                            <motion.h1
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 }}
+                                className="text-4xl lg:text-7xl font-black text-slate-900 leading-tight mb-8 tracking-tighter"
+                            >
+                                Student <br />
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">Success Stories</span>
+                            </motion.h1>
+
+                            <motion.p
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2 }}
+                                className="text-xl text-slate-600 font-medium leading-relaxed mb-12 lg:mx-0 mx-auto"
+                            >
+                                Discover how Nexvera Hub students transformed their learning into real achievements through projects, internships, and career support.
+                            </motion.p>
+
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.3 }}
+                                className="flex justify-center lg:justify-start"
+                            >
+                                <button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black px-10 py-5 rounded-2xl shadow-2xl shadow-blue-500/20 transition-all active:scale-95 flex items-center gap-3 uppercase tracking-widest text-sm">
+                                    Start Your Journey
+                                    <Rocket className="w-5 h-5" />
+                                </button>
+                            </motion.div>
+                        </div>
+
+                        <div className="flex-1 w-full max-w-xl">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.8, x: 20 }}
+                                animate={{ opacity: 1, scale: 1, x: 0 }}
+                                transition={{ duration: 0.8 }}
+                                className="relative"
+                            >
+                                <div className="absolute -inset-10 bg-gradient-to-tr from-blue-400/10 via-purple-400/10 to-indigo-400/10 rounded-full blur-[100px] -z-10 animate-pulse"></div>
+                                <img
+                                    src="https://illustrations.popsy.co/blue/success.svg"
+                                    alt="Student Success"
+                                    className="w-full h-auto drop-shadow-2xl"
+                                />
+                            </motion.div>
+                        </div>
+                    </div>
+                </div>
+
                 <div className="absolute top-0 right-0 w-1/2 h-full opacity-10 pointer-events-none">
                     <svg viewBox="0 0 500 500" className="w-full h-full text-blue-400">
                         <path d="M0,100 C150,200 350,0 500,100 L500,0 L0,0 Z" fill="currentColor" />
                     </svg>
-                </div>
-
-                <div className="container mx-auto relative z-10 text-center max-w-4xl text-center">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-xs font-black uppercase tracking-widest mb-8 border border-blue-100"
-                    >
-                        <Trophy className="w-4 h-4" />
-                        Student Success Center
-                    </motion.div>
-
-                    <motion.h1
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="text-4xl lg:text-7xl font-black text-slate-900 leading-tight mb-8 tracking-tighter"
-                    >
-                        Student <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">Success Stories</span>
-                    </motion.h1>
-
-                    <motion.p
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="text-xl text-slate-600 font-medium leading-relaxed mb-12"
-                    >
-                        Discover how Nexvera Hub students transformed their learning into real achievements through projects, internships, and career support.
-                    </motion.p>
-
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.3 }}
-                        className="flex justify-center"
-                    >
-                        <button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black px-10 py-5 rounded-2xl shadow-2xl shadow-blue-500/20 transition-all active:scale-95 flex items-center gap-3 uppercase tracking-widest text-sm">
-                            Start Your Journey
-                            <Rocket className="w-5 h-5" />
-                        </button>
-                    </motion.div>
                 </div>
             </section>
 

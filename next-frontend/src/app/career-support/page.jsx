@@ -177,33 +177,17 @@ const CareerSupport = () => {
                         </div>
                         <div className="lg:w-1/2 relative">
                             <motion.div
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ duration: 0.8, ease: "easeOut" }}
-                                className="relative z-10"
+                                initial={{ opacity: 0, scale: 0.8, x: 20 }}
+                                animate={{ opacity: 1, scale: 1, x: 0 }}
+                                transition={{ duration: 0.8 }}
+                                className="relative"
                             >
-                                {/* Rainbow Border Wrapper */}
-                                <div className="bg-gradient-to-r from-blue-500 via-purple-500 via-pink-500 via-orange-500 to-yellow-500 p-1.5 rounded-[3.2rem] shadow-2xl">
-                                    <div className="bg-white rounded-[2.8rem] p-1 shadow-inner overflow-hidden">
-                                        <img
-                                            src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80&w=1200"
-                                            alt="Career Success"
-                                            className="rounded-[2.6rem] w-full h-auto object-cover"
-                                        />
-                                    </div>
-                                    <div className="absolute inset-x-2 bottom-8 text-white px-8">
-                                        <div className="flex items-center gap-4 mb-2">
-                                            <div className="flex -space-x-3">
-                                                {[1, 2, 3].map((i) => (
-                                                    <div key={i} className="w-10 h-10 rounded-full border-2 border-white bg-slate-200 overflow-hidden shadow-lg">
-                                                        <img src={`https://i.pravatar.cc/150?u=${i + 10}`} alt="avatar" />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <span className="text-sm font-black bg-blue-600/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">Join 5,000+ Students</span>
-                                        </div>
-                                    </div>
-                                </div>
+                                <div className="absolute -inset-10 bg-gradient-to-tr from-blue-400/10 via-purple-400/10 to-indigo-400/10 rounded-full blur-[100px] -z-10 animate-pulse"></div>
+                                <img
+                                    src="https://illustrations.popsy.co/blue/work-from-home.svg"
+                                    alt="Career Support"
+                                    className="w-full h-auto drop-shadow-2xl"
+                                />
                             </motion.div>
                         </div>
                     </div>

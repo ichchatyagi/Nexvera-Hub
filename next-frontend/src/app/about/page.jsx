@@ -63,7 +63,7 @@ const MissionCard = ({ icon: Icon, title, description, color }) => (
                 <Icon size={24} />
             </div>
             <h4 className="text-xl font-black text-white mb-3 leading-tight uppercase tracking-tight tracking-tighter">{title}</h4>
-            <p className="text-white/80 text-xs font-black uppercase tracking-tight leading-relaxed">{description}</p>
+            <p className="text-white/80 text-xs font-medium tracking-tight leading-relaxed">{description}</p>
         </div>
     </motion.div>
 );
@@ -96,7 +96,7 @@ const AboutNexvera = () => {
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.8 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                className="inline-flex items-center gap-3 px-5 py-2.5 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black mb-8 border border-blue-100 shadow-sm uppercase tracking-[0.3em]"
+                                className="inline-flex items-center gap-3 px-5 py-2.5 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black mb-10 border border-blue-100 shadow-sm uppercase tracking-[0.3em]"
                             >
                                 <span className="flex h-2 w-2 rounded-full bg-blue-600 animate-pulse"></span>
                                 Nexstar Media Presents
@@ -107,7 +107,7 @@ const AboutNexvera = () => {
                                 <motion.h1
                                     initial={{ opacity: 0, y: -20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="text-4xl md:text-5xl lg:text-7xl font-black text-slate-950 leading-[0.9] mb-8 uppercase tracking-tighter"
+                                    className="text-4xl md:text-5xl lg:text-7xl font-black text-slate-950 leading-[0.9] mb-8 tracking-tighter"
                                 >
                                     Introducing <br />
                                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">Nexvera Hub</span>
@@ -118,7 +118,7 @@ const AboutNexvera = () => {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.1 }}
-                                className="text-lg text-slate-500 font-bold leading-relaxed max-w-2xl lg:mx-0 mx-auto mb-12 uppercase tracking-tight"
+                                className="text-lg text-slate-500 font-medium leading-relaxed max-w-2xl lg:mx-0 mx-auto mb-12 tracking-tight"
                             >
                                 A modern learning platform designed to empower students with <span className="text-blue-600">practical skills</span>, real-world knowledge, and career-focused education.
                             </motion.p>
@@ -165,7 +165,7 @@ const AboutNexvera = () => {
                         <MetallicCard color="from-blue-600 to-blue-800">
                             <Target className="w-14 h-14 text-white/40 mb-8" />
                             <h2 className="text-4xl font-black text-white mb-6 uppercase tracking-tighter">Our Vision</h2>
-                            <p className="text-white/80 text-lg font-black uppercase tracking-tight leading-relaxed">
+                            <p className="text-white/80 text-lg font-medium tracking-tight leading-relaxed">
                                 Our vision is to create a learning ecosystem where students can develop real-world skills, gain confidence, and prepare themselves for modern career opportunities in technology and digital industries.
                             </p>
                         </MetallicCard>
@@ -173,7 +173,7 @@ const AboutNexvera = () => {
                         <MetallicCard color="from-teal-600 to-teal-800">
                             <Lightbulb className="w-14 h-14 text-white/40 mb-8" />
                             <h2 className="text-4xl font-black text-white mb-6 uppercase tracking-tighter">Our Belief</h2>
-                            <p className="text-white/80 text-lg font-black uppercase tracking-tight leading-relaxed">
+                            <p className="text-white/80 text-lg font-medium tracking-tight leading-relaxed">
                                 At Nexvera Hub, we believe learning should go beyond theory. Students should gain practical knowledge, real experience, and the confidence to apply their skills in real-world situations.
                             </p>
                         </MetallicCard>
@@ -216,7 +216,7 @@ const AboutNexvera = () => {
                                 </div>
                                 <h3 className="text-3xl font-black text-white uppercase tracking-tighter">Online Mode</h3>
                             </div>
-                            <p className="text-white/90 text-lg font-black uppercase tracking-tight leading-relaxed mb-6">
+                            <p className="text-white/90 text-lg font-medium tracking-tight leading-relaxed mb-6">
                                 Students attend live classes through <span className="text-white underline decoration-white/40 underline-offset-8">Google Meet</span>, where mentors guide them through lessons, discussions, and practical learning sessions.
                             </p>
                         </MetallicCard>
@@ -228,7 +228,7 @@ const AboutNexvera = () => {
                                 </div>
                                 <h3 className="text-3xl font-black text-white uppercase tracking-tighter">Offline Mode</h3>
                             </div>
-                            <p className="text-white/90 text-lg font-black uppercase tracking-tight leading-relaxed mb-6">
+                            <p className="text-white/90 text-lg font-medium tracking-tight leading-relaxed mb-6">
                                 Students receive <span className="text-white underline decoration-white/40 underline-offset-8">structured course content</span>, notes, and learning materials that allow them to study at their own pace.
                             </p>
                         </MetallicCard>
@@ -254,7 +254,7 @@ const AboutNexvera = () => {
                                         <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
                                             <CheckCircle size={20} />
                                         </div>
-                                        <span className="text-lg font-black uppercase tracking-tight text-slate-800">{point}</span>
+                                        <span className="text-lg font-medium tracking-tight text-slate-800">{point}</span>
                                     </motion.div>
                                 ))}
                             </div>
@@ -270,7 +270,7 @@ const AboutNexvera = () => {
                                 </div>
                                 <div className="relative">
                                     <div className="absolute -left-6 top-0 text-8xl text-blue-500/10 font-black select-none">"</div>
-                                    <p className="text-slate-500 text-xl font-black uppercase tracking-tight leading-relaxed italic relative z-10 pl-4 py-4">
+                                    <p className="text-slate-500 text-xl font-medium tracking-tight leading-relaxed italic relative z-10 pl-4 py-4">
                                         Nexvera Hub is proudly created by <span className="text-blue-600">Nexstar Media</span> with the vision of building a modern learning platform that helps students grow and prepare for future career opportunities.
                                     </p>
                                 </div>
@@ -296,7 +296,7 @@ const AboutNexvera = () => {
                         <h2 className="text-4xl lg:text-6xl font-black text-white mb-8 uppercase tracking-tighter pt-12 text-center mt-4 uppercase">Certification After Completion</h2>
 
                         <div className="max-w-4xl mx-auto space-y-8">
-                            <p className="text-white/90 text-2xl font-black uppercase tracking-tight leading-relaxed text-center tracking-tighter">
+                            <p className="text-white/90 text-2xl font-medium tracking-tight leading-relaxed text-center tracking-tighter">
                                 Students who successfully complete their course and learning program receive a <span className="text-white underline underline-offset-8 decoration-white/40">Nexvera Hub certification</span> that validates their skills and project experience.
                             </p>
                             <div className="flex justify-center flex-wrap gap-4 pt-4">
@@ -315,7 +315,7 @@ const AboutNexvera = () => {
                     </MetallicCard>
                 </div>
             </section>
-            
+
             <ConsultancyCTA />
         </div>
     );

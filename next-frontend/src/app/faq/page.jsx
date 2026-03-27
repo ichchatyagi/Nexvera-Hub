@@ -151,7 +151,70 @@ const FAQ = () => {
     return (
         <div className="bg-transparent overflow-hidden">
             {/* Hero Section */}
-            <section className="relative pt-6 lg:pt-12 pb-20 px-6 lg:px-12 overflow-hidden text-center text-center">
+            {/* Hero Section */}
+            <section className="relative pt-6 lg:pt-12 pb-20 px-6 lg:px-12 overflow-hidden">
+                <div className="container mx-auto relative z-10">
+                    <div className="flex flex-col lg:flex-row items-center gap-16">
+                        <div className="flex-1 text-center lg:text-left">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-50 text-blue-600 rounded-full text-xs font-black uppercase tracking-[0.2em] mb-8 border border-blue-100 shadow-sm"
+                            >
+                                <HelpCircle className="w-4 h-4" />
+                                Got Questions?
+                            </motion.div>
+
+                            <motion.h1
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 }}
+                                className="text-4xl lg:text-7xl font-black text-slate-900 leading-tight mb-8 tracking-tighter"
+                            >
+                                Frequently Asked <br />
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 underline decoration-blue-100 decoration-8 underline-offset-8">Questions</span>
+                            </motion.h1>
+
+                            <motion.p
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2 }}
+                                className="text-xl text-slate-600 font-medium leading-relaxed mb-12 max-w-2xl lg:mx-0 mx-auto"
+                            >
+                                Find quick answers to common questions about Nexvera Hub courses, learning process, certifications, and career support.
+                            </motion.p>
+
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.3 }}
+                                className="flex flex-col sm:flex-row items-center lg:justify-start justify-center gap-4"
+                            >
+                                <Link href="/course" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black px-10 py-5 rounded-2xl shadow-2xl shadow-blue-500/20 transition-all active:scale-95 flex items-center gap-3 uppercase tracking-widest text-sm">
+                                    Browse Courses
+                                    <Rocket className="w-5 h-5" />
+                                </Link>
+                            </motion.div>
+                        </div>
+
+                        <div className="flex-1 w-full max-w-xl">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.8, x: 20 }}
+                                animate={{ opacity: 1, scale: 1, x: 0 }}
+                                transition={{ duration: 0.8 }}
+                                className="relative"
+                            >
+                                <div className="absolute -inset-10 bg-gradient-to-tr from-blue-400/10 via-purple-400/10 to-indigo-400/10 rounded-full blur-[100px] -z-10 animate-pulse"></div>
+                                <img
+                                    src="https://illustrations.popsy.co/blue/customer-support.svg"
+                                    alt="FAQ Support"
+                                    className="w-full h-auto drop-shadow-2xl"
+                                />
+                            </motion.div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Decorative background shapes */}
                 <div className="absolute top-0 right-0 w-2/3 h-full opacity-10 pointer-events-none -mr-1/4">
                     <svg viewBox="0 0 500 500" className="w-full h-full text-blue-400">
@@ -159,47 +222,6 @@ const FAQ = () => {
                     </svg>
                 </div>
                 <div className="absolute -top-24 -left-24 w-96 h-96 bg-blue-600/10 rounded-full blur-[100px]"></div>
-
-                <div className="container mx-auto relative z-10 max-w-4xl text-center">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-50 text-blue-600 rounded-full text-xs font-black uppercase tracking-[0.2em] mb-8 border border-blue-100 shadow-sm"
-                    >
-                        <HelpCircle className="w-4 h-4" />
-                        Got Questions?
-                    </motion.div>
-
-                    <motion.h1
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="text-4xl lg:text-7xl font-black text-slate-900 leading-tight mb-8 tracking-tighter"
-                    >
-                        Frequently Asked <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 underline decoration-blue-100 decoration-8 underline-offset-8">Questions</span>
-                    </motion.h1>
-
-                    <motion.p
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="text-xl text-slate-600 font-medium leading-relaxed mb-12 max-w-2xl mx-auto"
-                    >
-                        Find quick answers to common questions about Nexvera Hub courses, learning process, certifications, and career support.
-                    </motion.p>
-
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.3 }}
-                        className="flex flex-col sm:flex-row items-center justify-center gap-4"
-                    >
-                        <Link href="/course" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black px-10 py-5 rounded-2xl shadow-2xl shadow-blue-500/20 transition-all active:scale-95 flex items-center gap-3 uppercase tracking-widest text-sm">
-                            Browse Courses
-                            <Rocket className="w-5 h-5" />
-                        </Link>
-                    </motion.div>
-                </div>
             </section>
 
             {/* Popular Questions Highlight */}

@@ -98,53 +98,75 @@ const Blog = () => {
     return (
         <div className="bg-transparent overflow-hidden">
             {/* Blog Hero */}
-            <section className="relative pt-6 lg:pt-12 pb-20 px-6 lg:px-12 overflow-hidden text-center">
+            {/* Blog Hero */}
+            <section className="relative pt-6 lg:pt-12 pb-20 px-6 lg:px-12 overflow-hidden">
+                <div className="container mx-auto relative z-10">
+                    <div className="flex flex-col lg:flex-row items-center gap-16">
+                        <div className="flex-1 text-center lg:text-left">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="inline-flex items-center gap-3 px-5 py-2.5 bg-blue-50 text-blue-600 rounded-full text-xs font-black uppercase tracking-[0.25em] mb-8 border border-blue-100 shadow-sm"
+                            >
+                                <TrendingUp className="w-4 h-4" />
+                                Insights & Guides
+                            </motion.div>
+
+                            <motion.h1
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="text-4xl lg:text-7xl font-black text-slate-900 leading-tight mb-8 tracking-tighter"
+                            >
+                                Nexvera Hub <br />
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Blog</span>
+                            </motion.h1>
+
+                            <motion.p
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 }}
+                                className="text-xl text-slate-600 font-medium leading-relaxed mb-12 max-w-2xl lg:mx-0 mx-auto"
+                            >
+                                Explore insights, tutorials, career advice, and technology guides from the Nexvera Hub learning community.
+                            </motion.p>
+
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.2 }}
+                                className="flex justify-center lg:justify-start"
+                            >
+                                <Link href="/course" className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black px-6 lg:px-12 py-5 rounded-2xl shadow-2xl hover:shadow-blue-500/30 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-sm">
+                                    Explore Courses
+                                    <Rocket className="w-5 h-5" />
+                                </Link>
+                            </motion.div>
+                        </div>
+
+                        <div className="flex-1 w-full max-w-xl">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.8, x: 20 }}
+                                animate={{ opacity: 1, scale: 1, x: 0 }}
+                                transition={{ duration: 0.8 }}
+                                className="relative"
+                            >
+                                <div className="absolute -inset-10 bg-gradient-to-tr from-blue-400/10 via-purple-400/10 to-indigo-400/10 rounded-full blur-[100px] -z-10 animate-pulse"></div>
+                                <img
+                                    src="https://illustrations.popsy.co/blue/taking-notes.svg"
+                                    alt="Blog Writing"
+                                    className="w-full h-auto drop-shadow-2xl"
+                                />
+                            </motion.div>
+                        </div>
+                    </div>
+                </div>
+
                 <div className="absolute top-0 right-0 w-2/3 h-full opacity-10 pointer-events-none -mr-1/4">
                     <svg viewBox="0 0 500 500" className="w-full h-full text-blue-400">
                         <path d="M50,150 C200,50 400,250 500,100 L500,0 L0,0 Z" fill="currentColor" />
                     </svg>
                 </div>
                 <div className="absolute -top-24 -left-24 w-96 h-96 bg-blue-600/10 rounded-full blur-[100px]"></div>
-
-                <div className="container mx-auto relative z-10 max-w-4xl">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="inline-flex items-center gap-3 px-5 py-2.5 bg-blue-50 text-blue-600 rounded-full text-xs font-black uppercase tracking-[0.25em] mb-8 border border-blue-100 shadow-sm"
-                    >
-                        <TrendingUp className="w-4 h-4" />
-                        Insights & Guides
-                    </motion.div>
-
-                    <motion.h1
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-4xl lg:text-7xl font-black text-slate-900 leading-tight mb-8 tracking-tighter"
-                    >
-                        Nexvera Hub <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Blog</span>
-                    </motion.h1>
-
-                    <motion.p
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="text-xl text-slate-600 font-medium leading-relaxed mb-12 max-w-2xl mx-auto"
-                    >
-                        Explore insights, tutorials, career advice, and technology guides from the Nexvera Hub learning community.
-                    </motion.p>
-
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.2 }}
-                        className="flex justify-center"
-                    >
-                        <Link href="/course" className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black px-6 lg:px-12 py-5 rounded-2xl shadow-2xl hover:shadow-blue-500/30 transition-all flex items-center gap-3 uppercase tracking-widest text-sm">
-                            Explore Courses
-                            <Rocket className="w-5 h-5" />
-                        </Link>
-                    </motion.div>
-                </div>
             </section>
 
             {/* Blog Categories Section */}

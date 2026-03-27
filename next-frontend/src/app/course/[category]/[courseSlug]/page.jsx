@@ -573,16 +573,16 @@ const CourseDetail = () => {
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="relative w-full max-w-xl bg-white rounded-[4rem] p-12 lg:p-20 text-center overflow-hidden border-[2px] border-slate-100 shadow-2xl"
+                            className="relative w-full max-w-md bg-white rounded-[3rem] p-10 lg:p-12 text-center overflow-hidden border-[2px] border-slate-100 shadow-2xl"
                         >
-                            <button onClick={() => setIsComingSoonOpen(false)} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-colors">
-                                <X size={24} />
+                            <button onClick={() => setIsComingSoonOpen(false)} className="absolute top-6 right-6 w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-colors">
+                                <X size={20} />
                             </button>
-                            <div className={`absolute top-0 left-0 w-full h-[8px] bg-gradient-to-r ${themeColor}`}></div>
-                            <div className="w-24 h-24 rounded-[2.5rem] bg-slate-50 border border-slate-200 flex items-center justify-center text-5xl mx-auto mb-10 select-none">🚀</div>
-                            <h3 className="text-4xl lg:text-7xl font-black text-slate-950 mb-6 uppercase tracking-tighter leading-[0.9]">Something <br /> <span className={`text-transparent bg-clip-text bg-gradient-to-r ${themeColor}`}>Exciting</span> is on the way.</h3>
-                            <p className="text-slate-500 font-bold mb-12 text-sm lg:text-base leading-relaxed">This feature will be unlocked soon—stay connected.</p>
-                            <button onClick={() => setIsComingSoonOpen(false)} className={`w-full py-7 rounded-[2.5rem] bg-gradient-to-r ${themeColor} text-white font-black uppercase tracking-[0.3em] text-[11px] hover:scale-[1.02] transition-all`}>Close Notification</button>
+                            <div className={`absolute top-0 left-0 w-full h-[6px] bg-gradient-to-r ${themeColor}`}></div>
+                            <div className="w-20 h-20 rounded-[2rem] bg-slate-50 border border-slate-200 flex items-center justify-center text-4xl mx-auto mb-8 select-none">🚀</div>
+                            <h3 className="text-3xl lg:text-4xl font-black text-slate-950 mb-4 uppercase tracking-tighter leading-tight">Something <br /> <span className={`text-transparent bg-clip-text bg-gradient-to-r ${themeColor}`}>Exciting</span> is on the way.</h3>
+                            <p className="text-slate-500 font-bold mb-10 text-xs lg:text-sm leading-relaxed px-4">This feature will be unlocked soon—stay connected.</p>
+                            <button onClick={() => setIsComingSoonOpen(false)} className={`w-full py-5 rounded-[2rem] bg-gradient-to-r ${themeColor} text-white font-black uppercase tracking-[0.3em] text-[10px] hover:scale-[1.02] transition-all`}>Close Notification</button>
                         </motion.div>
                     </div>
                 )}

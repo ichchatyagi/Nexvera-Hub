@@ -96,6 +96,73 @@ const Home = () => {
                 </div>
             </section>
 
+            {/* Premium Tuition Advertisement Section */}
+            <section className="py-24 relative overflow-hidden bg-white/30 backdrop-blur-md border-y border-slate-50">
+                <div className="container mx-auto px-6 lg:px-12 relative z-10">
+                    <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
+                        <div className="flex-1 text-center lg:text-left">
+                            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-[0.4em] mb-8">
+                                Academic Mastery 🎓
+                            </motion.div>
+                            
+                            <h2 className="text-4xl lg:text-7xl font-black text-slate-900 uppercase tracking-tighter mb-8 leading-[0.95]">
+                                Premium <br />
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">ONLINE</span> <br />
+                                TUITIONS
+                            </h2>
+
+                            <p className="text-lg text-slate-500 font-medium leading-relaxed mb-12 max-w-xl mx-auto lg:mx-0">
+                                Specialized academic support for <strong className="text-slate-900">Classes 5–12</strong>. We bridge the gap between classroom learning and academic excellence with personalized online mentorship.
+                            </p>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-12">
+                                {[
+                                    { title: "Personalized Focus", desc: "Expert 1-on-1 and small group sessions." },
+                                    { title: "All Major Boards", desc: "CBSE, ICSE, ISC, and State Boards supported." }
+                                ].map((item, idx) => (
+                                    <div key={idx} className="flex flex-col gap-2 p-6 rounded-3xl bg-white border border-slate-100 shadow-sm">
+                                        <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{item.title}</h4>
+                                        <p className="text-xs text-slate-500 font-medium leading-relaxed">{item.desc}</p>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-6 justify-center lg:justify-start">
+                                <button
+                                    onClick={openModal}
+                                    className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:scale-105 text-white font-black text-[10px] uppercase tracking-widest px-12 py-5 rounded-2xl transition-all shadow-xl shadow-blue-200 active:scale-95"
+                                >
+                                    Book Free Demo
+                                </button>
+                                <Link href="/course" className="flex items-center justify-center gap-2 text-blue-600 font-black text-[10px] uppercase tracking-widest hover:translate-x-1 transition-transform">
+                                    View Subject Coverage <ChevronRight className="w-4 h-4" />
+                                </Link>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 relative flex justify-center lg:justify-end">
+                            <div className="relative w-full max-w-lg group">
+                                <div className="absolute -inset-10 bg-gradient-to-tr from-blue-400/20 via-cyan-400/20 to-indigo-400/20 rounded-full blur-[100px] -z-10 animate-pulse"></div>
+                                <motion.div
+                                    whileHover={{ y: -10 }}
+                                    className="relative z-10 p-2 group-hover:drop-shadow-2xl transition-all duration-500"
+                                >
+                                    <img
+                                        src="https://illustrations.popsy.co/blue/presentation.svg"
+                                        alt="Online Tuitions"
+                                        className="w-full h-auto"
+                                    />
+                                    <div className="absolute -bottom-6 -right-6 bg-gradient-to-br from-blue-600 to-indigo-700 p-8 rounded-3xl text-white shadow-2xl hidden md:block">
+                                        <span className="block text-3xl font-black">5–12</span>
+                                        <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Classes Covered</span>
+                                    </div>
+                                </motion.div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* About Section */}
             <section className="py-16 lg:py-24 border-y border-slate-50 overflow-hidden">
                 <div className="container mx-auto px-6 lg:px-12">

@@ -8,6 +8,7 @@ import MobileAppBanner from "../components/MobileAppBanner";
 import ScrollToTop from "../components/ScrollToTop";
 import PageBackground from "../components/PageBackground";
 import ConsultationModal from "../components/ConsultationModal";
+import TuitionPromo from "../components/TuitionPromo";
 
 export default function ClientLayoutWrapper({ children }) {
   const pathname = usePathname();
@@ -37,6 +38,7 @@ export default function ClientLayoutWrapper({ children }) {
         {!isAuthPage && !isCourseDetailPage && <MobileAppBanner />}
         {!isAuthPage && !isCourseDetailPage && <Footer />}
         <ConsultationModal />
+        <TuitionPromo />
       </div>
     </ConsultationProvider>
   );
