@@ -1,0 +1,1217 @@
+[
+  {
+    "course_id": 1,
+    "level": "Beginner",
+    "price": 839
+  },
+  {
+    "course_id": 2,
+    "level": "Beginner",
+    "price": 971
+  },
+  {
+    "course_id": 3,
+    "level": "Beginner",
+    "price": 949
+  },
+  {
+    "course_id": 4,
+    "level": "Beginner",
+    "price": 724
+  },
+  {
+    "course_id": 5,
+    "level": "Beginner",
+    "price": 851
+  },
+  {
+    "course_id": 6,
+    "level": "Beginner",
+    "price": 611
+  },
+  {
+    "course_id": 7,
+    "level": "Beginner",
+    "price": 1191
+  },
+  {
+    "course_id": 8,
+    "level": "Beginner",
+    "price": 1124
+  },
+  {
+    "course_id": 9,
+    "level": "Beginner",
+    "price": 841
+  },
+  {
+    "course_id": 10,
+    "level": "Beginner",
+    "price": 1149
+  },
+  {
+    "course_id": 11,
+    "level": "Beginner",
+    "price": 1121
+  },
+  {
+    "course_id": 12,
+    "level": "Beginner",
+    "price": 1019
+  },
+  {
+    "course_id": 13,
+    "level": "Beginner",
+    "price": 1043
+  },
+  {
+    "course_id": 14,
+    "level": "Beginner",
+    "price": 749
+  },
+  {
+    "course_id": 15,
+    "level": "Beginner",
+    "price": 1137
+  },
+  {
+    "course_id": 16,
+    "level": "Beginner",
+    "price": 909
+  },
+  {
+    "course_id": 17,
+    "level": "Beginner",
+    "price": 1023
+  },
+  {
+    "course_id": 18,
+    "level": "Beginner",
+    "price": 934
+  },
+  {
+    "course_id": 19,
+    "level": "Beginner",
+    "price": 633
+  },
+  {
+    "course_id": 20,
+    "level": "Beginner",
+    "price": 704
+  },
+  {
+    "course_id": 21,
+    "level": "Beginner",
+    "price": 1074
+  },
+  {
+    "course_id": 22,
+    "level": "Beginner",
+    "price": 1071
+  },
+  {
+    "course_id": 23,
+    "level": "Beginner",
+    "price": 807
+  },
+  {
+    "course_id": 24,
+    "level": "Beginner",
+    "price": 813
+  },
+  {
+    "course_id": 25,
+    "level": "Beginner",
+    "price": 877
+  },
+  {
+    "course_id": 26,
+    "level": "Beginner",
+    "price": 751
+  },
+  {
+    "course_id": 27,
+    "level": "Beginner",
+    "price": 899
+  },
+  {
+    "course_id": 28,
+    "level": "Beginner",
+    "price": 624
+  },
+  {
+    "course_id": 29,
+    "level": "Beginner",
+    "price": 759
+  },
+  {
+    "course_id": 30,
+    "level": "Beginner",
+    "price": 923
+  },
+  {
+    "course_id": 31,
+    "level": "Beginner",
+    "price": 631
+  },
+  {
+    "course_id": 32,
+    "level": "Beginner",
+    "price": 1087
+  },
+  {
+    "course_id": 33,
+    "level": "Beginner",
+    "price": 711
+  },
+  {
+    "course_id": 34,
+    "level": "Beginner",
+    "price": 707
+  },
+  {
+    "course_id": 35,
+    "level": "Beginner",
+    "price": 924
+  },
+  {
+    "course_id": 36,
+    "level": "Beginner",
+    "price": 889
+  },
+  {
+    "course_id": 37,
+    "level": "Beginner",
+    "price": 761
+  },
+  {
+    "course_id": 38,
+    "level": "Beginner",
+    "price": 609
+  },
+  {
+    "course_id": 39,
+    "level": "Beginner",
+    "price": 1057
+  },
+  {
+    "course_id": 40,
+    "level": "Beginner",
+    "price": 853
+  },
+  {
+    "course_id": 41,
+    "level": "Beginner",
+    "price": 721
+  },
+  {
+    "course_id": 42,
+    "level": "Beginner",
+    "price": 1029
+  },
+  {
+    "course_id": 43,
+    "level": "Beginner",
+    "price": 767
+  },
+  {
+    "course_id": 44,
+    "level": "Beginner",
+    "price": 1139
+  },
+  {
+    "course_id": 45,
+    "level": "Beginner",
+    "price": 1163
+  },
+  {
+    "course_id": 46,
+    "level": "Beginner",
+    "price": 637
+  },
+  {
+    "course_id": 47,
+    "level": "Beginner",
+    "price": 1061
+  },
+  {
+    "course_id": 48,
+    "level": "Beginner",
+    "price": 604
+  },
+  {
+    "course_id": 49,
+    "level": "Beginner",
+    "price": 914
+  },
+  {
+    "course_id": 50,
+    "level": "Beginner",
+    "price": 741
+  },
+  {
+    "course_id": 51,
+    "level": "Beginner",
+    "price": 844
+  },
+  {
+    "course_id": 52,
+    "level": "Beginner",
+    "price": 1047
+  },
+  {
+    "course_id": 53,
+    "level": "Beginner",
+    "price": 747
+  },
+  {
+    "course_id": 54,
+    "level": "Beginner",
+    "price": 621
+  },
+  {
+    "course_id": 55,
+    "level": "Beginner",
+    "price": 623
+  },
+  {
+    "course_id": 56,
+    "level": "Beginner",
+    "price": 1159
+  },
+  {
+    "course_id": 57,
+    "level": "Beginner",
+    "price": 801
+  },
+  {
+    "course_id": 58,
+    "level": "Beginner",
+    "price": 619
+  },
+  {
+    "course_id": 59,
+    "level": "Beginner",
+    "price": 1101
+  },
+  {
+    "course_id": 60,
+    "level": "Beginner",
+    "price": 629
+  },
+  {
+    "course_id": 61,
+    "level": "Beginner",
+    "price": 824
+  },
+  {
+    "course_id": 62,
+    "level": "Beginner",
+    "price": 881
+  },
+  {
+    "course_id": 63,
+    "level": "Beginner",
+    "price": 777
+  },
+  {
+    "course_id": 64,
+    "level": "Beginner",
+    "price": 907
+  },
+  {
+    "course_id": 65,
+    "level": "Beginner",
+    "price": 873
+  },
+  {
+    "course_id": 66,
+    "level": "Beginner",
+    "price": 1097
+  },
+  {
+    "course_id": 67,
+    "level": "Beginner",
+    "price": 857
+  },
+  {
+    "course_id": 68,
+    "level": "Beginner",
+    "price": 699
+  },
+  {
+    "course_id": 69,
+    "level": "Beginner",
+    "price": 1073
+  },
+  {
+    "course_id": 70,
+    "level": "Beginner",
+    "price": 1127
+  },
+  {
+    "course_id": 71,
+    "level": "Beginner",
+    "price": 1109
+  },
+  {
+    "course_id": 72,
+    "level": "Beginner",
+    "price": 1134
+  },
+  {
+    "course_id": 73,
+    "level": "Beginner",
+    "price": 729
+  },
+  {
+    "course_id": 74,
+    "level": "Beginner",
+    "price": 651
+  },
+  {
+    "course_id": 75,
+    "level": "Beginner",
+    "price": 1004
+  },
+  {
+    "course_id": 76,
+    "level": "Beginner",
+    "price": 981
+  },
+  {
+    "course_id": 77,
+    "level": "Beginner",
+    "price": 904
+  },
+  {
+    "course_id": 78,
+    "level": "Beginner",
+    "price": 677
+  },
+  {
+    "course_id": 79,
+    "level": "Beginner",
+    "price": 764
+  },
+  {
+    "course_id": 80,
+    "level": "Beginner",
+    "price": 789
+  },
+  {
+    "course_id": 81,
+    "level": "Beginner",
+    "price": 1113
+  },
+  {
+    "course_id": 82,
+    "level": "Intermediate",
+    "price": 1291
+  },
+  {
+    "course_id": 83,
+    "level": "Intermediate",
+    "price": 1357
+  },
+  {
+    "course_id": 84,
+    "level": "Intermediate",
+    "price": 1187
+  },
+  {
+    "course_id": 85,
+    "level": "Intermediate",
+    "price": 1289
+  },
+  {
+    "course_id": 86,
+    "level": "Intermediate",
+    "price": 1364
+  },
+  {
+    "course_id": 87,
+    "level": "Intermediate",
+    "price": 1254
+  },
+  {
+    "course_id": 88,
+    "level": "Intermediate",
+    "price": 1427
+  },
+  {
+    "course_id": 89,
+    "level": "Intermediate",
+    "price": 1273
+  },
+  {
+    "course_id": 90,
+    "level": "Intermediate",
+    "price": 1211
+  },
+  {
+    "course_id": 91,
+    "level": "Intermediate",
+    "price": 1239
+  },
+  {
+    "course_id": 92,
+    "level": "Intermediate",
+    "price": 1201
+  },
+  {
+    "course_id": 93,
+    "level": "Intermediate",
+    "price": 1339
+  },
+  {
+    "course_id": 94,
+    "level": "Intermediate",
+    "price": 1241
+  },
+  {
+    "course_id": 95,
+    "level": "Intermediate",
+    "price": 1197
+  },
+  {
+    "course_id": 96,
+    "level": "Intermediate",
+    "price": 1309
+  },
+  {
+    "course_id": 97,
+    "level": "Intermediate",
+    "price": 1329
+  },
+  {
+    "course_id": 98,
+    "level": "Intermediate",
+    "price": 1177
+  },
+  {
+    "course_id": 99,
+    "level": "Intermediate",
+    "price": 1327
+  },
+  {
+    "course_id": 100,
+    "level": "Intermediate",
+    "price": 1104
+  },
+  {
+    "course_id": 101,
+    "level": "Intermediate",
+    "price": 1174
+  },
+  {
+    "course_id": 102,
+    "level": "Intermediate",
+    "price": 1263
+  },
+  {
+    "course_id": 103,
+    "level": "Intermediate",
+    "price": 1411
+  },
+  {
+    "course_id": 104,
+    "level": "Intermediate",
+    "price": 1163
+  },
+  {
+    "course_id": 105,
+    "level": "Intermediate",
+    "price": 1437
+  },
+  {
+    "course_id": 106,
+    "level": "Intermediate",
+    "price": 1413
+  },
+  {
+    "course_id": 107,
+    "level": "Intermediate",
+    "price": 1319
+  },
+  {
+    "course_id": 108,
+    "level": "Intermediate",
+    "price": 1429
+  },
+  {
+    "course_id": 109,
+    "level": "Intermediate",
+    "price": 1101
+  },
+  {
+    "course_id": 110,
+    "level": "Intermediate",
+    "price": 1351
+  },
+  {
+    "course_id": 111,
+    "level": "Intermediate",
+    "price": 1279
+  },
+  {
+    "course_id": 112,
+    "level": "Intermediate",
+    "price": 1347
+  },
+  {
+    "course_id": 113,
+    "level": "Intermediate",
+    "price": 1441
+  },
+  {
+    "course_id": 114,
+    "level": "Intermediate",
+    "price": 1159
+  },
+  {
+    "course_id": 115,
+    "level": "Intermediate",
+    "price": 1154
+  },
+  {
+    "course_id": 116,
+    "level": "Intermediate",
+    "price": 1203
+  },
+  {
+    "course_id": 117,
+    "level": "Intermediate",
+    "price": 1447
+  },
+  {
+    "course_id": 118,
+    "level": "Intermediate",
+    "price": 1199
+  },
+  {
+    "course_id": 119,
+    "level": "Intermediate",
+    "price": 1471
+  },
+  {
+    "course_id": 120,
+    "level": "Intermediate",
+    "price": 1131
+  },
+  {
+    "course_id": 121,
+    "level": "Intermediate",
+    "price": 1433
+  },
+  {
+    "course_id": 122,
+    "level": "Intermediate",
+    "price": 1341
+  },
+  {
+    "course_id": 123,
+    "level": "Intermediate",
+    "price": 1204
+  },
+  {
+    "course_id": 124,
+    "level": "Intermediate",
+    "price": 1227
+  },
+  {
+    "course_id": 125,
+    "level": "Intermediate",
+    "price": 1179
+  },
+  {
+    "course_id": 126,
+    "level": "Intermediate",
+    "price": 1124
+  },
+  {
+    "course_id": 127,
+    "level": "Intermediate",
+    "price": 1371
+  },
+  {
+    "course_id": 128,
+    "level": "Intermediate",
+    "price": 1491
+  },
+  {
+    "course_id": 129,
+    "level": "Intermediate",
+    "price": 1297
+  },
+  {
+    "course_id": 130,
+    "level": "Intermediate",
+    "price": 1434
+  },
+  {
+    "course_id": 131,
+    "level": "Intermediate",
+    "price": 1284
+  },
+  {
+    "course_id": 132,
+    "level": "Intermediate",
+    "price": 1229
+  },
+  {
+    "course_id": 133,
+    "level": "Intermediate",
+    "price": 1169
+  },
+  {
+    "course_id": 134,
+    "level": "Intermediate",
+    "price": 1121
+  },
+  {
+    "course_id": 135,
+    "level": "Intermediate",
+    "price": 1113
+  },
+  {
+    "course_id": 136,
+    "level": "Intermediate",
+    "price": 1213
+  },
+  {
+    "course_id": 137,
+    "level": "Intermediate",
+    "price": 1171
+  },
+  {
+    "course_id": 138,
+    "level": "Intermediate",
+    "price": 1473
+  },
+  {
+    "course_id": 139,
+    "level": "Intermediate",
+    "price": 1454
+  },
+  {
+    "course_id": 140,
+    "level": "Intermediate",
+    "price": 1331
+  },
+  {
+    "course_id": 141,
+    "level": "Intermediate",
+    "price": 1107
+  },
+  {
+    "course_id": 142,
+    "level": "Intermediate",
+    "price": 1271
+  },
+  {
+    "course_id": 143,
+    "level": "Intermediate",
+    "price": 1221
+  },
+  {
+    "course_id": 144,
+    "level": "Intermediate",
+    "price": 1399
+  },
+  {
+    "course_id": 145,
+    "level": "Intermediate",
+    "price": 1439
+  },
+  {
+    "course_id": 146,
+    "level": "Intermediate",
+    "price": 1337
+  },
+  {
+    "course_id": 147,
+    "level": "Intermediate",
+    "price": 1464
+  },
+  {
+    "course_id": 148,
+    "level": "Intermediate",
+    "price": 1223
+  },
+  {
+    "course_id": 149,
+    "level": "Intermediate",
+    "price": 1234
+  },
+  {
+    "course_id": 150,
+    "level": "Intermediate",
+    "price": 1424
+  },
+  {
+    "course_id": 151,
+    "level": "Intermediate",
+    "price": 1311
+  },
+  {
+    "course_id": 152,
+    "level": "Intermediate",
+    "price": 1144
+  },
+  {
+    "course_id": 153,
+    "level": "Intermediate",
+    "price": 1194
+  },
+  {
+    "course_id": 154,
+    "level": "Intermediate",
+    "price": 1183
+  },
+  {
+    "course_id": 155,
+    "level": "Intermediate",
+    "price": 1264
+  },
+  {
+    "course_id": 156,
+    "level": "Intermediate",
+    "price": 1453
+  },
+  {
+    "course_id": 157,
+    "level": "Intermediate",
+    "price": 1394
+  },
+  {
+    "course_id": 158,
+    "level": "Intermediate",
+    "price": 1353
+  },
+  {
+    "course_id": 159,
+    "level": "Intermediate",
+    "price": 1367
+  },
+  {
+    "course_id": 160,
+    "level": "Intermediate",
+    "price": 1139
+  },
+  {
+    "course_id": 161,
+    "level": "Intermediate",
+    "price": 1111
+  },
+  {
+    "course_id": 162,
+    "level": "Intermediate",
+    "price": 1497
+  },
+  {
+    "course_id": 163,
+    "level": "Advanced",
+    "price": 2113
+  },
+  {
+    "course_id": 164,
+    "level": "Advanced",
+    "price": 2163
+  },
+  {
+    "course_id": 165,
+    "level": "Advanced",
+    "price": 2047
+  },
+  {
+    "course_id": 166,
+    "level": "Advanced",
+    "price": 2089
+  },
+  {
+    "course_id": 167,
+    "level": "Advanced",
+    "price": 1984
+  },
+  {
+    "course_id": 168,
+    "level": "Advanced",
+    "price": 2091
+  },
+  {
+    "course_id": 169,
+    "level": "Advanced",
+    "price": 1943
+  },
+  {
+    "course_id": 170,
+    "level": "Advanced",
+    "price": 1947
+  },
+  {
+    "course_id": 171,
+    "level": "Advanced",
+    "price": 1837
+  },
+  {
+    "course_id": 172,
+    "level": "Advanced",
+    "price": 1804
+  },
+  {
+    "course_id": 173,
+    "level": "Advanced",
+    "price": 1857
+  },
+  {
+    "course_id": 174,
+    "level": "Advanced",
+    "price": 2171
+  },
+  {
+    "course_id": 175,
+    "level": "Advanced",
+    "price": 1964
+  },
+  {
+    "course_id": 176,
+    "level": "Advanced",
+    "price": 2143
+  },
+  {
+    "course_id": 177,
+    "level": "Advanced",
+    "price": 2139
+  },
+  {
+    "course_id": 178,
+    "level": "Advanced",
+    "price": 1851
+  },
+  {
+    "course_id": 179,
+    "level": "Advanced",
+    "price": 2191
+  },
+  {
+    "course_id": 180,
+    "level": "Advanced",
+    "price": 2027
+  },
+  {
+    "course_id": 181,
+    "level": "Advanced",
+    "price": 1817
+  },
+  {
+    "course_id": 182,
+    "level": "Advanced",
+    "price": 1844
+  },
+  {
+    "course_id": 183,
+    "level": "Advanced",
+    "price": 2057
+  },
+  {
+    "course_id": 184,
+    "level": "Advanced",
+    "price": 2104
+  },
+  {
+    "course_id": 185,
+    "level": "Advanced",
+    "price": 2011
+  },
+  {
+    "course_id": 186,
+    "level": "Advanced",
+    "price": 1931
+  },
+  {
+    "course_id": 187,
+    "level": "Advanced",
+    "price": 1831
+  },
+  {
+    "course_id": 188,
+    "level": "Advanced",
+    "price": 1811
+  },
+  {
+    "course_id": 189,
+    "level": "Advanced",
+    "price": 1914
+  },
+  {
+    "course_id": 190,
+    "level": "Advanced",
+    "price": 2009
+  },
+  {
+    "course_id": 191,
+    "level": "Advanced",
+    "price": 2144
+  },
+  {
+    "course_id": 192,
+    "level": "Advanced",
+    "price": 1863
+  },
+  {
+    "course_id": 193,
+    "level": "Advanced",
+    "price": 1879
+  },
+  {
+    "course_id": 194,
+    "level": "Advanced",
+    "price": 1904
+  },
+  {
+    "course_id": 195,
+    "level": "Advanced",
+    "price": 2051
+  },
+  {
+    "course_id": 196,
+    "level": "Advanced",
+    "price": 2119
+  },
+  {
+    "course_id": 197,
+    "level": "Advanced",
+    "price": 2083
+  },
+  {
+    "course_id": 198,
+    "level": "Advanced",
+    "price": 1849
+  },
+  {
+    "course_id": 199,
+    "level": "Advanced",
+    "price": 1973
+  },
+  {
+    "course_id": 200,
+    "level": "Advanced",
+    "price": 2127
+  },
+  {
+    "course_id": 201,
+    "level": "Advanced",
+    "price": 1974
+  },
+  {
+    "course_id": 202,
+    "level": "Advanced",
+    "price": 1944
+  },
+  {
+    "course_id": 203,
+    "level": "Advanced",
+    "price": 1977
+  },
+  {
+    "course_id": 204,
+    "level": "Advanced",
+    "price": 2199
+  },
+  {
+    "course_id": 205,
+    "level": "Advanced",
+    "price": 1809
+  },
+  {
+    "course_id": 206,
+    "level": "Advanced",
+    "price": 1874
+  },
+  {
+    "course_id": 207,
+    "level": "Advanced",
+    "price": 2043
+  },
+  {
+    "course_id": 208,
+    "level": "Advanced",
+    "price": 1877
+  },
+  {
+    "course_id": 209,
+    "level": "Advanced",
+    "price": 1824
+  },
+  {
+    "course_id": 210,
+    "level": "Advanced",
+    "price": 1823
+  },
+  {
+    "course_id": 211,
+    "level": "Advanced",
+    "price": 1839
+  },
+  {
+    "course_id": 212,
+    "level": "Advanced",
+    "price": 1899
+  },
+  {
+    "course_id": 213,
+    "level": "Advanced",
+    "price": 1909
+  },
+  {
+    "course_id": 214,
+    "level": "Advanced",
+    "price": 1861
+  },
+  {
+    "course_id": 215,
+    "level": "Advanced",
+    "price": 1829
+  },
+  {
+    "course_id": 216,
+    "level": "Advanced",
+    "price": 1959
+  },
+  {
+    "course_id": 217,
+    "level": "Advanced",
+    "price": 1907
+  },
+  {
+    "course_id": 218,
+    "level": "Advanced",
+    "price": 1951
+  },
+  {
+    "course_id": 219,
+    "level": "Advanced",
+    "price": 2039
+  },
+  {
+    "course_id": 220,
+    "level": "Advanced",
+    "price": 1854
+  },
+  {
+    "course_id": 221,
+    "level": "Advanced",
+    "price": 1833
+  },
+  {
+    "course_id": 222,
+    "level": "Advanced",
+    "price": 1889
+  },
+  {
+    "course_id": 223,
+    "level": "Advanced",
+    "price": 2007
+  },
+  {
+    "course_id": 224,
+    "level": "Advanced",
+    "price": 2107
+  },
+  {
+    "course_id": 225,
+    "level": "Advanced",
+    "price": 2137
+  },
+  {
+    "course_id": 226,
+    "level": "Advanced",
+    "price": 2129
+  },
+  {
+    "course_id": 227,
+    "level": "Advanced",
+    "price": 2183
+  },
+  {
+    "course_id": 228,
+    "level": "Advanced",
+    "price": 1859
+  },
+  {
+    "course_id": 229,
+    "level": "Advanced",
+    "price": 2149
+  },
+  {
+    "course_id": 230,
+    "level": "Advanced",
+    "price": 2197
+  },
+  {
+    "course_id": 231,
+    "level": "Advanced",
+    "price": 1961
+  },
+  {
+    "course_id": 232,
+    "level": "Advanced",
+    "price": 1927
+  },
+  {
+    "course_id": 233,
+    "level": "Advanced",
+    "price": 1983
+  },
+  {
+    "course_id": 234,
+    "level": "Advanced",
+    "price": 2024
+  },
+  {
+    "course_id": 235,
+    "level": "Advanced",
+    "price": 1969
+  },
+  {
+    "course_id": 236,
+    "level": "Advanced",
+    "price": 2081
+  },
+  {
+    "course_id": 237,
+    "level": "Advanced",
+    "price": 1933
+  },
+  {
+    "course_id": 238,
+    "level": "Advanced",
+    "price": 2177
+  },
+  {
+    "course_id": 239,
+    "level": "Advanced",
+    "price": 1864
+  },
+  {
+    "course_id": 240,
+    "level": "Advanced",
+    "price": 1901
+  },
+  {
+    "course_id": 241,
+    "level": "Advanced",
+    "price": 1807
+  },
+  {
+    "course_id": 242,
+    "level": "Advanced",
+    "price": 1891
+  },
+  {
+    "course_id": 243,
+    "level": "Advanced",
+    "price": 2099
+  }
+]
