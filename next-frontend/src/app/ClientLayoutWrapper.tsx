@@ -1,7 +1,10 @@
 "use client";
 
+import React from 'react';
 import { usePathname } from "next/navigation";
 import { ConsultationProvider } from "../context/ConsultationContext";
+import { AuthProvider } from "../context/AuthContext";
+import { Toaster } from 'react-hot-toast';
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import MobileAppBanner from "../components/MobileAppBanner";
@@ -10,7 +13,7 @@ import PageBackground from "../components/PageBackground";
 import ConsultationModal from "../components/ConsultationModal";
 import TuitionPromo from "../components/TuitionPromo";
 
-export default function ClientLayoutWrapper({ children }) {
+export default function ClientLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const backgroundPages = [
@@ -25,21 +28,24 @@ export default function ClientLayoutWrapper({ children }) {
                          pathname.startsWith('/guide/') || 
                          pathname.startsWith('/faq/');
 
-  const isAuthPage = ['/login', '/signup'].includes(pathname);
+  const isAuthPage = ['/login', '/register'].includes(pathname);
   const isCourseDetailPage = pathname.startsWith('/course/') && pathname.split('/').filter(Boolean).length >= 3;
 
   return (
-    <ConsultationProvider>
-      <ScrollToTop />
-      <div className="relative min-h-screen bg-transparent font-sans selection:bg-blue-100 selection:text-blue-900">
-        {showBackground && <PageBackground />}
-        {!isAuthPage && <Navbar />}
-        <main className="relative z-10">{children}</main>
-        {!isAuthPage && !isCourseDetailPage && <MobileAppBanner />}
-        {!isAuthPage && !isCourseDetailPage && <Footer />}
-        <ConsultationModal />
-        <TuitionPromo />
-      </div>
-    </ConsultationProvider>
+    <AuthProvider>
+      <ConsultationProvider>
+        <Toaster position="top-right" />
+        <ScrollToTop />
+        <div className="relative min-h-screen bg-transparent font-sans selection:bg-blue-100 selection:text-blue-900">
+          {showBackground && <PageBackground />}
+          {!isAuthPage && <Navbar />}
+          <main className="relative z-10">{children}</main>
+          {!isAuthPage && !isCourseDetailPage && <MobileAppBanner />}
+          {!isAuthPage && !isCourseDetailPage && <Footer />}
+          <ConsultationModal />
+          <TuitionPromo />
+        </div>
+      </ConsultationProvider>
+    </AuthProvider>
   );
 }

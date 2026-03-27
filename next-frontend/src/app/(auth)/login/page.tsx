@@ -1,12 +1,25 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { Facebook, Instagram } from 'lucide-react';
+import { Facebook, Instagram, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import PageBackground from '@/components/PageBackground';
+import { useAuth } from '@/context/AuthContext';
 
 const Login = () => {
+    const { login, isLoading } = useAuth();
+    const [formData, setFormData] = useState({ email: '', password: '' });
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            await login(formData);
+        } catch (error) {
+            // Error handling is managed in AuthContext/toast
+        }
+    };
+
     return (
         <div className="h-screen w-full flex items-center justify-center bg-transparent selection:bg-blue-100 selection:text-blue-900 overflow-hidden px-4">
             <PageBackground />
@@ -30,12 +43,14 @@ const Login = () => {
                     <h2 className="text-xl font-bold text-blue-600 uppercase tracking-[0.2em]">Nexvera Hub</h2>
                 </div>
 
-                <form className="space-y-6">
+                <form className="space-y-6" onSubmit={handleSubmit}>
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Email</label>
                         <input
                             required
                             type="email"
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                             className="w-full px-6 py-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-200 transition-all font-semibold placeholder:text-slate-300 text-sm"
                             placeholder="your@email.com"
                         />
@@ -48,11 +63,17 @@ const Login = () => {
                         <input
                             required
                             type="password"
+                            value={formData.password}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                             className="w-full px-6 py-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-200 transition-all font-semibold placeholder:text-slate-300 text-sm"
                             placeholder="••••••••"
                         />
                     </div>
-                    <button className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-500/20 hover:bg-blue-700 hover:scale-[1.02] transition-all active:scale-95 uppercase tracking-widest text-xs mt-2">
+                    <button 
+                        disabled={isLoading}
+                        className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-500/20 hover:bg-blue-700 hover:scale-[1.02] transition-all active:scale-95 uppercase tracking-widest text-xs mt-2 disabled:opacity-70 disabled:hover:scale-100"
+                    >
+                        {isLoading && <Loader2 className="animate-spin" size={16} />}
                         Login
                     </button>
                 </form>
@@ -78,7 +99,7 @@ const Login = () => {
                 </div>
 
                 <p className="mt-10 text-center text-slate-500 font-bold text-sm">
-                    New here? <Link href="/signup" className="text-blue-600 font-black hover:underline ml-1">Create Account</Link>
+                    New here? <Link href="/register" className="text-blue-600 font-black hover:underline ml-1">Create Account</Link>
                 </p>
             </motion.div>
         </div>
