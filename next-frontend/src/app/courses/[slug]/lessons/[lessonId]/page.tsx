@@ -21,7 +21,7 @@ import api from '@/lib/api';
 import toast from 'react-hot-toast';
 
 const LessonPlayer = () => {
-  const { courseId, lessonId } = useParams();
+  const { slug, lessonId } = useParams();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playbackData, setPlaybackData] = useState<any>(null);
   const [curriculum, setCurriculum] = useState<any[]>([]);
@@ -31,7 +31,7 @@ const LessonPlayer = () => {
 
   useEffect(() => {
     if (lessonId) fetchLessonData();
-    if (courseId) fetchCurriculum();
+    if (slug) fetchCurriculum();
   }, [lessonId]);
 
   const fetchLessonData = async () => {
@@ -56,7 +56,7 @@ const LessonPlayer = () => {
 
   const fetchCurriculum = async () => {
     try {
-      const curriculumRes = await api.get(`/courses/${courseId}/curriculum`);
+      const curriculumRes = await api.get(`/courses/${slug}/curriculum`);
       setCurriculum(curriculumRes.data || []);
     } catch (error) {
       console.error('Failed to fetch curriculum for sidebar', error);
@@ -96,7 +96,7 @@ const LessonPlayer = () => {
       <div className="h-14 shrink-0 px-6 border-b border-white/5 flex items-center justify-between text-white/50 bg-black/40 backdrop-blur-md">
         <div className="flex items-center gap-4">
           <button 
-            onClick={() => router.push(`/courses/${courseId}`)}
+            onClick={() => router.push(`/courses/${slug}`)}
             className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/10 transition-all hover:text-white"
           >
             <ChevronLeft size={20} />
@@ -184,7 +184,7 @@ const LessonPlayer = () => {
                       {section.lessons.map((lesson: any) => (
                          <button
                            key={lesson.id}
-                           onClick={() => router.push(`/courses/${courseId}/lessons/${lesson.id}`)}
+                           onClick={() => router.push(`/courses/${slug}/lessons/${lesson.id}`)}
                            className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all group overflow-hidden relative ${
                              lesson.id === lessonId 
                              ? 'bg-blue-600 text-white shadow-xl shadow-blue-600/20' 
