@@ -103,4 +103,17 @@ export class AppConfigService {
     }
     return origins.split(',').map((origin) => origin.trim());
   }
+
+  // Razorpay Config
+  get razorpayKeyId(): string {
+    return this.configService.get<string>('RAZORPAY_KEY_ID') || '';
+  }
+
+  get razorpayKeySecret(): string {
+    return this.configService.get<string>('RAZORPAY_KEY_SECRET') || '';
+  }
+
+  get razorpayWebhookSecret(): string {
+    return this.configService.get<string>('RAZORPAY_WEBHOOK_SECRET') || '';
+  }
 }

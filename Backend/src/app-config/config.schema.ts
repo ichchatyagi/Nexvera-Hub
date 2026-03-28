@@ -34,4 +34,9 @@ export const configValidationSchema = Joi.object({
   // See IMPLEMENTATION_PLAN_PART3.md §7 – Step 5: CDN Distribution
   // Format: d1234abcde.cloudfront.net  (no https:// prefix)
   CLOUDFRONT_VIDEO_DOMAIN: Joi.string().optional(),
+
+  // Razorpay configuration
+  RAZORPAY_KEY_ID: Joi.string().required(),
+  RAZORPAY_KEY_SECRET: Joi.string().required(),
+  RAZORPAY_WEBHOOK_SECRET: Joi.string().required(),
 });

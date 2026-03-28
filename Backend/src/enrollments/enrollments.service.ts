@@ -10,7 +10,7 @@ export class EnrollmentsService {
     @InjectModel(Enrollment.name) private enrollmentModel: Model<EnrollmentDocument>,
   ) {}
 
-  async enroll(courseId: string, studentId: string) {
+  async enroll(courseId: string, studentId: string, transactionId?: string) {
     if (!Types.ObjectId.isValid(courseId)) throw new NotFoundException('Invalid Course ID');
     
     // In a full implementation, we would check if the course exists and handle payment
@@ -29,6 +29,7 @@ export class EnrollmentsService {
     const enrollment = await this.enrollmentModel.create({
       course_id: new Types.ObjectId(courseId),
       student_id: studentId,
+      transaction_id: transactionId,
       status: 'active',
       progress: {
         percentage: 0,
