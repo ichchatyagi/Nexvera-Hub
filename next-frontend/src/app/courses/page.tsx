@@ -40,8 +40,24 @@ const CourseCatalog = () => {
       if (activeCategory !== 'All') params.category = activeCategory;
       if (searchTerm) params.search = searchTerm;
       
-      const response = await api.get('/courses', { params });
-      setCourses(response.data.data || []); // NestJS returns { data, total, page, limit }
+      const response: any = await api.get('/courses', { params });
+      
+      const rawCourses = response || [];
+      const mappedCourses = rawCourses.map((c: any) => ({
+        id: c._id || c.id,
+        slug: c.slug,
+        title: c.title,
+        description: c.description || '',
+        teacher_name: c.teacher_name || 'Expert Instructor',
+        price: c.pricing?.price || 0,
+        rating: c.stats?.average_rating || 0,
+        review_count: c.stats?.total_reviews || 0,
+        level: c.level || 'All Levels',
+        category: c.category?.main || c.category || 'Development',
+        thumbnail_url: c.thumbnail_url || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80',
+      }));
+
+      setCourses(mappedCourses);
     } catch (error) {
       toast.error('Failed to load courses');
       console.error(error);

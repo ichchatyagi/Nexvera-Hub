@@ -31,10 +31,7 @@ api.interceptors.response.use(
     // we want to return response.data.data for convenience in components
     // Note: We check if it's already unwrapped by seeing if success field exists
     if (response.data && response.data.success === true && response.data.data !== undefined) {
-      return {
-        ...response,
-        data: response.data.data
-      };
+      return response.data.data;
     }
     return response;
   },

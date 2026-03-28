@@ -22,6 +22,7 @@ import {
 import api from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
+import { openRazorpayCheckout } from '@/lib/razorpay';
 
 interface Lesson {
   id: string;
@@ -62,6 +63,7 @@ const CourseDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [isEnrolled, setIsEnrolled] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -71,22 +73,44 @@ const CourseDetail = () => {
   const fetchCourseData = async () => {
     try {
       setIsLoading(true);
-      const courseRes = await api.get(`/courses/${slug}`); // Backend should handle lookup by slug
-      const courseData = courseRes.data;
+      const courseRes: any = await api.get(`/courses/${slug}`); // Backend should handle lookup by slug
+      const rawData = courseRes; // api.ts already unwrapped {success: true, data: ...}
+      
+      const courseData: CourseDetail = {
+        id: rawData._id || rawData.id,
+        slug: rawData.slug,
+        title: rawData.title,
+        description: rawData.description,
+        teacher_name: rawData.teacher_name || 'Expert Instructor',
+        teacher_bio: rawData.teacher_bio || '',
+        price: rawData.pricing?.price || 0,
+        rating: rawData.stats?.average_rating || 0,
+        review_count: rawData.stats?.total_reviews || 0,
+        level: rawData.level || 'Beginner',
+        category: rawData.category?.main || rawData.category || 'Development',
+        thumbnail_url: rawData.thumbnail_url || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80',
+        total_lessons: rawData.total_lessons || 0,
+        total_duration: rawData.total_duration || 0,
+      };
+      
       setCourse(courseData);
 
       // Fetch curriculum
-      const curriculumRes = await api.get(`/courses/${courseData.id}/curriculum`);
-      setCurriculum(curriculumRes.data || []);
-      if (curriculumRes.data?.length > 0) {
-        setActiveSection(curriculumRes.data[0].id);
+      try {
+        const curriculumRes: any = await api.get(`/courses/${courseData.id}/curriculum`);
+        setCurriculum(curriculumRes || []);
+        if (curriculumRes?.length > 0) {
+          setActiveSection(curriculumRes[0].id);
+        }
+      } catch (e) {
+        console.error('Error fetching curriculum:', e);
       }
 
       // Check enrollment status if authenticated
       if (isAuthenticated) {
         try {
-          const enrollmentRes = await api.get(`/enrollments/check/${courseData.id}`);
-          setIsEnrolled(enrollmentRes.data.isEnrolled);
+          const enrollmentRes: any = await api.get(`/enrollments/check/${courseData.id}`);
+          setIsEnrolled(enrollmentRes?.isEnrolled || false);
         } catch (e) {
           console.error('Error checking enrollment:', e);
         }
@@ -99,19 +123,67 @@ const CourseDetail = () => {
     }
   };
 
-  const handleEnroll = async () => {
+  const handlePurchase = async () => {
     if (!isAuthenticated) {
       router.push(`/login?redirect=/courses/${slug}`);
       return;
     }
 
+    if (user?.role !== 'student') {
+      toast.error('Only students can enroll in courses');
+      return;
+    }
+
     try {
-      toast.loading('Enrolling in course...', { id: 'enroll' });
-      await api.post(`/enrollments`, { course_id: course?.id });
-      setIsEnrolled(true);
-      toast.success('Successfully enrolled!', { id: 'enroll' });
+      setIsProcessing(true);
+      toast.loading('Initiating payment...', { id: 'purchase' });
+
+      // 1. Create Order on Backend
+      // The Backend returns { orderId, amount, currency, keyId, course }
+      const orderData: any = await api.post(`/payments/courses/${course?.id}/order`);
+
+      // 2. Open Razorpay Checkout
+      const options = {
+        key: orderData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: 'Nexvera Hub',
+        description: `Enrollment in ${course?.title}`,
+        image: '/logo.png', // Fallback to a site logo if available
+        order_id: orderData.orderId,
+        prefill: {
+          name: user.name || '',
+          email: user.email,
+        },
+        theme: {
+          color: '#2563eb', // blue-600
+        },
+        handler: async function (response: any) {
+          // Note: Backend webhook captures payment. 
+          // Frontend just reacts to successful callback from Razorpay Modal.
+          toast.success('Payment Received! Confirming enrollment...', { id: 'purchase' });
+          
+          // Small delay to ensure success toast is visible before redirect if desired,
+          // or just dismiss and redirect as requested.
+          setTimeout(() => {
+            toast.dismiss('purchase');
+            router.push(`/payment/success?courseId=${course?.id}`);
+          }, 1500);
+        },
+        modal: {
+          ondismiss: function () {
+            setIsProcessing(false);
+            toast.dismiss('purchase');
+          },
+        },
+      };
+
+      await openRazorpayCheckout(options);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Enrollment failed', { id: 'enroll' });
+      setIsProcessing(false);
+      const message = error.response?.data?.message || 'Failed to initiate purchase';
+      toast.error(message, { id: 'purchase' });
+      console.error('Purchase error:', error);
     }
   };
 
@@ -226,14 +298,22 @@ const CourseDetail = () => {
                 </div>
 
                 <button 
-                  onClick={isEnrolled ? () => router.push(`/courses/${course.id}/lessons/${curriculum[0]?.lessons[0]?.id}`) : handleEnroll}
-                  className={`w-full py-6 rounded-[1.8rem] font-black uppercase tracking-widest text-xs transition-all active:scale-95 shadow-2xl ${
+                  onClick={isEnrolled ? () => router.push(`/courses/${course.id}/lessons/${curriculum[0]?.lessons[0]?.id}`) : handlePurchase}
+                  disabled={isProcessing}
+                  className={`w-full py-6 rounded-[1.8rem] font-black uppercase tracking-widest text-xs transition-all active:scale-95 shadow-2xl flex items-center justify-center gap-3 ${
                     isEnrolled 
                     ? 'bg-slate-950 text-white hover:bg-black shadow-slate-900/20' 
                     : 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:scale-[1.02] shadow-blue-200'
-                  }`}
+                  } ${isProcessing ? 'opacity-70 cursor-not-allowed' : ''}`}
                 >
-                  {isEnrolled ? 'Continue Learning' : 'Enroll Now'}
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="animate-spin" size={16} />
+                      Processing...
+                    </>
+                  ) : (
+                    isEnrolled ? 'Continue Learning' : 'Enroll Now'
+                  )}
                 </button>
 
                 <div className="mt-10 space-y-4">

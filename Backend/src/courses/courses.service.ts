@@ -62,6 +62,20 @@ export class CoursesService {
     return { success: true, data: course.curriculum };
   }
 
+  async findById(id: string) {
+    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Invalid ID');
+    const course = await this.courseModel.findById(id).exec();
+    if (!course) throw new NotFoundException('Course not found');
+    return { success: true, data: course };
+  }
+
+  async incrementEnrollments(courseId: string) {
+    if (!Types.ObjectId.isValid(courseId)) throw new NotFoundException('Invalid ID');
+    await this.courseModel.findByIdAndUpdate(courseId, {
+      $inc: { 'stats.enrollments': 1 },
+    });
+  }
+
   async create(teacherId: string, createDto: CreateCourseDto) {
     const created = await this.courseModel.create({
       ...createDto,
