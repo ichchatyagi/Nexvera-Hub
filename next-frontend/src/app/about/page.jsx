@@ -147,7 +147,7 @@ const AboutNexvera = () => {
                                 <img
                                     src="https://illustrations.popsy.co/blue/creative-work.svg"
                                     alt="Nexvera Creativity"
-                                    className="w-full h-auto drop-shadow-2xl"
+                                    className="w-full max-w-md lg:max-w-full mx-auto h-auto drop-shadow-2xl"
                                 />
                             </motion.div>
                         </div>
@@ -191,7 +191,7 @@ const AboutNexvera = () => {
                         <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px] text-center">Empowering the next generation of global talent</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
                         {missions.map((mission, idx) => (
                             <MissionCard key={idx} {...mission} />
                         ))}

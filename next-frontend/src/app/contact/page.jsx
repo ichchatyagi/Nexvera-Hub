@@ -84,7 +84,7 @@ const Contact = () => {
                                         value={formData.name}
                                         onChange={handleChange}
                                         className="w-full px-8 py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 text-sm"
-                                        placeholder="Identification Entry..."
+                                        placeholder="Enter your name..."
                                     />
                                 </div>
                                 <div className="grid md:grid-cols-2 gap-8">
@@ -114,14 +114,14 @@ const Contact = () => {
                                     </div>
                                 </div>
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Query Payload</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Message</label>
                                     <textarea
                                         name="message"
                                         value={formData.message}
                                         onChange={handleChange}
                                         rows="4"
                                         className="w-full px-8 py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 resize-none text-sm"
-                                        placeholder="Initiate message broadcast..."
+                                        placeholder="Enter your message..."
                                     ></textarea>
                                 </div>
                                 <button

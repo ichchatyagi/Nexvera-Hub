@@ -32,7 +32,7 @@ const Home = () => {
                             Professional Launchpad 🚀
                         </motion.div>
 
-                        <h1 className="text-5xl md:text-7xl lg:text-9xl font-black leading-[0.85] mb-10 uppercase tracking-tighter">
+                        <h1 className="text-4xl md:text-6xl lg:text-8xl font-black leading-[0.85] mb-10 uppercase tracking-tighter">
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">LEARN.</span> <br />
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 to-blue-600">GROW.</span> <br />
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">SUCCESS.</span>
@@ -97,7 +97,7 @@ const Home = () => {
             </section>
 
             {/* Premium Tuition Advertisement Section */}
-            <section className="py-24 relative overflow-hidden bg-white/30 backdrop-blur-md border-y border-slate-50">
+            <section className="py-16 md:py-24 relative overflow-hidden bg-white/30 backdrop-blur-md border-y border-slate-50">
                 <div className="container mx-auto px-6 lg:px-12 relative z-10">
                     <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
                         <div className="flex-1 text-center lg:text-left">

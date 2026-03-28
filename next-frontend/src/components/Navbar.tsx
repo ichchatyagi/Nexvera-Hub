@@ -113,6 +113,7 @@ const Navbar = () => {
 
     const resourceItems = [
         { label: 'Blog', path: '/blog' },
+        { label: 'Our Educators', path: '/our-educators' },
         { label: 'Free Guides', path: '/free-guides' },
         { label: 'Learning Roadmaps', path: '/roadmaps' }
     ];
@@ -129,9 +130,9 @@ const Navbar = () => {
         <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-slate-100">
             <nav className="flex items-center justify-between px-6 lg:px-12 h-20 relative w-full lg:max-w-7xl lg:mx-auto xl:max-w-none xl:mx-0">
                 {/* Logo */}
-                <div className="flex items-center w-36 lg:w-48 relative h-full shrink-0">
+                <div className="flex items-center w-32 lg:w-48 relative h-full shrink-0">
                     <Link href="/" className="absolute left-0 top-1/2 -translate-y-1/2 py-2">
-                        <Image src="/assets/logo.PNG" alt="Nexvera Hub" width={200} height={100} className="h-24 lg:h-32 w-auto object-contain drop-shadow-sm" />
+                        <Image src="/assets/logo.PNG" alt="Nexvera Hub" width={200} height={100} className="h-16 lg:h-24 w-auto object-contain drop-shadow-sm" />
                     </Link>
                 </div>
 
