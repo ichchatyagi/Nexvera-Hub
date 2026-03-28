@@ -26,14 +26,17 @@ import { openRazorpayCheckout } from '@/lib/razorpay';
 
 interface Lesson {
   id: string;
+  lesson_id?: string;
   title: string;
   duration: number;
+  duration_minutes?: number;
   type: 'video' | 'article' | 'quiz';
   video_id?: string;
 }
 
 interface Section {
   id: string;
+  section_id?: string;
   title: string;
   lessons: Lesson[];
 }
@@ -62,6 +65,7 @@ const CourseDetail = () => {
   const [curriculum, setCurriculum] = useState<Section[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [enrollment, setEnrollment] = useState<any>(null);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const router = useRouter();
@@ -73,11 +77,12 @@ const CourseDetail = () => {
   const fetchCourseData = async () => {
     try {
       setIsLoading(true);
-      const courseRes: any = await api.get(`/courses/${slug}`); // Backend should handle lookup by slug
-      const rawData = courseRes; // api.ts already unwrapped {success: true, data: ...}
+      const courseRes: any = await api.get(`/courses/${slug}`);
+      const rawData = courseRes;
       
+      const courseId = rawData._id || rawData.id;
       const courseData: CourseDetail = {
-        id: rawData._id || rawData.id,
+        id: courseId,
         slug: rawData.slug,
         title: rawData.title,
         description: rawData.description,
@@ -96,21 +101,18 @@ const CourseDetail = () => {
       setCourse(courseData);
 
       // Fetch curriculum
-      try {
-        const curriculumRes: any = await api.get(`/courses/${courseData.id}/curriculum`);
-        setCurriculum(curriculumRes || []);
-        if (curriculumRes?.length > 0) {
-          setActiveSection(curriculumRes[0].id);
-        }
-      } catch (e) {
-        console.error('Error fetching curriculum:', e);
+      const curriculumRes: any = await api.get(`/courses/${courseId}/curriculum`);
+      setCurriculum(curriculumRes || []);
+      if (curriculumRes?.length > 0) {
+        setActiveSection(curriculumRes[0].section_id || curriculumRes[0].id);
       }
 
       // Check enrollment status if authenticated
       if (isAuthenticated) {
         try {
-          const enrollmentRes: any = await api.get(`/enrollments/check/${courseData.id}`);
+          const enrollmentRes: any = await api.get(`/enrollments/check/${courseId}`);
           setIsEnrolled(enrollmentRes?.isEnrolled || false);
+          setEnrollment(enrollmentRes);
         } catch (e) {
           console.error('Error checking enrollment:', e);
         }
@@ -139,7 +141,6 @@ const CourseDetail = () => {
       toast.loading('Initiating payment...', { id: 'purchase' });
 
       // 1. Create Order on Backend
-      // The Backend returns { orderId, amount, currency, keyId, course }
       const orderData: any = await api.post(`/payments/courses/${course?.id}/order`);
 
       // 2. Open Razorpay Checkout
@@ -149,22 +150,17 @@ const CourseDetail = () => {
         currency: orderData.currency,
         name: 'Nexvera Hub',
         description: `Enrollment in ${course?.title}`,
-        image: '/logo.png', // Fallback to a site logo if available
+        image: '/logo.png',
         order_id: orderData.orderId,
         prefill: {
           name: user.name || '',
           email: user.email,
         },
         theme: {
-          color: '#2563eb', // blue-600
+          color: '#2563eb',
         },
         handler: async function (response: any) {
-          // Note: Backend webhook captures payment. 
-          // Frontend just reacts to successful callback from Razorpay Modal.
           toast.success('Payment Received! Confirming enrollment...', { id: 'purchase' });
-          
-          // Small delay to ensure success toast is visible before redirect if desired,
-          // or just dismiss and redirect as requested.
           setTimeout(() => {
             toast.dismiss('purchase');
             router.push(`/payment/success?courseId=${course?.id}`);
@@ -185,6 +181,16 @@ const CourseDetail = () => {
       toast.error(message, { id: 'purchase' });
       console.error('Purchase error:', error);
     }
+  };
+
+  const getContinueLink = () => {
+    if (!course || !curriculum.length) return '#';
+    const currentLessonId = enrollment?.currentLessonId || curriculum[0]?.lessons[0]?.lesson_id || curriculum[0]?.lessons[0]?.id;
+    return `/courses/${course.slug}/lessons/${currentLessonId}`;
+  };
+
+  const isLessonCompleted = (lessonId: string) => {
+    return enrollment?.progress?.completed_lessons?.includes(lessonId);
   };
 
   if (isLoading) {
@@ -298,7 +304,7 @@ const CourseDetail = () => {
                 </div>
 
                 <button 
-                  onClick={isEnrolled ? () => router.push(`/courses/${course.id}/lessons/${curriculum[0]?.lessons[0]?.id}`) : handlePurchase}
+                  onClick={isEnrolled ? () => router.push(getContinueLink()) : handlePurchase}
                   disabled={isProcessing}
                   className={`w-full py-6 rounded-[1.8rem] font-black uppercase tracking-widest text-xs transition-all active:scale-95 shadow-2xl flex items-center justify-center gap-3 ${
                     isEnrolled 
@@ -350,59 +356,66 @@ const CourseDetail = () => {
               </h2>
               
               <div className="space-y-4">
-                {curriculum.map((section) => (
-                  <div key={section.id} className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden shadow-sm">
-                    <button 
-                      onClick={() => setActiveSection(activeSection === section.id ? null : section.id)}
-                      className="w-full flex items-center justify-between p-8 hover:bg-slate-50 transition-colors text-left outline-none"
-                    >
-                      <div className="flex items-center gap-6">
-                         <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                            {curriculum.indexOf(section) + 1}
-                         </div>
-                         <div>
-                            <h4 className="font-black text-slate-900 uppercase tracking-tight text-lg">{section.title}</h4>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">
-                               {section.lessons.length} Modules • {section.lessons.reduce((acc, l) => acc + l.duration, 0)} Min
-                            </p>
-                         </div>
-                      </div>
-                      <ChevronDown size={20} className={`text-slate-400 transition-transform ${activeSection === section.id ? 'rotate-180' : ''}`} />
-                    </button>
-                    
-                    <AnimatePresence>
-                      {activeSection === section.id && (
-                        <motion.div 
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          className="overflow-hidden border-t border-slate-100"
-                        >
-                          <div className="p-4 space-y-2">
-                             {section.lessons.map((lesson) => (
-                               <div 
-                                 key={lesson.id}
-                                 className="flex items-center justify-between p-4 rounded-xl hover:bg-blue-50/50 transition-all group"
-                               >
-                                  <div className="flex items-center gap-4">
-                                     <div className={`w-8 h-8 rounded-lg ${isEnrolled ? 'bg-white' : 'bg-slate-50'} shadow-sm flex items-center justify-center text-slate-400`}>
-                                        {isEnrolled ? <Play size={12} className="text-blue-600" /> : <Lock size={12} />}
-                                     </div>
-                                     <span className={`text-sm font-bold tracking-tight ${isEnrolled ? 'text-slate-800' : 'text-slate-400'}`}>
-                                       {lesson.title}
-                                     </span>
-                                  </div>
-                                  <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest px-3">
-                                     {lesson.duration}m
-                                  </span>
-                               </div>
-                             ))}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                ))}
+                {curriculum.map((section) => {
+                  const sId = section.section_id || section.id;
+                  return (
+                    <div key={sId} className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden shadow-sm">
+                      <button 
+                        onClick={() => setActiveSection(activeSection === sId ? null : sId)}
+                        className="w-full flex items-center justify-between p-8 hover:bg-slate-50 transition-colors text-left outline-none"
+                      >
+                        <div className="flex items-center gap-6">
+                           <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                              {curriculum.indexOf(section) + 1}
+                           </div>
+                           <div>
+                              <h4 className="font-black text-slate-900 uppercase tracking-tight text-lg">{section.title}</h4>
+                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">
+                                 {section.lessons?.length || 0} Modules • {section.lessons?.reduce((acc: number, l: any) => acc + (l.duration_minutes || l.duration || 0), 0)} Min
+                              </p>
+                           </div>
+                        </div>
+                        <ChevronDown size={20} className={`text-slate-400 transition-transform ${activeSection === sId ? 'rotate-180' : ''}`} />
+                      </button>
+                      
+                      <AnimatePresence>
+                        {activeSection === sId && (
+                          <motion.div 
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden border-t border-slate-100"
+                          >
+                            <div className="p-4 space-y-2">
+                               {section.lessons?.map((lesson: any) => {
+                                 const lId = lesson.lesson_id || lesson.id;
+                                 const completed = isLessonCompleted(lId);
+                                 return (
+                                   <div 
+                                     key={lId}
+                                     className="flex items-center justify-between p-4 rounded-xl hover:bg-blue-50/50 transition-all group"
+                                   >
+                                      <div className="flex items-center gap-4">
+                                         <div className={`w-8 h-8 rounded-lg ${completed ? 'bg-green-100 text-green-600' : isEnrolled ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'} shadow-sm flex items-center justify-center transition-all`}>
+                                            {completed ? <CheckCircle2 size={12} /> : isEnrolled ? <Play size={12} /> : <Lock size={12} />}
+                                         </div>
+                                         <span className={`text-sm font-bold tracking-tight ${isEnrolled ? 'text-slate-800' : 'text-slate-400'}`}>
+                                           {lesson.title}
+                                         </span>
+                                      </div>
+                                      <span className={`text-[10px] font-black uppercase tracking-widest px-3 ${completed ? 'text-green-500' : 'text-slate-300'}`}>
+                                         {completed ? 'Learned' : `${lesson.duration_minutes || lesson.duration || 0}m`}
+                                      </span>
+                                   </div>
+                                 );
+                               })}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

@@ -8,9 +8,27 @@ export class UpdateProgressDto {
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
+  completedLessons?: string[];
+
+  // Keep compatibility or support both? Requirements say completedLessons
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
   completed_lessons?: string[];
 
   @IsString()
   @IsOptional()
+  currentLessonId?: string;
+
+  @IsString()
+  @IsOptional()
   current_lesson?: string;
+
+  @IsNumber()
+  @IsOptional()
+  lastPositionSeconds?: number;
+
+  @IsString()
+  @IsOptional()
+  videoId?: string;
 }
