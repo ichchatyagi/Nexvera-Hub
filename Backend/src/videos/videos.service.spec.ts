@@ -27,7 +27,11 @@ function makeMockVideo(overrides: Partial<any> = {}) {
     processed: {
       status: 'pending',
       manifest_url: null,
-      qualities: [] as Array<{ resolution: string; bitrate: number; url: string }>,
+      qualities: [] as Array<{
+        resolution: string;
+        bitrate: number;
+        url: string;
+      }>,
       thumbnail_url: null,
       thumbnails_vtt: null,
     },
@@ -93,7 +97,9 @@ describe('VideosService', () => {
   describe('initiateUpload', () => {
     it('creates a video document with status pending and returns a presigned URL', async () => {
       const courseId = new Types.ObjectId().toString();
-      const mockVideo = makeMockVideo({ course_id: new Types.ObjectId(courseId) });
+      const mockVideo = makeMockVideo({
+        course_id: new Types.ObjectId(courseId),
+      });
 
       mockVideoModel.create.mockResolvedValue(mockVideo);
 
@@ -159,11 +165,15 @@ describe('VideosService', () => {
         exec: jest.fn().mockResolvedValue(null),
       });
       const validId = new Types.ObjectId().toString();
-      await expect(service.findById(validId)).rejects.toThrow(NotFoundException);
+      await expect(service.findById(validId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('throws NotFoundException for an invalid ObjectId string', async () => {
-      await expect(service.findById('not-a-valid-id')).rejects.toThrow(NotFoundException);
+      await expect(service.findById('not-a-valid-id')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -176,7 +186,10 @@ describe('VideosService', () => {
         exec: jest.fn().mockResolvedValue(mockVideo),
       });
 
-      const result = await service.triggerProcessing(mockVideo._id.toString(), TEACHER_ID);
+      const result = await service.triggerProcessing(
+        mockVideo._id.toString(),
+        TEACHER_ID,
+      );
 
       expect(mockVideo.processed.status).toBe('processing');
       expect(mockVideo.save).toHaveBeenCalled();
@@ -239,23 +252,38 @@ describe('VideosService', () => {
           status: 'completed',
           manifest_url: 'https://test.cloudfront.net/videos/abc/master.m3u8',
           qualities: [
-            { resolution: '720p', bitrate: 2_500_000, url: 'https://test.cloudfront.net/videos/abc/720p/index.m3u8' },
+            {
+              resolution: '720p',
+              bitrate: 2_500_000,
+              url: 'https://test.cloudfront.net/videos/abc/720p/index.m3u8',
+            },
           ],
           thumbnail_url: 'https://test.cloudfront.net/videos/abc/thumbnail.jpg',
-          thumbnails_vtt: 'https://test.cloudfront.net/videos/abc/thumbnails.vtt',
+          thumbnails_vtt:
+            'https://test.cloudfront.net/videos/abc/thumbnails.vtt',
         },
-        captions: [{ language: 'en', url: 'https://cdn.example.com/en.vtt', auto_generated: true }],
+        captions: [
+          {
+            language: 'en',
+            url: 'https://cdn.example.com/en.vtt',
+            auto_generated: true,
+          },
+        ],
       });
 
       mockVideoModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockVideo),
       });
 
-      const result = await service.getPlaybackMetadata(mockVideo._id.toString());
+      const result = await service.getPlaybackMetadata(
+        mockVideo._id.toString(),
+      );
 
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
-      expect(result.data!.manifest_url).toBe('https://test.cloudfront.net/videos/abc/master.m3u8');
+      expect(result.data!.manifest_url).toBe(
+        'https://test.cloudfront.net/videos/abc/master.m3u8',
+      );
       expect(result.data!.qualities).toHaveLength(1);
       expect(result.data!.captions).toHaveLength(1);
 
@@ -264,12 +292,22 @@ describe('VideosService', () => {
     });
 
     it('returns an error payload when video is not yet ready', async () => {
-      const mockVideo = makeMockVideo({ processed: { status: 'processing', manifest_url: null, qualities: [], thumbnail_url: null, thumbnails_vtt: null } });
+      const mockVideo = makeMockVideo({
+        processed: {
+          status: 'processing',
+          manifest_url: null,
+          qualities: [],
+          thumbnail_url: null,
+          thumbnails_vtt: null,
+        },
+      });
       mockVideoModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockVideo),
       });
 
-      const result = await service.getPlaybackMetadata(mockVideo._id.toString());
+      const result = await service.getPlaybackMetadata(
+        mockVideo._id.toString(),
+      );
 
       expect(result.success).toBe(false);
       expect((result as any).error.code).toBe('VIDEO_NOT_READY');
@@ -290,7 +328,9 @@ describe('VideosService', () => {
 
       const result = await service.remove(mockVideo._id.toString(), TEACHER_ID);
       expect(result.success).toBe(true);
-      expect(mockVideoModel.findByIdAndDelete).toHaveBeenCalledWith(mockVideo._id.toString());
+      expect(mockVideoModel.findByIdAndDelete).toHaveBeenCalledWith(
+        mockVideo._id.toString(),
+      );
     });
 
     it('throws ForbiddenException when a non-owner tries to delete', async () => {

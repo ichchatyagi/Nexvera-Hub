@@ -20,6 +20,10 @@ export class RegisterDto {
   @IsIn([UserRole.STUDENT, UserRole.TEACHER])
   @IsOptional()
   role?: UserRole.STUDENT | UserRole.TEACHER;
+
+  @IsString()
+  @IsOptional()
+  name?: string;
 }
 
 export class LoginDto {

@@ -1,9 +1,17 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Course, CourseDocument } from './schemas/course.schema';
 import { Review, ReviewDocument } from './schemas/review.schema';
-import { CreateCourseDto, UpdateCourseDto, CreateReviewDto } from './dto/course.dto';
+import {
+  CreateCourseDto,
+  UpdateCourseDto,
+  CreateReviewDto,
+} from './dto/course.dto';
 
 @Injectable()
 export class CoursesService {
@@ -57,7 +65,10 @@ export class CoursesService {
 
   async getCurriculum(id: string) {
     if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Invalid ID');
-    const course = await this.courseModel.findById(id).select('curriculum').exec();
+    const course = await this.courseModel
+      .findById(id)
+      .select('curriculum')
+      .exec();
     if (!course) throw new NotFoundException('Course not found');
     return { success: true, data: course.curriculum };
   }
@@ -70,7 +81,8 @@ export class CoursesService {
   }
 
   async incrementEnrollments(courseId: string) {
-    if (!Types.ObjectId.isValid(courseId)) throw new NotFoundException('Invalid ID');
+    if (!Types.ObjectId.isValid(courseId))
+      throw new NotFoundException('Invalid ID');
     await this.courseModel.findByIdAndUpdate(courseId, {
       $inc: { 'stats.enrollments': 1 },
     });
@@ -89,9 +101,10 @@ export class CoursesService {
     if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Invalid ID');
     const course = await this.courseModel.findById(id).exec();
     if (!course) throw new NotFoundException('Course not found');
-    
+
     // Check ownership
-    if (course.teacher_id !== teacherId) throw new ForbiddenException('Not your course');
+    if (course.teacher_id !== teacherId)
+      throw new ForbiddenException('Not your course');
 
     Object.assign(course, updateDto);
     await course.save();
@@ -103,8 +116,9 @@ export class CoursesService {
     if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Invalid ID');
     const course = await this.courseModel.findById(id).exec();
     if (!course) throw new NotFoundException('Course not found');
-    
-    if (course.teacher_id !== teacherId) throw new ForbiddenException('Not your course');
+
+    if (course.teacher_id !== teacherId)
+      throw new ForbiddenException('Not your course');
 
     await this.courseModel.findByIdAndDelete(id).exec();
     return { success: true, data: { deleted: true } };
@@ -113,17 +127,18 @@ export class CoursesService {
   async publish(id: string, teacherId: string, status: string) {
     if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Invalid ID');
     if (!['pending_review', 'published', 'draft'].includes(status)) {
-        status = 'pending_review';
+      status = 'pending_review';
     }
 
     const course = await this.courseModel.findById(id).exec();
     if (!course) throw new NotFoundException('Course not found');
-    
-    if (course.teacher_id !== teacherId) throw new ForbiddenException('Not your course');
+
+    if (course.teacher_id !== teacherId)
+      throw new ForbiddenException('Not your course');
 
     course.status = status;
     if (status === 'published') {
-        course.published_at = new Date();
+      course.published_at = new Date();
     }
     await course.save();
     return { success: true, data: course };
@@ -131,8 +146,9 @@ export class CoursesService {
 
   // REVIEWS
   async getReviews(courseId: string, query: any = {}) {
-    if (!Types.ObjectId.isValid(courseId)) throw new NotFoundException('Invalid ID');
-    
+    if (!Types.ObjectId.isValid(courseId))
+      throw new NotFoundException('Invalid ID');
+
     const page = parseInt(query.page, 10) || 1;
     const limit = parseInt(query.limit, 10) || 10;
     const skip = (page - 1) * limit;
@@ -144,19 +160,32 @@ export class CoursesService {
       .sort({ created_at: -1 })
       .exec();
 
-    const total = await this.reviewModel.countDocuments({ course_id: new Types.ObjectId(courseId), status: 'published' });
+    const total = await this.reviewModel.countDocuments({
+      course_id: new Types.ObjectId(courseId),
+      status: 'published',
+    });
 
     return {
       success: true,
       data,
       meta: {
-        pagination: { page, per_page: limit, total, total_pages: Math.ceil(total / limit) },
+        pagination: {
+          page,
+          per_page: limit,
+          total,
+          total_pages: Math.ceil(total / limit),
+        },
       },
     };
   }
 
-  async createReview(courseId: string, studentId: string, dto: CreateReviewDto) {
-    if (!Types.ObjectId.isValid(courseId)) throw new NotFoundException('Invalid ID');
+  async createReview(
+    courseId: string,
+    studentId: string,
+    dto: CreateReviewDto,
+  ) {
+    if (!Types.ObjectId.isValid(courseId))
+      throw new NotFoundException('Invalid ID');
 
     // TODO: Verify the student is enrolled before allowing a review.
     // Inject EnrollmentsService (or the Enrollment model directly) and call:
@@ -164,29 +193,34 @@ export class CoursesService {
     //   if (!enrollment) throw new ForbiddenException('Must be enrolled to leave a review');
 
     // Check if already reviewed
-    const existing = await this.reviewModel.findOne({ course_id: new Types.ObjectId(courseId), student_id: studentId });
+    const existing = await this.reviewModel.findOne({
+      course_id: new Types.ObjectId(courseId),
+      student_id: studentId,
+    });
     if (existing) {
-        throw new ForbiddenException('You have already reviewed this course');
+      throw new ForbiddenException('You have already reviewed this course');
     }
 
     const review = await this.reviewModel.create({
-        course_id: new Types.ObjectId(courseId),
-        student_id: studentId,
-        rating: dto.rating,
-        review_text: dto.review_text,
+      course_id: new Types.ObjectId(courseId),
+      student_id: studentId,
+      rating: dto.rating,
+      review_text: dto.review_text,
     });
 
     // Update course stats
     const course = await this.courseModel.findById(courseId);
     if (course) {
-        const { stats } = course;
-        stats.total_reviews += 1;
-        // recalculate average rating
-        // For accurate recalculation we should query all reviews, but for now exact math:
-        // new_avg = (old_avg * (n-1) + new_rating) / n
-        stats.average_rating = ((stats.average_rating * (stats.total_reviews - 1)) + dto.rating) / stats.total_reviews;
-        course.stats = stats;
-        await course.save();
+      const { stats } = course;
+      stats.total_reviews += 1;
+      // recalculate average rating
+      // For accurate recalculation we should query all reviews, but for now exact math:
+      // new_avg = (old_avg * (n-1) + new_rating) / n
+      stats.average_rating =
+        (stats.average_rating * (stats.total_reviews - 1) + dto.rating) /
+        stats.total_reviews;
+      course.stats = stats;
+      await course.save();
     }
 
     return { success: true, data: review };

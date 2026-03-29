@@ -17,6 +17,9 @@ import {
 } from './schemas/live-class.schema';
 import { CreateLiveClassDto, UpdateLiveClassDto } from './dto/live-class.dto';
 import { AppConfigService } from '../app-config/app-config.service';
+import { EnrollmentsService } from '../enrollments/enrollments.service';
+import { CoursesService } from '../courses/courses.service';
+import { UserRole } from '../users/entities/user.entity';
 
 // ─── Agora token shape ────────────────────────────────────────────────────────
 
@@ -52,6 +55,8 @@ export class LiveClassesService {
     @InjectModel(LiveClass.name)
     private readonly liveClassModel: Model<LiveClassDocument>,
     private readonly appConfig: AppConfigService,
+    private readonly enrollmentsService: EnrollmentsService,
+    private readonly coursesService: CoursesService,
   ) {}
 
   // ─── Agora token generation ──────────────────────────────────────────────
@@ -120,7 +125,9 @@ export class LiveClassesService {
     const end = new Date(dto.scheduled_end);
 
     if (end <= start) {
-      throw new BadRequestException('scheduled_end must be after scheduled_start');
+      throw new BadRequestException(
+        'scheduled_end must be after scheduled_start',
+      );
     }
 
     const channelName = `nexvera-${randomUUID()}`;
@@ -151,7 +158,7 @@ export class LiveClassesService {
     });
 
     this.logger.log(
-      `Live class "${liveClass._id}" created by teacher "${teacherId}". Channel: ${channelName}`,
+      `Live class "${liveClass._id.toString()}" created by teacher "${teacherId}". Channel: ${channelName}`,
     );
 
     return liveClass;
@@ -208,7 +215,9 @@ export class LiveClassesService {
         ? new Date(dto.scheduled_end)
         : lc.scheduled_end;
       if (end <= start) {
-        throw new BadRequestException('scheduled_end must be after scheduled_start');
+        throw new BadRequestException(
+          'scheduled_end must be after scheduled_start',
+        );
       }
       lc.scheduled_start = start;
       lc.scheduled_end = end;
@@ -217,7 +226,8 @@ export class LiveClassesService {
     if (dto.title !== undefined) lc.title = dto.title;
     if (dto.description !== undefined) lc.description = dto.description;
     if (dto.timezone !== undefined) lc.timezone = dto.timezone;
-    if (dto.max_participants !== undefined) lc.max_participants = dto.max_participants;
+    if (dto.max_participants !== undefined)
+      lc.max_participants = dto.max_participants;
 
     // Merge feature flags
     if (dto.features) {
@@ -230,7 +240,9 @@ export class LiveClassesService {
     }
 
     await lc.save();
-    this.logger.log(`Live class "${id}" updated by requester "${requesterId}".`);
+    this.logger.log(
+      `Live class "${id}" updated by requester "${requesterId}".`,
+    );
     return lc;
   }
 
@@ -284,10 +296,14 @@ export class LiveClassesService {
     this.assertOwner(lc, requesterId, isAdmin);
 
     if (lc.status === LiveClassStatus.CANCELLED) {
-      throw new UnprocessableEntityException('Cannot start a cancelled live class.');
+      throw new UnprocessableEntityException(
+        'Cannot start a cancelled live class.',
+      );
     }
     if (lc.status === LiveClassStatus.ENDED) {
-      throw new UnprocessableEntityException('Cannot restart an ended live class.');
+      throw new UnprocessableEntityException(
+        'Cannot restart an ended live class.',
+      );
     }
     if (lc.status === LiveClassStatus.LIVE) {
       throw new UnprocessableEntityException('Live class is already live.');
@@ -342,6 +358,67 @@ export class LiveClassesService {
     return lc;
   }
 
+  /**
+   * Global list for students: returns live classes for courses they are enrolled in.
+   * For Admins/Teachers: returns all live classes.
+   */
+  async findAll(userId: string, role: UserRole) {
+    let filter = {};
+
+    if (role === UserRole.STUDENT) {
+      const enrollmentRes =
+        await this.enrollmentsService.getEnrolledCourses(userId);
+      const courseIds = enrollmentRes.data.map((e) => e.courseId);
+
+      if (courseIds.length === 0) {
+        return { success: true, data: [] };
+      }
+
+      filter = {
+        course_id: { $in: courseIds },
+        status: { $ne: LiveClassStatus.CANCELLED },
+      };
+    }
+
+    const classes = await this.liveClassModel
+      .find(filter)
+      .sort({ scheduled_start: 1 })
+      .exec();
+
+    // Map to include course titles as expected by frontend
+    const data = await Promise.all(
+      classes.map(async (lc) => {
+        let courseTitle = 'Unknown Course';
+        try {
+          const courseRes = await this.coursesService.findById(
+            lc.course_id.toString(),
+          );
+          courseTitle = courseRes.data.title;
+        } catch (_) {
+          this.logger.warn(
+            `Could not find course ${lc.course_id.toString()} for live class ${lc._id.toString()}`,
+          );
+        }
+
+        return {
+          id: lc._id,
+          title: lc.title,
+          description: lc.description,
+          start_time: lc.scheduled_start,
+          end_time: lc.scheduled_end,
+          course_id: lc.course_id,
+          course_title: courseTitle,
+          teacher_id: lc.teacher_id,
+          status: lc.status,
+          // teacher_name is left for future ProfilesModule integration
+          teacher_name: 'Instructor',
+        };
+      }),
+    );
+
+    return { success: true, data };
+  }
+
   // ─── Student ──────────────────────────────────────────────────────────────
 
   /**
@@ -374,7 +451,10 @@ export class LiveClassesService {
   async register(
     id: string,
     studentId: string,
-  ): Promise<{ success: boolean; data: { registered: boolean; count: number } }> {
+  ): Promise<{
+    success: boolean;
+    data: { registered: boolean; count: number };
+  }> {
     const lc = await this.findById(id);
 
     // Cannot register for cancelled or ended classes

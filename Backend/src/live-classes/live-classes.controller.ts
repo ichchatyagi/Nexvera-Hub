@@ -21,6 +21,19 @@ import { UserRole, User } from '../users/entities/user.entity';
 export class LiveClassesController {
   constructor(private readonly liveClassesService: LiveClassesService) {}
 
+  /**
+   * GET /live-classes
+   *
+   * Returns all live classes for the authenticated user.
+   * - Students: See classes for their enrolled courses only.
+   * - Teachers/Admins: See all (subject to later filtering).
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  async findAll(@CurrentUser() user: User) {
+    return this.liveClassesService.findAll(user.id, user.role);
+  }
+
   // =========================================================================
   // Teacher / Admin – Schedule & manage
   // =========================================================================
@@ -107,7 +120,12 @@ export class LiveClassesController {
     @Body() dto: UpdateLiveClassDto,
   ) {
     const isAdmin = user.role === UserRole.ADMIN;
-    const data = await this.liveClassesService.update(id, user.id, isAdmin, dto);
+    const data = await this.liveClassesService.update(
+      id,
+      user.id,
+      isAdmin,
+      dto,
+    );
     return { success: true, data };
   }
 

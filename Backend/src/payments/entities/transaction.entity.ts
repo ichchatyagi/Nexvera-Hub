@@ -62,13 +62,28 @@ export class Transaction {
   @Column({ name: 'course_id', type: 'varchar', length: 50, nullable: true })
   courseId: string; // Mongo ObjectId as string
 
-  @Column({ name: 'razorpay_order_id', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'razorpay_order_id',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   razorpayOrderId: string;
 
-  @Column({ name: 'razorpay_payment_id', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'razorpay_payment_id',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   razorpayPaymentId: string;
 
-  @Column({ name: 'razorpay_signature', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'razorpay_signature',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   razorpaySignature: string;
 
   @Column({ type: 'jsonb', nullable: true })

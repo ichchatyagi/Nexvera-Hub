@@ -78,7 +78,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success('Successfully logged in!');
       router.push('/');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Login failed');
+      const msg = error.response?.data?.message;
+      toast.error(typeof msg === 'string' ? msg : (Array.isArray(msg) ? msg[0] : 'Login failed'));
       throw error;
     } finally {
       setIsLoading(false);
@@ -106,7 +107,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success('Registration successful!');
       router.push('/');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Registration failed');
+      const msg = error.response?.data?.message;
+      toast.error(typeof msg === 'string' ? msg : (Array.isArray(msg) ? msg[0] : 'Registration failed'));
       throw error;
     } finally {
       setIsLoading(false);

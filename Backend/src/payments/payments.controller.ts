@@ -28,7 +28,9 @@ export class PaymentsController {
     @Param('courseId') courseId: string,
     @CurrentUser() user: User,
   ) {
-    this.logger.log(`User ${user.id} requested payment order for course ${courseId}`);
+    this.logger.log(
+      `User ${user.id} requested payment order for course ${courseId}`,
+    );
     return this.paymentsService.createOrder(courseId, user.id);
   }
 

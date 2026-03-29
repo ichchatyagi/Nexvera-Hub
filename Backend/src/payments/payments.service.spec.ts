@@ -104,7 +104,7 @@ describe('PaymentsService', () => {
 
       mockCoursesService.findById.mockResolvedValue({ data: mockCourse });
       mockTransactionRepository.create.mockReturnValue({});
-      
+
       const result = await service.createOrder(courseId, userId);
 
       expect(result.success).toBe(true);
@@ -113,8 +113,12 @@ describe('PaymentsService', () => {
     });
 
     it('should throw BadRequestException if course is not published', async () => {
-      mockCoursesService.findById.mockResolvedValue({ data: { status: 'draft' } });
-      await expect(service.createOrder('1', '1')).rejects.toThrow(BadRequestException);
+      mockCoursesService.findById.mockResolvedValue({
+        data: { status: 'draft' },
+      });
+      await expect(service.createOrder('1', '1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -142,7 +146,7 @@ describe('PaymentsService', () => {
         amount: 100,
         currency: 'INR',
       });
-      
+
       mockCoursesService.findById.mockResolvedValue({
         data: { teacher_id: 'teacher_123' },
       });
@@ -151,14 +155,22 @@ describe('PaymentsService', () => {
 
       expect(result.received).toBe(true);
       expect(mockTransactionRepository.save).toHaveBeenCalled();
-      expect(mockEnrollmentsService.enroll).toHaveBeenCalledWith('course_123', 'user_123', 'trans_123');
-      expect(mockCoursesService.incrementEnrollments).toHaveBeenCalledWith('course_123');
+      expect(mockEnrollmentsService.enroll).toHaveBeenCalledWith(
+        'course_123',
+        'user_123',
+        'trans_123',
+      );
+      expect(mockCoursesService.incrementEnrollments).toHaveBeenCalledWith(
+        'course_123',
+      );
       expect(mockTeacherPayoutRepository.save).toHaveBeenCalled();
     });
 
     it('should throw BadRequestException for invalid signature', async () => {
       (Razorpay.validateWebhookSignature as jest.Mock).mockReturnValue(false);
-      await expect(service.handleWebhook({}, 'sig')).rejects.toThrow(BadRequestException);
+      await expect(service.handleWebhook({}, 'sig')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

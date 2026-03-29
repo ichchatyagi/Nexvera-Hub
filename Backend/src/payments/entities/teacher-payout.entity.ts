@@ -41,7 +41,12 @@ export class TeacherPayout {
   })
   status: PayoutStatus;
 
-  @Column({ name: 'razorpay_payout_id', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'razorpay_payout_id',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   razorpayPayoutId: string;
 
   @Column({ name: 'payout_period_start', type: 'date', nullable: true })
@@ -50,7 +55,11 @@ export class TeacherPayout {
   @Column({ name: 'payout_period_end', type: 'date', nullable: true })
   payoutPeriodEnd: Date;
 
-  @Column({ name: 'processed_at', type: 'timestamp with time zone', nullable: true })
+  @Column({
+    name: 'processed_at',
+    type: 'timestamp with time zone',
+    nullable: true,
+  })
   processedAt: Date;
 
   @CreateDateColumn({ name: 'created_at' })

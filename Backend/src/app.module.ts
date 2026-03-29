@@ -17,7 +17,22 @@ import { DatabaseModule } from './database/database.module';
 import { AppConfigModule } from './app-config/app-config.module';
 
 @Module({
-  imports: [AuthModule, UsersModule, ProfilesModule, CoursesModule, EnrollmentsModule, VideosModule, LiveClassesModule, PaymentsModule, SearchModule, NotificationsModule, AnalyticsModule, CommonModule, DatabaseModule, AppConfigModule],
+  imports: [
+    AuthModule,
+    UsersModule,
+    ProfilesModule,
+    CoursesModule,
+    EnrollmentsModule,
+    VideosModule,
+    LiveClassesModule,
+    PaymentsModule,
+    SearchModule,
+    NotificationsModule,
+    AnalyticsModule,
+    CommonModule,
+    DatabaseModule,
+    AppConfigModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

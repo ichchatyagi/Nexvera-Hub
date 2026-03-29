@@ -265,7 +265,10 @@ describe('LiveClassesService', () => {
       const moduleNoAgora: TestingModule = await Test.createTestingModule({
         providers: [
           LiveClassesService,
-          { provide: getModelToken(LiveClass.name), useValue: mockLiveClassModel },
+          {
+            provide: getModelToken(LiveClass.name),
+            useValue: mockLiveClassModel,
+          },
           {
             provide: AppConfigService,
             useValue: { agoraAppId: '', agoraAppCertificate: '' },
@@ -273,7 +276,8 @@ describe('LiveClassesService', () => {
         ],
       }).compile();
 
-      const serviceNoAgora = moduleNoAgora.get<LiveClassesService>(LiveClassesService);
+      const serviceNoAgora =
+        moduleNoAgora.get<LiveClassesService>(LiveClassesService);
 
       await expect(
         serviceNoAgora.join(mockLc._id.toString(), STUDENT_ID),
@@ -290,7 +294,11 @@ describe('LiveClassesService', () => {
         exec: jest.fn().mockResolvedValue(mockLc),
       });
 
-      const result = await service.start(mockLc._id.toString(), TEACHER_ID, false);
+      const result = await service.start(
+        mockLc._id.toString(),
+        TEACHER_ID,
+        false,
+      );
 
       expect(result.status).toBe(LiveClassStatus.LIVE);
       expect(result.actual_start).toBeInstanceOf(Date);
@@ -314,7 +322,11 @@ describe('LiveClassesService', () => {
         exec: jest.fn().mockResolvedValue(mockLc),
       });
 
-      const result = await service.start(mockLc._id.toString(), OTHER_TEACHER_ID, true);
+      const result = await service.start(
+        mockLc._id.toString(),
+        OTHER_TEACHER_ID,
+        true,
+      );
       expect(result.status).toBe(LiveClassStatus.LIVE);
     });
 
@@ -342,7 +354,11 @@ describe('LiveClassesService', () => {
         exec: jest.fn().mockResolvedValue(mockLc),
       });
 
-      const result = await service.end(mockLc._id.toString(), TEACHER_ID, false);
+      const result = await service.end(
+        mockLc._id.toString(),
+        TEACHER_ID,
+        false,
+      );
 
       expect(result.status).toBe(LiveClassStatus.ENDED);
       expect(result.actual_end).toBeInstanceOf(Date);
@@ -370,7 +386,11 @@ describe('LiveClassesService', () => {
         exec: jest.fn().mockResolvedValue(mockLc),
       });
 
-      const result = await service.cancel(mockLc._id.toString(), TEACHER_ID, false);
+      const result = await service.cancel(
+        mockLc._id.toString(),
+        TEACHER_ID,
+        false,
+      );
 
       expect(result.status).toBe(LiveClassStatus.CANCELLED);
       expect(mockLc.save).toHaveBeenCalled();

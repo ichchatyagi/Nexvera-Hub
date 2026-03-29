@@ -7,9 +7,7 @@ import { AppConfigModule } from '../app-config/app-config.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: Video.name, schema: VideoSchema },
-    ]),
+    MongooseModule.forFeature([{ name: Video.name, schema: VideoSchema }]),
     // AppConfigService is used inside VideosService for S3 bucket + CDN domain config
     AppConfigModule,
   ],
