@@ -53,7 +53,11 @@ describe('CoursesService', () => {
   describe('createCourse', () => {
     it('should create a course as a teacher', async () => {
       const dto = { title: 'Test Course', slug: 'test-course' };
-      mockCourseModel.create.mockResolvedValue({ _id: '1', teacher_id: 't1', ...dto });
+      mockCourseModel.create.mockResolvedValue({
+        _id: '1',
+        teacher_id: 't1',
+        ...dto,
+      });
 
       const result = await service.create('t1', dto);
 
@@ -94,9 +98,11 @@ describe('CoursesService', () => {
     it('should throw an error if already reviewed', async () => {
       const courseId = new Types.ObjectId().toString();
       mockReviewModel.findOne.mockResolvedValue({ _id: 'r1' });
-      
+
       const dto = { rating: 5 };
-      await expect(service.createReview(courseId, 's1', dto)).rejects.toThrow(ForbiddenException);
+      await expect(service.createReview(courseId, 's1', dto)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 });

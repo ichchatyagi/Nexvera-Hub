@@ -17,7 +17,18 @@ async function bootstrap() {
 
   // CORS Configuration
   app.enableCors({
-    origin: appConfigService.environment === 'development' ? '*' : appConfigService.corsOrigins,
+    origin: (origin, callback) => {
+      if (!origin || appConfigService.environment === 'development') {
+        callback(null, true);
+      } else {
+        const allowedOrigins = appConfigService.corsOrigins;
+        if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      }
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });

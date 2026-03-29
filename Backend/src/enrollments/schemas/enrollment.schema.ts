@@ -77,7 +77,11 @@ export class Enrollment {
   @Prop()
   access_expires?: Date;
 
-  @Prop({ type: String, enum: ['active', 'expired', 'refunded'], default: 'active' })
+  @Prop({
+    type: String,
+    enum: ['active', 'expired', 'refunded'],
+    default: 'active',
+  })
   status: string;
 
   enrolled_at?: Date;

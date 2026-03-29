@@ -34,4 +34,8 @@ export class UpdateProfileDto {
   @IsString()
   @IsOptional()
   avatarUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  name?: string;
 }

@@ -26,7 +26,11 @@ export class CourseDiscount {
 
 @Schema({ _id: false })
 export class CoursePricing {
-  @Prop({ type: String, enum: ['free', 'paid', 'subscription'], default: 'paid' })
+  @Prop({
+    type: String,
+    enum: ['free', 'paid', 'subscription'],
+    default: 'paid',
+  })
   type: string;
 
   @Prop({ default: 0 })
@@ -62,7 +66,10 @@ export class Lesson {
   @Prop({ required: true })
   title: string;
 
-  @Prop({ type: String, enum: ['video', 'live_class', 'quiz', 'assignment', 'resource'] })
+  @Prop({
+    type: String,
+    enum: ['video', 'live_class', 'quiz', 'assignment', 'resource'],
+  })
   type: string;
 
   @Prop()
@@ -155,7 +162,11 @@ export class Course {
   @Prop({ type: CourseStats, default: () => ({}) })
   stats: CourseStats;
 
-  @Prop({ type: String, enum: ['draft', 'pending_review', 'published', 'archived'], default: 'draft' })
+  @Prop({
+    type: String,
+    enum: ['draft', 'pending_review', 'published', 'archived'],
+    default: 'draft',
+  })
   status: string;
 
   @Prop()
@@ -177,6 +188,6 @@ export class Course {
 export const CourseSchema = SchemaFactory.createForClass(Course);
 
 CourseSchema.index({ 'category.main': 1, 'category.sub': 1 });
-CourseSchema.index({ 'status': 1, 'published_at': -1 });
+CourseSchema.index({ status: 1, published_at: -1 });
 CourseSchema.index({ 'stats.average_rating': -1 });
 // CourseSchema.index({ '$**': 'text' }); // We can wait for later module for search

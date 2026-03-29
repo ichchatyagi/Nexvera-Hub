@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Put,
-  Body,
-  Param,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Put, Body, Param, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { mapUserToResponse } from './dto/user-response.dto';
@@ -26,10 +19,7 @@ export class UsersController {
   }
 
   @Put('me')
-  async updateMe(
-    @CurrentUser() user: User,
-    @Body() dto: UpdateProfileDto,
-  ) {
+  async updateMe(@CurrentUser() user: User, @Body() dto: UpdateProfileDto) {
     const updated = await this.usersService.updateProfile(user.id, dto);
     return { success: true, data: mapUserToResponse(updated) };
   }
@@ -50,6 +40,9 @@ export class UsersController {
   @Roles(UserRole.ADMIN)
   @Get('admin/dashboard')
   async adminDashboard() {
-    return { success: true, data: { message: 'Admin dashboard – coming soon' } };
+    return {
+      success: true,
+      data: { message: 'Admin dashboard – coming soon' },
+    };
   }
 }

@@ -111,14 +111,14 @@ export class PaymentsService {
     const secret = this.configService.razorpayWebhookSecret;
 
     // Verify signature
-    // Razorpay webhook signature verification usually compares 
+    // Razorpay webhook signature verification usually compares
     // the hex digest of (rawBody + secret) with signature.
     // Wait, the official recommendation is to use Razorpay.validateWebhookSignature
-    
+
     const isValid = Razorpay.validateWebhookSignature(
       JSON.stringify(body),
       signature,
-      secret
+      secret,
     );
 
     if (!isValid) {
@@ -130,7 +130,7 @@ export class PaymentsService {
     this.logger.log(`Received Razorpay webhook: ${event}`);
 
     const payload = body.payload;
-    
+
     if (event === 'payment.captured') {
       const payment = payload.payment.entity;
       const orderId = payment.order_id;
@@ -163,13 +163,18 @@ export class PaymentsService {
           transaction.id,
         );
         await this.coursesService.incrementEnrollments(transaction.courseId);
-        
+
         // Record teacher earnings
         await this.recordTeacherEarnings(transaction);
-        
-        this.logger.log(`User ${transaction.userId} successfully enrolled in ${transaction.courseId}`);
+
+        this.logger.log(
+          `User ${transaction.userId} successfully enrolled in ${transaction.courseId}`,
+        );
       } catch (error) {
-        this.logger.error(`Failed to process post-payment tasks for transaction ${transaction.id}`, error.stack);
+        this.logger.error(
+          `Failed to process post-payment tasks for transaction ${transaction.id}`,
+          error.stack,
+        );
       }
     } else if (event === 'payment.failed') {
       const payment = payload.payment.entity;
@@ -192,7 +197,9 @@ export class PaymentsService {
 
   private async recordTeacherEarnings(transaction: Transaction) {
     try {
-      const courseResponse = await this.coursesService.findById(transaction.courseId);
+      const courseResponse = await this.coursesService.findById(
+        transaction.courseId,
+      );
       const course = courseResponse.data;
       const teacherId = course.teacher_id;
 
@@ -207,7 +214,9 @@ export class PaymentsService {
       });
 
       await this.teacherPayoutRepository.save(payout);
-      this.logger.log(`Recorded earnings for teacher ${teacherId}: ${teacherShare} ${transaction.currency}`);
+      this.logger.log(
+        `Recorded earnings for teacher ${teacherId}: ${teacherShare} ${transaction.currency}`,
+      );
     } catch (error) {
       this.logger.error('Failed to record teacher earnings', error.stack);
     }
@@ -221,7 +230,11 @@ export class PaymentsService {
 
     // Total earned could be pending + completed, but typically current "balance" is what they want
     const totalEarned = payouts
-      .filter(p => p.status === PayoutStatus.COMPLETED || p.status === PayoutStatus.PENDING)
+      .filter(
+        (p) =>
+          p.status === PayoutStatus.COMPLETED ||
+          p.status === PayoutStatus.PENDING,
+      )
       .reduce((sum, p) => sum + Number(p.amount), 0);
 
     return {

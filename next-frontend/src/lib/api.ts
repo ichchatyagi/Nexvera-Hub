@@ -29,11 +29,12 @@ api.interceptors.response.use(
   (response) => {
     // If backend returns a {success: true, data: ...} wrapper, 
     // we want to return response.data.data for convenience in components
-    // Note: We check if it's already unwrapped by seeing if success field exists
-    if (response.data && response.data.success === true && response.data.data !== undefined) {
-      return response.data.data;
+    if (response.data && response.data.success === true) {
+      return response.data.data !== undefined ? response.data.data : response.data;
     }
-    return response;
+    // Return the data directly if it doesn't match the wrapper, 
+    // NOT the full axios response object
+    return response.data;
   },
   async (error) => {
     const originalRequest = error.config;

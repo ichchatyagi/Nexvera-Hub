@@ -10,7 +10,11 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { VideosService } from './videos.service';
-import { InitiateUploadDto, TriggerProcessingDto, AddCaptionDto } from './dto/video.dto';
+import {
+  InitiateUploadDto,
+  TriggerProcessingDto,
+  AddCaptionDto,
+} from './dto/video.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';

@@ -48,7 +48,9 @@ export class VideosService {
   /** Build a CloudFront URL for a given S3 key in the processed bucket. */
   private cdnUrl(s3Key: string): string {
     const domain = this.appConfig.cloudfrontVideoDomain;
-    return domain ? `https://${domain}/${s3Key}` : `https://cdn.example.com/${s3Key}`;
+    return domain
+      ? `https://${domain}/${s3Key}`
+      : `https://cdn.example.com/${s3Key}`;
   }
 
   /** Generate the S3 object key for a raw upload. */
@@ -138,7 +140,8 @@ export class VideosService {
   // ─── Find / read ──────────────────────────────────────────────────────────
 
   async findById(id: string): Promise<VideoDocument> {
-    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Invalid video ID');
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException('Invalid video ID');
     const video = await this.videoModel.findById(id).exec();
     if (!video) throw new NotFoundException('Video not found');
     return video;
@@ -168,8 +171,12 @@ export class VideosService {
    * event (s3:ObjectCreated) and does NOT need this endpoint for production.
    * This endpoint exists for manual/admin triggers and local testing.
    */
-  async triggerProcessing(id: string, requesterId: string): Promise<{ success: boolean; data: VideoDocument }> {
-    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Invalid video ID');
+  async triggerProcessing(
+    id: string,
+    requesterId: string,
+  ): Promise<{ success: boolean; data: VideoDocument }> {
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException('Invalid video ID');
 
     const video = await this.videoModel.findById(id).exec();
     if (!video) throw new NotFoundException('Video not found');
@@ -185,7 +192,7 @@ export class VideosService {
     // TODO: Replace with real queue publish (see IMPLEMENTATION_PLAN_PART3.md §7 – Step 2)
     this.logger.log(
       `[STUB] Enqueuing MediaConvert job for video ${id}. ` +
-      `In production, publish to RabbitMQ/SQS with: { videoId: '${id}', s3Key: '${video.original.key}' }`,
+        `In production, publish to RabbitMQ/SQS with: { videoId: '${id}', s3Key: '${video.original.key}' }`,
     );
 
     return { success: true, data: video };
@@ -205,8 +212,11 @@ export class VideosService {
    *     3. Builds CloudFront URLs.
    *     4. Updates the Video document with real manifest_url / qualities.
    */
-  async simulateProcessing(id: string): Promise<{ success: boolean; data: VideoDocument }> {
-    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Invalid video ID');
+  async simulateProcessing(
+    id: string,
+  ): Promise<{ success: boolean; data: VideoDocument }> {
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException('Invalid video ID');
 
     const video = await this.videoModel.findById(id).exec();
     if (!video) throw new NotFoundException('Video not found');
@@ -216,10 +226,26 @@ export class VideosService {
 
     // Fake HLS outputs matching the MediaConvert template in the plan
     const qualities = [
-      { resolution: '360p',  bitrate: 800_000,  url: this.cdnUrl(`${base}/360p/index.m3u8`) },
-      { resolution: '480p',  bitrate: 1_500_000, url: this.cdnUrl(`${base}/480p/index.m3u8`) },
-      { resolution: '720p',  bitrate: 2_500_000, url: this.cdnUrl(`${base}/720p/index.m3u8`) },
-      { resolution: '1080p', bitrate: 5_000_000, url: this.cdnUrl(`${base}/1080p/index.m3u8`) },
+      {
+        resolution: '360p',
+        bitrate: 800_000,
+        url: this.cdnUrl(`${base}/360p/index.m3u8`),
+      },
+      {
+        resolution: '480p',
+        bitrate: 1_500_000,
+        url: this.cdnUrl(`${base}/480p/index.m3u8`),
+      },
+      {
+        resolution: '720p',
+        bitrate: 2_500_000,
+        url: this.cdnUrl(`${base}/720p/index.m3u8`),
+      },
+      {
+        resolution: '1080p',
+        bitrate: 5_000_000,
+        url: this.cdnUrl(`${base}/1080p/index.m3u8`),
+      },
     ];
 
     video.processed.status = 'completed';
@@ -289,7 +315,8 @@ export class VideosService {
 
   async addCaption(id: string, teacherId: string, dto: AddCaptionDto) {
     const video = await this.findById(id);
-    if (video.teacher_id !== teacherId) throw new ForbiddenException('Not your video');
+    if (video.teacher_id !== teacherId)
+      throw new ForbiddenException('Not your video');
 
     video.captions.push({
       language: dto.language,
@@ -316,11 +343,14 @@ export class VideosService {
 
   async remove(id: string, requesterId: string): Promise<{ success: boolean }> {
     const video = await this.findById(id);
-    if (video.teacher_id !== requesterId) throw new ForbiddenException('Not your video');
+    if (video.teacher_id !== requesterId)
+      throw new ForbiddenException('Not your video');
 
     // TODO: Also delete S3 objects (original + processed) using AWS SDK
     await this.videoModel.findByIdAndDelete(id).exec();
-    this.logger.log(`Video ${id} deleted. TODO: remove S3 objects for key prefix videos/${id}/`);
+    this.logger.log(
+      `Video ${id} deleted. TODO: remove S3 objects for key prefix videos/${id}/`,
+    );
 
     return { success: true };
   }

@@ -54,8 +54,10 @@ describe('EnrollmentsService', () => {
     it('should throw ConflictException if already enrolled', async () => {
       const courseId = new Types.ObjectId().toString();
       mockEnrollmentModel.findOne.mockResolvedValue({ _id: 'e1' });
-      
-      await expect(service.enroll(courseId, 's1')).rejects.toThrow(ConflictException);
+
+      await expect(service.enroll(courseId, 's1')).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 
@@ -75,7 +77,9 @@ describe('EnrollmentsService', () => {
       const mockExec = jest.fn().mockResolvedValue(mockEnrollment);
       mockEnrollmentModel.findOne.mockReturnValue({ exec: mockExec });
 
-      const result = await service.updateProgress(courseId, 's1', { percentage: 50 });
+      const result = await service.updateProgress(courseId, 's1', {
+        percentage: 50,
+      });
 
       expect(result.success).toBe(true);
       expect(mockEnrollment.progress.percentage).toBe(50);

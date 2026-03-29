@@ -16,11 +16,7 @@ export class UsersService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  async create(
-    email: string,
-    password: string,
-    role: UserRole,
-  ): Promise<User> {
+  async create(email: string, password: string, role: UserRole): Promise<User> {
     const existing = await this.userRepository.findOne({ where: { email } });
     if (existing) {
       throw new ConflictException('Email already registered');
@@ -46,10 +42,7 @@ export class UsersService {
     return this.userRepository.findOne({ where: { id } });
   }
 
-  async updateProfile(
-    userId: string,
-    _dto: UpdateProfileDto,
-  ): Promise<User> {
+  async updateProfile(userId: string, _dto: UpdateProfileDto): Promise<User> {
     const user = await this.findById(userId);
     if (!user) throw new NotFoundException('User not found');
 
@@ -66,7 +59,9 @@ export class UsersService {
   }
 
   async listTeachers(): Promise<User[]> {
-    return this.userRepository.find({ where: { role: UserRole.TEACHER, status: 'active' } });
+    return this.userRepository.find({
+      where: { role: UserRole.TEACHER, status: 'active' },
+    });
   }
 
   async findOrCreateGoogleUser(

@@ -158,11 +158,17 @@ export class AuthService {
 
   async resetPassword(_token: string, _newPassword: string) {
     // TODO: verify reset token from DB, hash newPassword, update user
-    return { success: true, data: { message: 'Password reset — implement token verification' } };
+    return {
+      success: true,
+      data: { message: 'Password reset — implement token verification' },
+    };
   }
 
   async verifyEmail(_token: string) {
     // TODO: mark user.emailVerified = true based on signed token
-    return { success: true, data: { message: 'Email verification — implement token lookup' } };
+    return {
+      success: true,
+      data: { message: 'Email verification — implement token lookup' },
+    };
   }
 }
