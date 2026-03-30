@@ -4,10 +4,11 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ChevronRight, Star, BookOpen, Layout, Users, Monitor, UserCheck, Lightbulb, Search, ArrowRight, CheckCircle2, Calculator, Atom, FlaskConical, Cpu, BookText, TrendingUp, Languages, Globe } from 'lucide-react';
+import { ChevronRight, Star, BookOpen, Layout, Users, Monitor, UserCheck, Lightbulb, Search, ArrowRight, CheckCircle2, Calculator, Atom, FlaskConical, Cpu, BookText, TrendingUp, Languages, Globe, Rocket, ArrowUp } from 'lucide-react';
 import { categoryData } from '@/data/categoryData';
 import coursesPricing from '@/data/coursePricingData';
 import ConsultancyCTA from '@/components/ConsultancyCTA';
+import IconRenderer from '@/components/IconRenderer';
 
 const CourseHero = ({ onCategoryChange, onLevelChange }) => {
     return (
@@ -85,12 +86,12 @@ const ExploreCourses = ({ activeCategory, onCategoryChange }) => {
                             onClick={() => onCategoryChange(cat.name)}
                             className={`group flex items-center justify-center gap-3 px-6 py-6 rounded-[2rem] font-bold transition-all duration-300 hover:scale-[1.03] active:scale-95 shadow-sm border ${activeCategory === cat.name ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white border-blue-500 shadow-xl shadow-blue-200' : 'bg-white text-slate-600 border-slate-100 hover:border-blue-200 hover:bg-blue-50/30'}`}
                         >
-                            <span className="text-2xl filter group-hover:scale-110 transition-transform">{cat.icon}</span>
+                            <IconRenderer icon={cat.icon} category={cat.name} className={`w-8 h-8 filter group-hover:scale-125 transition-all duration-500`} showGlow={activeCategory === cat.name} />
                             <span className="text-[9px] uppercase tracking-[0.15em] font-black">{cat.name}</span>
                         </button>
                     ))}
                     <button className="flex items-center justify-center gap-3 px-6 py-6 rounded-[2rem] font-black text-[9px] uppercase tracking-[0.2em] bg-slate-900 text-white hover:bg-black transition-all">
-                        <span>🚀</span>
+                        <Rocket className="w-5 h-5" />
                         More
                     </button>
                 </div>
@@ -424,10 +425,13 @@ const CourseCard = ({ category, title, instructor, lessons, rating, reviews, col
             <div className={`h-48 bg-gradient-to-br ${color} p-8 flex flex-col justify-between relative overflow-hidden pointer-events-none`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl -mr-16 -mt-16 rounded-full"></div>
                 <div className="flex flex-col gap-2 relative z-10">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between">
                         <span className="bg-white/20 backdrop-blur-md px-4 py-2 rounded-xl text-white text-[10px] font-black uppercase tracking-[0.2em] border border-white/20">
                             {category}
                         </span>
+                        <div className="w-12 h-12 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/30 shadow-xl">
+                            <IconRenderer icon={icon} category={category} className="w-8 h-8" showGlow={true} />
+                        </div>
                     </div>
                 </div>
                 <h3 className="text-lg lg:text-xl font-black text-white leading-[1.1] uppercase tracking-tight relative z-10 tracking-tighter mt-4">
@@ -510,8 +514,8 @@ const StatsSection = () => {
                 <div className="flex flex-wrap items-center justify-between gap-8">
                     {stats.map((stat, index) => (
                         <div key={index} className="flex flex-col items-center text-center group cursor-pointer">
-                            <div className={`w-16 h-16 ${stat.color} rounded-2xl flex items-center justify-center text-2xl text-white mb-4 transition-all duration-300 group-hover:-translate-y-2 group-hover:rotate-6 shadow-lg shadow-blue-100`}>
-                                {stat.icon}
+                            <div className={`w-16 h-16 ${stat.color} rounded-2xl flex items-center justify-center text-white mb-4 transition-all duration-300 group-hover:-translate-y-2 group-hover:rotate-6 shadow-lg shadow-blue-100`}>
+                                <IconRenderer icon={stat.icon} className="w-8 h-8" />
                             </div>
                             <h4 className="text-xl font-black text-slate-800 tracking-tight">{stat.label}</h4>
                             <p className="text-[10px] font-black text-slate-400 mt-1 uppercase tracking-widest">{stat.sub}</p>
@@ -563,8 +567,8 @@ const CoursesContent = () => {
                                 className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-black px-6 lg:px-12 py-5 rounded-2xl shadow-2xl shadow-cyan-100 transition-all active:scale-95 group uppercase tracking-widest text-[10px]"
                             >
                                 {showAll ? 'Show Less' : 'View All Courses'}
-                                <span className={`inline-block transition-transform ${showAll ? 'rotate-180' : ''} group-hover:translate-x-1 ml-2`}>
-                                    {showAll ? '👆' : '👉'}
+                                <span className={`inline-flex items-center transition-transform ${showAll ? 'rotate-180' : ''} group-hover:translate-x-1 ml-2`}>
+                                    {showAll ? <ArrowUp className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
                                 </span>
                             </button>
                         </div>
