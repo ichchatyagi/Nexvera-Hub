@@ -32,7 +32,7 @@ const Home = () => {
                             Professional Launchpad 🚀
                         </motion.div>
 
-                        <h1 className="text-4xl md:text-6xl lg:text-8xl font-black leading-[0.85] mb-10 uppercase tracking-tighter">
+                        <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-8xl font-black leading-[0.85] mb-10 uppercase tracking-tighter">
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">LEARN.</span> <br />
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 to-blue-600">GROW.</span> <br />
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">SUCCESS.</span>
@@ -177,14 +177,14 @@ const Home = () => {
                             </p>
                         </div>
 
-                        <div className="flex-1 grid grid-cols-2 gap-4">
-                            <div className="p-10 rounded-[3rem] bg-white border-[3px] border-blue-500 text-slate-900 flex flex-col justify-end h-72 hover:-translate-y-2 transition-transform duration-500 shadow-2xl shadow-blue-500/10">
+                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="p-8 sm:p-10 rounded-[3rem] bg-white border-[3px] border-blue-500 text-slate-900 flex flex-col justify-end min-h-[16rem] h-auto hover:-translate-y-2 transition-transform duration-500 shadow-2xl shadow-blue-500/10">
                                 <Shield className="w-10 h-10 mb-8 text-blue-600" />
-                                <h4 className="text-2xl font-black uppercase tracking-tighter">Verified Systems</h4>
+                                <h4 className="text-xl sm:text-2xl font-black uppercase tracking-tighter">Verified Systems</h4>
                             </div>
-                            <div className="p-10 rounded-[3rem] bg-white border-[3px] border-cyan-400 text-slate-900 flex flex-col justify-end h-72 hover:-translate-y-2 transition-transform duration-500 delay-75 shadow-2xl shadow-cyan-500/10">
+                            <div className="p-8 sm:p-10 rounded-[3rem] bg-white border-[3px] border-cyan-400 text-slate-900 flex flex-col justify-end min-h-[16rem] h-auto hover:-translate-y-2 transition-transform duration-500 delay-75 shadow-2xl shadow-cyan-500/10">
                                 <Zap className="w-10 h-10 mb-8 text-cyan-500" />
-                                <h4 className="text-2xl font-black uppercase tracking-tighter">Real-Time Insight</h4>
+                                <h4 className="text-xl sm:text-2xl font-black uppercase tracking-tighter">Real-Time Insight</h4>
                             </div>
                         </div>
                     </div>

@@ -9,9 +9,9 @@ const Footer = () => {
             <div className="container mx-auto px-6 lg:px-12">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
                     {/* COLUMN 1 — Nexvera Hub Branding */}
-                    <div className="flex flex-col items-center lg:-ml-12">
+                    <div className="flex flex-col items-center">
                         <Link href="/" className="inline-block mb-4">
-                            <Image src="/assets/logo.PNG" alt="Nexvera Hub" width={200} height={130} className="h-32 w-auto object-contain" />
+                            <Image src="/assets/logo.PNG" alt="Nexvera Hub" width={200} height={130} className="h-24 sm:h-32 w-auto object-contain" />
                         </Link>
 
                         <div className="flex gap-4">

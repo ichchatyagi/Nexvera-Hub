@@ -158,7 +158,7 @@ const CareerSupport = () => {
                                     <TrendingUp className="w-4 h-4" />
                                     <span>Your Future Starts Here</span>
                                 </div>
-                                <h1 className="text-4xl lg:text-7xl font-black text-slate-900 leading-[1.1] mb-8 tracking-tighter">
+                                <h1 className="text-3xl sm:text-5xl lg:text-7xl font-black text-slate-900 leading-[1.1] mb-8 tracking-tighter">
                                     Career Support That Helps You <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Get Hired</span>
                                 </h1>
                                 <p className="text-xl text-slate-600 leading-relaxed mb-10 max-w-2xl lg:mx-0 mx-auto font-medium">

@@ -58,7 +58,7 @@ const Contact = () => {
                         <MessageCircle size={14} strokeWidth={3} />
                         Direct Support
                     </motion.div>
-                    <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-slate-950 leading-tight tracking-tighter uppercase text-center lg:text-left">
+                    <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-950 leading-tight tracking-tighter uppercase text-center lg:text-left">
                         Let's Start Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Nexvera</span> Journey
                     </h1>
                 </div>
@@ -263,7 +263,7 @@ const Contact = () => {
                         initial={{ opacity: 0, y: 30 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="bg-white p-4 rounded-[4rem] shadow-2xl border border-slate-100 h-[500px] lg:h-auto overflow-hidden relative order-1 lg:order-2"
+                        className="bg-white p-4 rounded-[4rem] shadow-2xl border border-slate-100 min-h-[350px] md:h-[500px] lg:h-auto overflow-hidden relative order-1 lg:order-2"
                     >
                         <div className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-[120%] z-10 flex flex-col items-center pointer-events-none transition-transform hover:scale-105">
                             {/* The Info Card */}

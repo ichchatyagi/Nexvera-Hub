@@ -25,7 +25,7 @@ const CourseHero = ({ onCategoryChange, onLevelChange }) => {
                         Exploration Engine Active
                     </motion.div>
 
-                    <h1 className="text-4xl lg:text-6xl font-black leading-[0.95] mb-8 text-slate-950 uppercase tracking-tighter">
+                    <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black leading-[0.95] mb-8 text-slate-950 uppercase tracking-tighter">
                         Explore <br /> Our <br /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">Expert</span> <br />
                         Courses
                     </h1>
@@ -65,13 +65,13 @@ const ExploreCourses = ({ activeCategory, onCategoryChange }) => {
                     <h2 className="text-4xl lg:text-6xl font-black text-slate-900 uppercase tracking-tighter mb-8">Explore <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">Categories</span></h2>
                     
                     <div className="w-full max-w-[550px]">
-                        <div className="flex p-2 bg-white rounded-3xl shadow-2xl shadow-blue-500/10 border border-slate-100">
+                        <div className="flex flex-col sm:flex-row p-1.5 sm:p-2 bg-white rounded-[2rem] sm:rounded-3xl shadow-2xl shadow-blue-500/10 border border-slate-100 gap-2 sm:gap-0">
                             <input
                                 type="text"
                                 placeholder="Search by course or skill..."
-                                className="flex-1 px-8 outline-none text-slate-700 placeholder:text-slate-400 font-bold"
+                                className="flex-1 px-4 sm:px-8 py-4 sm:py-0 outline-none text-slate-700 placeholder:text-slate-400 font-bold bg-transparent"
                             />
-                            <button className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:scale-105 text-white font-black text-xs uppercase tracking-widest px-10 py-5 rounded-[1.8rem] transition-all shadow-xl shadow-blue-200">
+                            <button className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:scale-105 text-white font-black text-[10px] sm:text-xs uppercase tracking-widest px-6 py-4 sm:px-10 sm:py-5 rounded-[1.4rem] sm:rounded-[1.8rem] transition-all shadow-xl shadow-blue-200 w-full sm:w-auto">
                                 Search
                             </button>
                         </div>
@@ -163,7 +163,7 @@ const TestimonialsMarquee = () => {
                     }}
                 >
                     {marqueeTestimonials.map((t, index) => (
-                        <div key={index} className="flex-shrink-0 w-[450px] p-8 whitespace-normal bg-white rounded-[2.5rem] border border-slate-100 hover:border-blue-200 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 group">
+                        <div key={index} className="flex-shrink-0 w-[85vw] md:w-[450px] p-8 whitespace-normal bg-white rounded-[2.5rem] border border-slate-100 hover:border-blue-200 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 group">
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="w-16 h-16 rounded-2xl bg-slate-100 overflow-hidden shrink-0 ring-4 ring-slate-50 group-hover:ring-blue-50 transition-all">
                                     <img
