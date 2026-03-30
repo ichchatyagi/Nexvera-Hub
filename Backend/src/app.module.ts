@@ -15,9 +15,26 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { CommonModule } from './common/common.module';
 import { DatabaseModule } from './database/database.module';
 import { AppConfigModule } from './app-config/app-config.module';
+import { ContactModule } from './contact/contact.module';
 
 @Module({
-  imports: [AuthModule, UsersModule, ProfilesModule, CoursesModule, EnrollmentsModule, VideosModule, LiveClassesModule, PaymentsModule, SearchModule, NotificationsModule, AnalyticsModule, CommonModule, DatabaseModule, AppConfigModule],
+  imports: [
+    AuthModule,
+    UsersModule,
+    ProfilesModule,
+    CoursesModule,
+    EnrollmentsModule,
+    VideosModule,
+    LiveClassesModule,
+    PaymentsModule,
+    SearchModule,
+    NotificationsModule,
+    AnalyticsModule,
+    CommonModule,
+    DatabaseModule,
+    AppConfigModule,
+    ContactModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

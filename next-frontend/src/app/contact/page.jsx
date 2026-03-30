@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Mail, Phone, MessageCircle, Clock, Send, Building2, Smartphone, Loader2, ChevronRight } from 'lucide-react';
+import api from '../../lib/api';
 
 const Contact = () => {
     const [formData, setFormData] = useState({
@@ -22,17 +23,7 @@ const Contact = () => {
         setIsSubmitting(true);
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/contact`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData),
-            });
-
-            if (!response.ok) throw new Error('Failed to send message');
-
-            await response.json();
+            await api.post('/contact', formData);
 
             alert('Details sent successfully! Please check your email for confirmation.');
             setFormData({ name: '', email: '', phone: '', message: '' });
