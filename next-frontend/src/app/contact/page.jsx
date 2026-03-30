@@ -58,7 +58,7 @@ const Contact = () => {
                         <MessageCircle size={14} strokeWidth={3} />
                         Direct Support
                     </motion.div>
-                    <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-slate-950 leading-tight tracking-tighter uppercase text-center lg:text-left">
+                    <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-950 leading-tight tracking-tighter uppercase text-center lg:text-left">
                         Let's Start Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Nexvera</span> Journey
                     </h1>
                 </div>
@@ -84,7 +84,7 @@ const Contact = () => {
                                         value={formData.name}
                                         onChange={handleChange}
                                         className="w-full px-8 py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 text-sm"
-                                        placeholder="Identification Entry..."
+                                        placeholder="Enter your name..."
                                     />
                                 </div>
                                 <div className="grid md:grid-cols-2 gap-8">
@@ -114,14 +114,14 @@ const Contact = () => {
                                     </div>
                                 </div>
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Query Payload</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Message</label>
                                     <textarea
                                         name="message"
                                         value={formData.message}
                                         onChange={handleChange}
                                         rows="4"
                                         className="w-full px-8 py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 resize-none text-sm"
-                                        placeholder="Initiate message broadcast..."
+                                        placeholder="Enter your message..."
                                     ></textarea>
                                 </div>
                                 <button
@@ -263,7 +263,7 @@ const Contact = () => {
                         initial={{ opacity: 0, y: 30 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="bg-white p-4 rounded-[4rem] shadow-2xl border border-slate-100 h-[500px] lg:h-auto overflow-hidden relative order-1 lg:order-2"
+                        className="bg-white p-4 rounded-[4rem] shadow-2xl border border-slate-100 min-h-[350px] md:h-[500px] lg:h-auto overflow-hidden relative order-1 lg:order-2"
                     >
                         <div className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-[120%] z-10 flex flex-col items-center pointer-events-none transition-transform hover:scale-105">
                             {/* The Info Card */}

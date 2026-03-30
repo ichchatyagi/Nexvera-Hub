@@ -107,7 +107,7 @@ const AboutNexvera = () => {
                                 <motion.h1
                                     initial={{ opacity: 0, y: -20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="text-4xl md:text-5xl lg:text-7xl font-black text-slate-950 leading-[0.9] mb-8 tracking-tighter"
+                                    className="text-3xl sm:text-5xl lg:text-7xl font-black text-slate-950 leading-[0.9] mb-8 tracking-tighter"
                                 >
                                     Introducing <br />
                                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">Nexvera Hub</span>
@@ -147,7 +147,7 @@ const AboutNexvera = () => {
                                 <img
                                     src="https://illustrations.popsy.co/blue/creative-work.svg"
                                     alt="Nexvera Creativity"
-                                    className="w-full h-auto drop-shadow-2xl"
+                                    className="w-full max-w-md lg:max-w-full mx-auto h-auto drop-shadow-2xl"
                                 />
                             </motion.div>
                         </div>
@@ -191,7 +191,7 @@ const AboutNexvera = () => {
                         <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px] text-center">Empowering the next generation of global talent</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
                         {missions.map((mission, idx) => (
                             <MissionCard key={idx} {...mission} />
                         ))}
@@ -202,10 +202,11 @@ const AboutNexvera = () => {
             {/* How You Learn */}
             <section className="py-16 lg:py-32 px-6 lg:px-12 bg-slate-50/50">
                 <div className="container mx-auto px-6">
-                    <div className="text-center mb-20">
-                        <h2 className="text-4xl lg:text-7xl font-black text-slate-950 uppercase tracking-tighter mb-4 text-center">
-                            How You <span className="text-blue-600">Learn</span>
+                    <div className="text-center mb-16 lg:mb-20">
+                        <h2 className="text-3xl sm:text-5xl lg:text-7xl font-black text-slate-950 uppercase tracking-tighter mb-4 text-center">
+                            Our <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Mission</span>
                         </h2>
+                        <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px] text-center">Empowering the next generation of global talent</p>
                     </div>
 
                     <div className="grid lg:grid-cols-2 gap-12 max-w-6xl mx-auto">

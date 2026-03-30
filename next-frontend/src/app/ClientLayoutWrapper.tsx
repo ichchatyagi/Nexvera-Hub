@@ -19,7 +19,7 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
   const backgroundPages = [
     '/', '/course', '/about', '/blog', '/contact',
     '/certifications', '/free-guides', '/roadmaps',
-    '/career-support', '/student-stories', '/faq'
+    '/career-support', '/student-stories', '/faq', '/our-educators'
   ];
 
   const showBackground = backgroundPages.includes(pathname) || 

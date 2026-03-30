@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
     Star,
@@ -13,6 +14,7 @@ import {
     ExternalLink,
     Heart
 } from 'lucide-react';
+
 
 const ScrollingMarquee = ({ children, speed = 40, direction = "left" }) => (
     <div className="flex overflow-hidden group">
@@ -29,7 +31,7 @@ const ScrollingMarquee = ({ children, speed = 40, direction = "left" }) => (
 );
 
 const SuccessCardMarquee = ({ name, course, achievement, story, image, color, metallicGlow, isMarquee = true }) => (
-    <div className={isMarquee ? "w-[450px] shrink-0" : "w-full"}>
+    <div className={isMarquee ? "w-[85vw] md:w-[450px] shrink-0" : "w-full"}>
         <motion.div
             whileHover={{ y: -10, scale: 1.02 }}
             className={`relative p-[2px] rounded-[2.5rem] bg-gradient-to-br ${metallicGlow || 'from-slate-400 via-white to-slate-400'} shadow-2xl group overflow-hidden h-full`}
@@ -58,7 +60,7 @@ const SuccessCardMarquee = ({ name, course, achievement, story, image, color, me
 );
 
 const TestimonialCardMarquee = ({ name, course, feedback, rating }) => (
-    <div className="w-[350px] shrink-0">
+    <div className="w-[85vw] md:w-[350px] shrink-0">
         <motion.div
             whileHover={{ y: -5 }}
             className="p-[1.5px] rounded-3xl bg-gradient-to-br from-blue-400 via-cyan-300 to-blue-500 shadow-xl h-full"
@@ -287,7 +289,7 @@ const StudentStories = () => {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.1 }}
-                                className="text-4xl lg:text-7xl font-black text-slate-900 leading-tight mb-8 tracking-tighter"
+                                className="text-3xl sm:text-5xl lg:text-7xl font-black text-slate-900 leading-tight mb-8 tracking-tighter"
                             >
                                 Student <br />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">Success Stories</span>
@@ -308,10 +310,12 @@ const StudentStories = () => {
                                 transition={{ delay: 0.3 }}
                                 className="flex justify-center lg:justify-start"
                             >
-                                <button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black px-10 py-5 rounded-2xl shadow-2xl shadow-blue-500/20 transition-all active:scale-95 flex items-center gap-3 uppercase tracking-widest text-sm">
-                                    Start Your Journey
-                                    <Rocket className="w-5 h-5" />
-                                </button>
+                                <Link href="/course">
+                                    <button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black px-10 py-5 rounded-2xl shadow-2xl shadow-blue-500/20 transition-all active:scale-95 flex items-center gap-3 uppercase tracking-widest text-sm">
+                                        Start Your Journey
+                                        <Rocket className="w-5 h-5" />
+                                    </button>
+                                </Link>
                             </motion.div>
                         </div>
 
@@ -463,7 +467,7 @@ const StudentStories = () => {
                         <p className="text-slate-500 font-medium pb-2">Your transformation from learner to leader</p>
                     </div>
 
-                    <div className="flex flex-wrap lg:flex-nowrap gap-8 justify-center items-start">
+                    <div className="flex flex-wrap lg:flex-nowrap gap-12 lg:gap-8 justify-center items-start">
                         <JourneyStep
                             index={0}
                             step="01"
@@ -531,12 +535,16 @@ const StudentStories = () => {
                             </div>
 
                             <div className="flex flex-col sm:flex-row gap-4">
-                                <button className="px-8 py-4 bg-white text-indigo-600 font-black rounded-xl shadow-xl hover:bg-slate-50 transition-all active:scale-95 text-[10px] uppercase tracking-widest whitespace-nowrap">
-                                    Browse Courses
-                                </button>
-                                <button className="px-8 py-4 bg-cyan-400 text-slate-900 font-black rounded-xl shadow-xl hover:bg-cyan-300 transition-all active:scale-95 text-[10px] uppercase tracking-widest whitespace-nowrap">
-                                    Join Now
-                                </button>
+                                <Link href="/course">
+                                    <button className="px-8 py-4 bg-white text-indigo-600 font-black rounded-xl shadow-xl hover:bg-slate-50 transition-all active:scale-95 text-[10px] uppercase tracking-widest whitespace-nowrap">
+                                        Browse Courses
+                                    </button>
+                                </Link>
+                                <Link href="/contact">
+                                    <button className="px-8 py-4 bg-cyan-400 text-slate-900 font-black rounded-xl shadow-xl hover:bg-cyan-300 transition-all active:scale-95 text-[10px] uppercase tracking-widest whitespace-nowrap">
+                                        Join Now
+                                    </button>
+                                </Link>
                             </div>
                         </div>
                     </div>

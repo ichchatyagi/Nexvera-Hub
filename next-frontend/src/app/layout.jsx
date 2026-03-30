@@ -11,9 +11,9 @@ export const metadata = {
   title: "Nexvera Hub",
   description: "Next-generation learning platform for professionals and students.",
   icons: {
-    icon: "/logo.png",
-    shortcut: "/logo.png",
-    apple: "/logo.png",
+    icon: "/favlog.png",
+    shortcut: "/favlog.png",
+    apple: "/favlog.png",
   }
 };
 

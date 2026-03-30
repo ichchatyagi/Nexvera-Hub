@@ -3,10 +3,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { ChevronRight, Star, Shield, Zap, Target, BookOpen, Users, Award, PresentationIcon } from 'lucide-react';
+import { ChevronRight, Star, Shield, Zap, Target, BookOpen, Users, Award, PresentationIcon, Rocket, GraduationCap } from 'lucide-react';
 import { categoryData } from '@/data/categoryData';
 import { useConsultation } from '@/context/ConsultationContext';
 import ConsultancyCTA from '@/components/ConsultancyCTA';
+import IconRenderer from '@/components/IconRenderer';
 
 const MetallicCard = ({ children, color = "from-blue-600 to-indigo-700", className = "", borderGradient = "from-slate-400 via-white to-slate-400" }) => (
     <motion.div
@@ -29,10 +30,10 @@ const Home = () => {
                 <div className="container mx-auto px-6 lg:px-12 flex flex-col lg:flex-row items-center gap-20">
                     <div className="flex-1 z-10">
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-[0.4em] mb-10">
-                            Professional Launchpad 🚀
+                            Professional Launchpad <Rocket className="w-3 h-3" />
                         </motion.div>
 
-                        <h1 className="text-5xl md:text-7xl lg:text-9xl font-black leading-[0.85] mb-10 uppercase tracking-tighter">
+                        <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-8xl font-black leading-[0.85] mb-10 uppercase tracking-tighter">
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">LEARN.</span> <br />
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 to-blue-600">GROW.</span> <br />
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">SUCCESS.</span>
@@ -58,7 +59,7 @@ const Home = () => {
                     <div className="flex-1 relative flex justify-end">
                         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative flex justify-center lg:justify-end">
                             <img
-                                src="/images/home-hero-v3.png"
+                                src="/home2.png"
                                 alt="Nexvera Hub Realistic Hero"
                                 className="w-full max-w-[500px] h-auto rounded-[3.8rem] object-cover"
                             />
@@ -82,14 +83,16 @@ const Home = () => {
                             <Link
                                 href={{ pathname: '/course', query: { category: cat.name } }}
                                 key={index}
-                                className="group flex flex-col items-center justify-center gap-4 px-6 py-10 rounded-[2.5rem] font-bold transition-all duration-300 hover:scale-[1.03] active:scale-95 bg-white text-slate-600 border border-slate-100 hover:border-blue-200 hover:bg-blue-50/30 hover:shadow-xl hover:shadow-blue-500/5"
+                                className="group flex flex-col items-center justify-center gap-6 px-4 sm:px-6 py-10 rounded-[2.5rem] font-bold transition-all duration-500 hover:scale-[1.05] active:scale-95 bg-white/50 backdrop-blur-xl border border-white hover:border-blue-200 hover:shadow-2xl hover:shadow-blue-500/10"
                             >
-                                <span className="text-4xl filter group-hover:scale-110 transition-transform">{cat.icon}</span>
-                                <span className="text-[10px] uppercase tracking-[0.2em] font-black text-center">{cat.name}</span>
+                                <div className="relative">
+                                    <IconRenderer icon={cat.icon} category={cat.name} className="w-12 h-12 group-hover:scale-125 transition-transform duration-500" showGlow={true} />
+                                </div>
+                                <span className="text-[10px] uppercase tracking-[0.25em] font-black text-center text-slate-500 group-hover:text-slate-900 transition-colors">{cat.name}</span>
                             </Link>
                         ))}
                         <Link href="/course" className="flex flex-col items-center justify-center gap-4 px-6 py-10 rounded-[2.5rem] font-black text-[10px] uppercase tracking-[0.2em] bg-slate-950 text-white hover:bg-black transition-all">
-                            <span className="text-4xl">🚀</span>
+                            <Rocket className="w-10 h-10 mb-2" />
                             More
                         </Link>
                     </div>
@@ -97,12 +100,12 @@ const Home = () => {
             </section>
 
             {/* Premium Tuition Advertisement Section */}
-            <section className="py-24 relative overflow-hidden bg-white/30 backdrop-blur-md border-y border-slate-50">
+            <section className="py-16 md:py-24 relative overflow-hidden bg-white/30 backdrop-blur-md border-y border-slate-50">
                 <div className="container mx-auto px-6 lg:px-12 relative z-10">
                     <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
                         <div className="flex-1 text-center lg:text-left">
                             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-[0.4em] mb-8">
-                                Academic Mastery 🎓
+                                Academic Mastery <GraduationCap className="w-3 h-3" />
                             </motion.div>
                             
                             <h2 className="text-4xl lg:text-7xl font-black text-slate-900 uppercase tracking-tighter mb-8 leading-[0.95]">
@@ -177,14 +180,14 @@ const Home = () => {
                             </p>
                         </div>
 
-                        <div className="flex-1 grid grid-cols-2 gap-4">
-                            <div className="p-10 rounded-[3rem] bg-white border-[3px] border-blue-500 text-slate-900 flex flex-col justify-end h-72 hover:-translate-y-2 transition-transform duration-500 shadow-2xl shadow-blue-500/10">
+                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="p-8 sm:p-10 rounded-[3rem] bg-white border-[3px] border-blue-500 text-slate-900 flex flex-col justify-end min-h-[16rem] h-auto hover:-translate-y-2 transition-transform duration-500 shadow-2xl shadow-blue-500/10">
                                 <Shield className="w-10 h-10 mb-8 text-blue-600" />
-                                <h4 className="text-2xl font-black uppercase tracking-tighter">Verified Systems</h4>
+                                <h4 className="text-xl sm:text-2xl font-black uppercase tracking-tighter">Verified Systems</h4>
                             </div>
-                            <div className="p-10 rounded-[3rem] bg-white border-[3px] border-cyan-400 text-slate-900 flex flex-col justify-end h-72 hover:-translate-y-2 transition-transform duration-500 delay-75 shadow-2xl shadow-cyan-500/10">
+                            <div className="p-8 sm:p-10 rounded-[3rem] bg-white border-[3px] border-cyan-400 text-slate-900 flex flex-col justify-end min-h-[16rem] h-auto hover:-translate-y-2 transition-transform duration-500 delay-75 shadow-2xl shadow-cyan-500/10">
                                 <Zap className="w-10 h-10 mb-8 text-cyan-500" />
-                                <h4 className="text-2xl font-black uppercase tracking-tighter">Real-Time Insight</h4>
+                                <h4 className="text-xl sm:text-2xl font-black uppercase tracking-tighter">Real-Time Insight</h4>
                             </div>
                         </div>
                     </div>
@@ -269,8 +272,8 @@ const Home = () => {
                             { label: '200+', sub: 'Expert Courses', icon: '✨', color: 'bg-indigo-600' }
                         ].map((stat, index) => (
                             <div key={index} className="flex flex-col items-center text-center group">
-                                <div className={`w-16 h-16 ${stat.color} rounded-2xl flex items-center justify-center text-2xl text-white mb-6 transition-all duration-300 group-hover:-translate-y-2 group-hover:rotate-6`}>
-                                    {stat.icon}
+                                <div className={`w-16 h-16 ${stat.color} rounded-2xl flex items-center justify-center text-white mb-6 transition-all duration-300 group-hover:-translate-y-2 group-hover:rotate-6`}>
+                                    <IconRenderer icon={stat.icon} className="w-8 h-8" />
                                 </div>
                                 <h4 className="text-3xl font-black text-slate-900">{stat.label}</h4>
                                 <p className="text-[10px] font-black text-slate-400 mt-2 uppercase tracking-widest">{stat.sub}</p>

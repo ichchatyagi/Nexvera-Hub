@@ -169,7 +169,7 @@ const FAQ = () => {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.1 }}
-                                className="text-4xl lg:text-7xl font-black text-slate-900 leading-tight mb-8 tracking-tighter"
+                                className="text-3xl sm:text-5xl lg:text-7xl font-black text-slate-900 leading-tight mb-8 tracking-tighter"
                             >
                                 Frequently Asked <br />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 underline decoration-blue-100 decoration-8 underline-offset-8">Questions</span>

@@ -71,7 +71,7 @@ const FeatureCard = ({ icon: Icon, title, description, color }) => (
 );
 
 const LandscapeStep = ({ step, title, description, isLast }) => (
-    <div className="flex-1 min-w-[250px] relative">
+    <div className="flex-1 min-w-[200px] sm:min-w-[250px] relative">
         {!isLast && (
             <div className="absolute top-10 left-[80%] w-full h-0.5 bg-gradient-to-r from-blue-500/50 to-transparent hidden lg:block"></div>
         )}
@@ -102,7 +102,7 @@ const LandscapeStep = ({ step, title, description, isLast }) => (
 
 const Certifications = () => {
     const categoriesSet = [
-        { name: "IT & Technology", color: "text-blue-500" },
+        { name: "Information Technology", color: "text-blue-500" },
         { name: "Health & Wellness", color: "text-emerald-500" },
         { name: "Language Learning", color: "text-amber-500" },
         { name: "Business & Entrepreneurship", color: "text-purple-500" },
@@ -192,7 +192,7 @@ const Certifications = () => {
                         <motion.h1
                             initial={{ opacity: 0, y: -20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="text-4xl lg:text-7xl font-black text-slate-900 leading-tight mb-8 tracking-tighter"
+                            className="text-3xl sm:text-5xl lg:text-7xl font-black text-slate-900 leading-tight mb-8 tracking-tighter"
                         >
                             Professional <br />
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Certifications</span>
@@ -337,7 +337,7 @@ const Certifications = () => {
                             {[...students, ...students, ...students].map((student, i) => (
                                 <div
                                     key={i}
-                                    className={`flex-shrink-0 w-[400px] p-[2px] rounded-[2.5rem] bg-gradient-to-br ${student.color} shadow-2xl transition-all h-fit`}
+                                    className={`flex-shrink-0 w-[85vw] md:w-[400px] p-[2px] rounded-[2.5rem] bg-gradient-to-br ${student.color} shadow-2xl transition-all h-fit`}
                                 >
                                     <div className="bg-white/95 backdrop-blur-md p-8 rounded-[2.4rem] h-full flex flex-col">
                                         <div className="flex items-center gap-4 mb-6">

@@ -1,7 +1,7 @@
 export const categoryData = [
     {
         name: 'Artificial Intelligence',
-        icon: '🤖',
+        icon: 'Artificial Intelligence',
         courses: [
             { title: 'Introduction to Artificial Intelligence', instructor: 'Dr. Sarah Mitchell', lessons: 15, rating: 4.8, reviews: '3.5k', color: 'from-blue-500 to-indigo-600', icon: '🤖' },
             { title: 'AI For Everyone', instructor: 'Andrew Ng', lessons: 10, rating: 4.9, reviews: '150k', color: 'from-cyan-400 to-blue-500', icon: '👥' },
@@ -26,8 +26,8 @@ export const categoryData = [
         ]
     },
     {
-        name: 'IT & Technology',
-        icon: '💻',
+        name: 'Information Technology',
+        icon: 'Information Technology',
         courses: [
             { title: 'Python Programming Fundamentals', instructor: 'Ethan Williams', lessons: 22, rating: 4.8, reviews: '1.2k', color: 'from-blue-500 to-indigo-600', icon: '🐍', image: '/images/courses/python-fundamentals.png' },
             { title: 'Web Development Bootcamp', instructor: 'Sarah Jenkins', lessons: 28, rating: 4.9, reviews: '2.5k', color: 'from-cyan-400 to-blue-500', icon: '🌐', image: '/images/courses/web-dev-bootcamp.png' },
@@ -53,7 +53,7 @@ export const categoryData = [
     },
     {
         name: 'Media & Entertainment',
-        icon: '🎬',
+        icon: 'Media & Entertainment',
         courses: [
             // Video Production Group
             { title: 'Video Production Masterclass', instructor: 'James Cameron', lessons: 30, rating: 4.9, reviews: '4.2k', color: 'from-purple-500 to-indigo-600', icon: '🎥' },
@@ -137,7 +137,7 @@ export const categoryData = [
     },
     {
         name: 'Health & Wellness',
-        icon: '💖',
+        icon: 'Health & Wellness',
         courses: [
             { title: 'Nutrition Science and Diet Planning', instructor: 'Elena Scott', lessons: 15, rating: 4.7, reviews: '750', color: 'from-orange-400 to-red-400', icon: '🥗', image: '/images/courses/nutrition-science.png' },
             { title: 'Yoga for Beginners', instructor: 'Coach Mike', lessons: 12, rating: 4.9, reviews: '920', color: 'from-emerald-400 to-teal-500', icon: '🧘', image: '/images/courses/yoga-beginners.png' },
@@ -163,7 +163,7 @@ export const categoryData = [
     },
     {
         name: 'Language Learning',
-        icon: '🗣️',
+        icon: 'Language Learning',
         courses: [
             { title: 'English for Beginners', instructor: 'Maria Garcia', lessons: 40, rating: 4.8, reviews: '3.4k', color: 'from-blue-400 to-indigo-500', icon: '🇬🇧' },
             { title: 'Conversational Spanish', instructor: 'Maria Garcia', lessons: 40, rating: 4.8, reviews: '3.4k', color: 'from-red-400 to-orange-500', icon: '🇪🇸' },
@@ -189,7 +189,7 @@ export const categoryData = [
     },
     {
         name: 'Business & Entrepreneurship',
-        icon: '💼',
+        icon: 'Business & Entrepreneurship',
         courses: [
             { title: 'Business Startup Essentials', instructor: 'Robert Kiyosaki', lessons: 30, rating: 4.9, reviews: '5.2k', color: 'from-amber-400 to-orange-500', icon: '🚀' },
             { title: 'Entrepreneurship Mindset', instructor: 'Robert Kiyosaki', lessons: 30, rating: 4.9, reviews: '5.2k', color: 'from-purple-500 to-indigo-600', icon: '🧠' },
@@ -215,7 +215,7 @@ export const categoryData = [
     },
     {
         name: 'Management',
-        icon: '📊',
+        icon: 'Management',
         courses: [
             { title: 'Project Management Basics', instructor: 'Ethan Hunt', lessons: 25, rating: 4.8, reviews: '1.5k', color: 'from-blue-500 to-indigo-500', icon: '📅' },
             { title: 'Leadership and Team Building', instructor: 'Simon Sinek', lessons: 30, rating: 4.9, reviews: '4.7k', color: 'from-blue-600 to-cyan-600', icon: '🤝' },
@@ -241,7 +241,7 @@ export const categoryData = [
     },
     {
         name: 'Sales & Marketing',
-        icon: '📈',
+        icon: 'Sales & Marketing',
         courses: [
             { title: 'Digital Marketing Fundamentals', instructor: 'Gary Vee', lessons: 50, rating: 4.9, reviews: '15k', color: 'from-orange-400 to-pink-500', icon: '📱' },
             { title: 'Social Media Marketing', instructor: 'Gary Vee', lessons: 50, rating: 4.9, reviews: '15k', color: 'from-blue-400 to-cyan-500', icon: '👥' },
@@ -267,7 +267,7 @@ export const categoryData = [
     },
     {
         name: 'Engineering & Construction',
-        icon: '🏗️',
+        icon: 'Engineering & Construction',
         courses: [
             { title: 'Civil Engineering Fundamentals', instructor: 'Engr. Smith', lessons: 45, rating: 4.7, reviews: '1.2k', color: 'from-amber-600 to-orange-700', icon: '🏗️' },
             { title: 'Structural Analysis Basics', instructor: 'Engr. Smith', lessons: 45, rating: 4.7, reviews: '1.2k', color: 'from-blue-700 to-slate-800', icon: '🏢' },
@@ -293,7 +293,7 @@ export const categoryData = [
     },
     {
         name: 'Teaching & Academics',
-        icon: '🎓',
+        icon: 'Teaching & Academics',
         courses: [
             { title: 'Teaching Methodologies', instructor: 'Mrs. Honey', lessons: 50, rating: 4.8, reviews: '3.1k', color: 'from-blue-400 to-indigo-500', icon: '📚' },
             { title: 'Classroom Management Skills', instructor: 'Mrs. Honey', lessons: 50, rating: 4.8, reviews: '3.1k', color: 'from-cyan-400 to-blue-500', icon: '🏫' },
@@ -319,7 +319,7 @@ export const categoryData = [
     },
     {
         name: 'Personal Development',
-        icon: '🧠',
+        icon: 'Personal Development',
         courses: [
             { title: 'Goal Setting & Achievement', instructor: 'Tony Robbins', lessons: 20, rating: 4.9, reviews: '12k', color: 'from-blue-500 to-indigo-600', icon: '🎯' },
             { title: 'Emotional Intelligence', instructor: 'Daniel Goleman', lessons: 18, rating: 4.7, reviews: '2.3k', color: 'from-purple-400 to-pink-500', icon: '🧠' },
