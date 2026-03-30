@@ -8,7 +8,7 @@ import { configValidationSchema } from './config.schema';
     ConfigModule.forRoot({
       isGlobal: true, // Make configuration globally accessible
       validationSchema: configValidationSchema,
-      envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
+      envFilePath: ['.env', `.env.${process.env.NODE_ENV || 'development'}`],
     }),
   ],
   providers: [AppConfigService],

@@ -4,8 +4,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, User, Mail, Phone, MessageSquare, Loader2 } from 'lucide-react';
 import { useConsultation } from '../context/ConsultationContext';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+import api from '../lib/api';
 
 const ConsultationModal = () => {
     const { isModalOpen, closeModal } = useConsultation();
@@ -22,18 +21,7 @@ const ConsultationModal = () => {
         setIsSubmitting(true);
 
         try {
-            const response = await fetch(`${API_URL}/consultancy`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData),
-            });
-// ...
-
-            if (!response.ok) throw new Error('Failed to send request');
-
-            await response.json();
+            await api.post('/contact/consultancy', formData);
 
             alert('Consultation request sent! Please check your email for details.');
             closeModal();
