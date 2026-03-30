@@ -1,6 +1,6 @@
 export const categoryData = [
     {
-        name: 'IT & Technology',
+        name: 'Information Technology',
         icon: '💻',
         courses: [
             { title: 'Python Programming Fundamentals', instructor: 'Ethan Williams', lessons: 22, rating: 4.8, reviews: '1.2k', color: 'from-blue-500 to-indigo-600', icon: '🐍' },

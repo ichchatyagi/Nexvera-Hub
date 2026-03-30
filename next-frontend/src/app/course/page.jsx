@@ -525,7 +525,7 @@ const StatsSection = () => {
 
 const CoursesContent = () => {
     const searchParams = useSearchParams();
-    const [activeCategory, setActiveCategory] = useState(searchParams.get('category') || 'IT & Technology');
+    const [activeCategory, setActiveCategory] = useState(searchParams.get('category') || 'Information Technology');
     const [showAll, setShowAll] = useState(false);
 
     useEffect(() => {

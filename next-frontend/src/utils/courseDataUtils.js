@@ -54,7 +54,7 @@ const getCategoryOutcomes = (categoryName, title) => {
     ];
 
     const categoryMap = {
-        'IT & Technology': [
+        'Information Technology': [
             "Build real-world software and applications from scratch",
             "Master industry-standard programming languages and frameworks",
             "Learn system design and architecture for scalable apps",
@@ -122,7 +122,7 @@ export const getCourseDetails = (categoryName, title, selectedLevel = null) => {
         // Specific description for Python as per mockup
         if (titleLower.includes("python") && titleLower.includes("fundamental")) {
             metadata.description = "Master Python from scratch with hands-on projects, covering everything from basic syntax to object-oriented programming.";
-        } else if (catLower.includes("it") || catLower.includes("tech")) {
+        } else if (catLower.includes("information technology") || catLower.includes("tech")) {
             metadata.description = "Master the digital landscape with expert-led courses in software engineering and systems architecture. Build the technical foundation required for modern engineering roles.";
             metadata.solidColor = "bg-blue-600";
         } else if (catLower.includes("health") || catLower.includes("wellness")) {
@@ -313,7 +313,7 @@ export const getCourseDetails = (categoryName, title, selectedLevel = null) => {
         if (titleLower.includes("rust programming")) return "/images/course-hero/rust-programming.webp";
         if (titleLower.includes("kotlin for android")) return "/images/course-hero/kotlin-android.webp";
         if (titleLower.includes("swift for ios")) return "/images/course-hero/swift-ios.webp";
-        if (catLower.includes("it") || catLower.includes("tech")) return "/images/course-hero/default-it.webp";
+        if (catLower.includes("information technology") || catLower.includes("tech")) return "/images/course-hero/default-it.webp";
         if (catLower.includes("health") || catLower.includes("wellness")) return "/images/course-hero/default-health.webp";
         if (catLower.includes("language")) return "/images/course-hero/default-language.webp";
         if (catLower.includes("business") || catLower.includes("entrepreneurship")) return "/images/course-hero/default-business.webp";
@@ -404,7 +404,7 @@ export const getCourseDetails = (categoryName, title, selectedLevel = null) => {
             const categoryLower = categoryName.toLowerCase();
             let toolsPool = ["Professional Skills", "Strategic Thinking", "Industry Standards", "Case Analysis", "Portfolio Sprint"];
             
-            if (categoryLower.includes("it") || categoryLower.includes("tech") || categoryLower.includes("software") || categoryLower.includes("cloud") || categoryLower.includes("cyber") || categoryLower.includes("data")) {
+            if (categoryLower.includes("information technology") || categoryLower.includes("tech") || categoryLower.includes("software") || categoryLower.includes("cloud") || categoryLower.includes("cyber") || categoryLower.includes("data")) {
                 toolsPool = ["VS Code", "GitHub", "Terminal", "NPM Ecosystem", "REST API", "Docker Containers", "AWS Cloud", "System Design Tool"];
             } else if (categoryLower.includes("health") || categoryLower.includes("wellness") || categoryLower.includes("medical")) {
                 toolsPool = ["Clinical Diagnostics", "Patient Care Module", "Health Data Analytics", "Medical Ethics Framework", "Therapeutic Planning", "Healthcare Informatics"];
@@ -415,7 +415,7 @@ export const getCourseDetails = (categoryName, title, selectedLevel = null) => {
             }
 
             const getCategoryImage = () => {
-                if (categoryLower.includes("it") || categoryLower.includes("tech") || categoryLower.includes("software") || categoryLower.includes("cloud") || categoryLower.includes("cyber") || categoryLower.includes("data")) return "/images/projects/it-tech.png";
+                if (categoryLower.includes("information technology") || categoryLower.includes("tech") || categoryLower.includes("software") || categoryLower.includes("cloud") || categoryLower.includes("cyber") || categoryLower.includes("data")) return "/images/projects/it-tech.png";
                 if (categoryLower.includes("health") || categoryLower.includes("wellness") || categoryLower.includes("medical")) return "/images/projects/health-wellness.png";
                 if (categoryLower.includes("business") || categoryLower.includes("management") || categoryLower.includes("sales") || categoryLower.includes("marketing")) return "/images/projects/business-management.png";
                 if (categoryLower.includes("language") || categoryLower.includes("translation") || categoryLower.includes("arts")) return "/images/projects/language-arts.png";

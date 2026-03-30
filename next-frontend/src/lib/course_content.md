@@ -1,4 +1,4 @@
-# Detailed Course Pages: IT & Technology
+# Detailed Course Pages: Information Technology
 
 ## Python Programming Fundamentals
 

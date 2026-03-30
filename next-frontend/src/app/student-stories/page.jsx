@@ -14,6 +14,7 @@ import {
     Heart
 } from 'lucide-react';
 
+
 const ScrollingMarquee = ({ children, speed = 40, direction = "left" }) => (
     <div className="flex overflow-hidden group">
         <motion.div

@@ -102,7 +102,7 @@ const LandscapeStep = ({ step, title, description, isLast }) => (
 
 const Certifications = () => {
     const categoriesSet = [
-        { name: "IT & Technology", color: "text-blue-500" },
+        { name: "Information Technology", color: "text-blue-500" },
         { name: "Health & Wellness", color: "text-emerald-500" },
         { name: "Language Learning", color: "text-amber-500" },
         { name: "Business & Entrepreneurship", color: "text-purple-500" },
