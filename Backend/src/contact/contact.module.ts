@@ -7,5 +7,6 @@ import { AppConfigModule } from '../app-config/app-config.module';
   imports: [AppConfigModule],
   controllers: [ContactController],
   providers: [ContactService],
+  exports: [ContactService],
 })
 export class ContactModule {}

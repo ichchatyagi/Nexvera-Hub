@@ -6,6 +6,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
+import { ContactService } from '../contact/contact.service';
 import { AppConfigService } from '../app-config/app-config.service';
 import { User, UserRole } from '../users/entities/user.entity';
 import { RegisterDto, LoginDto, RefreshTokenDto } from './dto/auth.dto';
@@ -18,6 +19,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly appConfigService: AppConfigService,
+    private readonly contactService: ContactService,
   ) {}
 
   // -----------------------------------------------------------------------
@@ -68,6 +70,10 @@ export class AuthService {
     const user = await this.usersService.create(dto.email, dto.password, role);
     const tokens = this.buildTokens(user);
 
+    // Send Signup Email (Async, don't wait to avoid slowing down response)
+    const fallbackName = dto.email.split('@')[0];
+    this.contactService.sendSignupEmail(user.email, fallbackName).catch(() => {});
+
     return {
       success: true,
       data: { user: mapUserToResponse(user), ...tokens },
@@ -90,6 +96,11 @@ export class AuthService {
     }
 
     const tokens = this.buildTokens(user);
+
+    // Send Login Email (Async)
+    const fallbackName = user.email.split('@')[0];
+    this.contactService.sendLoginEmail(user.email, fallbackName).catch(() => {});
+
     return {
       success: true,
       data: { user: mapUserToResponse(user), ...tokens },
