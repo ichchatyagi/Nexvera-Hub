@@ -103,7 +103,7 @@ export const userThankYouTemplateConsultancy = (data: any) => `
 <!-- Content -->
 <tr>
 <td style="padding-left:40px; padding-right:40px;">
-<p><b>Hi {{Student Name}},</b></p>
+<p><b>Hi ${data.name},</b></p>
 
 <p style="color:#555;">
 Thank you for reaching out to Nexvera Hub for consultancy. We've received your request for guidance on choosing the right course and career path.
@@ -259,7 +259,7 @@ export const userThankYouTemplateContact = (data: any) => `
 <!-- Content -->
 <tr>
 <td style="padding-left:40px; padding-right:40px;">
-<p><b>Hi {{Student Name}},</b></p>
+<p><b>Hi ${data.name},</b></p>
 
 <p style="color:#555;">
 Thank you for contacting Nexvera Hub. We've received your message and our team will review it shortly.
