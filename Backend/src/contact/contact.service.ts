@@ -105,6 +105,7 @@ export class ContactService {
   }
 
   async sendLoginEmail(email: string, name: string) {
+    console.log(`Attempting to send login email to ${email}`);
     try {
       const mailOptions = {
         from: `"Nexvera Hub" <${this.appConfig.senderEmail}>`,
@@ -117,11 +118,12 @@ export class ContactService {
       return { success: true, message: 'Login email sent successfully' };
     } catch (error) {
       console.error('Nodemailer Error (Login):', error);
-      // We don't necessarily want to throw here as login should still succeed
+      throw error; // Re-throw to be caught by AuthService
     }
   }
 
   async sendSignupEmail(email: string, name: string) {
+    console.log(`Attempting to send signup email to ${email}`);
     try {
       const mailOptions = {
         from: `"Nexvera Hub" <${this.appConfig.senderEmail}>`,
@@ -134,8 +136,7 @@ export class ContactService {
       return { success: true, message: 'Signup email sent successfully' };
     } catch (error) {
       console.error('Nodemailer Error (Signup):', error);
-      // We don't necessarily want to throw here as signup should still succeed
+      throw error; // Re-throw to be caught by AuthService
     }
   }
 }
-

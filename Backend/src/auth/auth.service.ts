@@ -72,7 +72,9 @@ export class AuthService {
 
     // Send Signup Email (Async, don't wait to avoid slowing down response)
     const fallbackName = dto.email.split('@')[0];
-    this.contactService.sendSignupEmail(user.email, fallbackName).catch(() => {});
+    this.contactService.sendSignupEmail(user.email, fallbackName).catch((err) => {
+      console.error('Failed to send signup email:', err);
+    });
 
     return {
       success: true,
@@ -99,7 +101,9 @@ export class AuthService {
 
     // Send Login Email (Async)
     const fallbackName = user.email.split('@')[0];
-    this.contactService.sendLoginEmail(user.email, fallbackName).catch(() => {});
+    this.contactService.sendLoginEmail(user.email, fallbackName).catch((err) => {
+      console.error('Failed to send login email:', err);
+    });
 
     return {
       success: true,
