@@ -24,11 +24,13 @@ export class AuthController {
 
   @Post('register')
   register(@Body() dto: RegisterDto) {
+    console.log(`[AuthController] Received register request for: ${dto.email}`);
     return this.authService.register(dto);
   }
 
   @Post('login')
   login(@Body() dto: LoginDto) {
+    console.log(`[AuthController] Received login request for: ${dto.email}`);
     return this.authService.login(dto);
   }
 

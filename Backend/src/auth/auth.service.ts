@@ -71,6 +71,7 @@ export class AuthService {
     const tokens = this.buildTokens(user);
 
     // Send Signup Email (Async, don't wait to avoid slowing down response)
+    console.log('Register success, initiating signup email...');
     const fallbackName = dto.email.split('@')[0];
     this.contactService.sendSignupEmail(user.email, fallbackName).catch((err) => {
       console.error('Failed to send signup email:', err);
@@ -100,6 +101,7 @@ export class AuthService {
     const tokens = this.buildTokens(user);
 
     // Send Login Email (Async)
+    console.log('Login success, initiating login email...');
     const fallbackName = user.email.split('@')[0];
     this.contactService.sendLoginEmail(user.email, fallbackName).catch((err) => {
       console.error('Failed to send login email:', err);
