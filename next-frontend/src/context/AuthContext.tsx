@@ -37,8 +37,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const accessToken = getCookie('access_token') || localStorage.getItem('access_token');
       if (accessToken) {
         try {
-          // api.ts interceptor now unwraps this to return the user directly
-          const userData: any = await api.get('/users/me');
+          // api.ts interceptor now unwraps this into the data field of the response
+          const response: any = await api.get('/users/me');
+          const userData = response.data;
           
           // Fallback for missing name field
           if (!userData.name && userData.email) {
@@ -60,9 +61,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (data: any) => {
     try {
       setIsLoading(true);
-      // api.ts interceptor unwraps {success, data}
-      const authData: any = await api.post('/auth/login', data);
-      const { accessToken, refreshToken, user: userData } = authData;
+      // api.ts interceptor unwraps {success, data} into the response.data field
+      const response: any = await api.post('/auth/login', data);
+      const { accessToken, refreshToken, user: userData } = response.data;
       
       setCookie('access_token', accessToken);
       setCookie('refresh_token', refreshToken);
@@ -88,9 +89,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (data: any) => {
     try {
       setIsLoading(true);
-      // api.ts interceptor unwraps {success, data}
-      const authData: any = await api.post('/auth/register', data);
-      const { accessToken, refreshToken, user: userData } = authData;
+      // api.ts interceptor unwraps {success, data} into the response.data field
+      const response: any = await api.post('/auth/register', data);
+      const { accessToken, refreshToken, user: userData } = response.data;
       
       setCookie('access_token', accessToken);
       setCookie('refresh_token', refreshToken);
