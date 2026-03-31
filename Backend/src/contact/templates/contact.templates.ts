@@ -18,7 +18,7 @@ export const adminNotificationTemplate = (data: any) => `
         <!-- Header -->
         <tr>
         <td align="center" style=" padding:25px 20px;">
-        <img style="width: 27vw;" src="https://nexverahub.com/assets/logo-B1jSTEFJ.PNG" alt="NEXVERAHUB"/>
+        <img style="width: 27vw;" src="https://nexverahub.com/logo.png" alt="NEXVERAHUB"/>
         <p style="margin:6px 0 0 0; color:#3b82f6; font-size:14px;">
         Learn Smart. Build Your Future.
         </p>
@@ -78,7 +78,7 @@ export const userThankYouTemplateConsultancy = (data: any) => `
 <tr>
 <td align="center">
 <br>
-<img src="https://via.placeholder.com/150x50?text=NEXVERA+hub" width="150">
+<img src="https://nexverahub.com/logo.png" width="150">
 </td>
 </tr>
 
@@ -234,7 +234,7 @@ export const userThankYouTemplateContact = (data: any) => `
 <tr>
 <td align="center">
 <br>
-<img src="https://via.placeholder.com/150x50?text=NEXVERA+hub" width="150">
+<img src="https://nexverahub.com/logo.png" width="150">
 </td>
 </tr>
 
@@ -384,7 +384,7 @@ export const loginTemplate = (data: any) => `
 <tr>
 <td align="center">
 <br>
-<img src="https://via.placeholder.com/150x50?text=NEXVERA+hub" width="150">
+<img src="https://nexverahub.com/logo.png" width="150">
 </td>
 </tr>
 
@@ -534,7 +534,7 @@ export const welcomeTemplate = (data: any) => `
 <tr>
 <td align="center">
 <br>
-<img src="https://via.placeholder.com/150x50?text=NEXVERA+hub" width="150">
+<img src="https://nexverahub.com/logo.png" width="150">
 </td>
 </tr>
 
