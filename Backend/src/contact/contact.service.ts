@@ -3,7 +3,7 @@ import * as nodemailer from 'nodemailer';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { AppConfigService } from '../app-config/app-config.service';
 import { adminNotificationTemplate, userThankYouTemplateContact, userThankYouTemplateConsultancy } from './templates/contact.templates';
-import { loginTemplate, welcomeTemplate } from '../../utils/emailTemplates';
+import { loginTemplate, welcomeTemplate, otpTemplate, verificationTemplate } from '../../utils/emailTemplates';
 
 @Injectable()
 export class ContactService {
@@ -137,6 +137,42 @@ export class ContactService {
     } catch (error) {
       console.error('Nodemailer Error (Signup):', error);
       throw error; // Re-throw to be caught by AuthService
+    }
+  }
+
+  async sendOtpEmail(email: string, name: string, otp: string) {
+    console.log(`Attempting to send OTP email to ${email}`);
+    try {
+      const mailOptions = {
+        from: `"Nexvera Hub Security" <${this.appConfig.senderEmail}>`,
+        to: email,
+        subject: 'Your Password Reset OTP',
+        html: otpTemplate({ name, otp }),
+      };
+
+      await this.thankYouTransporter.sendMail(mailOptions);
+      return { success: true, message: 'OTP email sent successfully' };
+    } catch (error) {
+      console.error('Nodemailer Error (OTP):', error);
+      throw error;
+    }
+  }
+
+  async sendVerificationEmail(email: string, name: string, otp: string) {
+    console.log(`Attempting to send verification email to ${email}`);
+    try {
+      const mailOptions = {
+        from: `"Nexvera Hub Onboarding" <${this.appConfig.senderEmail}>`,
+        to: email,
+        subject: 'Verify Your Hub Account',
+        html: verificationTemplate({ name, otp }),
+      };
+
+      await this.thankYouTransporter.sendMail(mailOptions);
+      return { success: true, message: 'Verification email sent successfully' };
+    } catch (error) {
+      console.error('Nodemailer Error (Verification):', error);
+      throw error;
     }
   }
 }

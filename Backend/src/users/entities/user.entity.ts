@@ -22,6 +22,9 @@ export class User {
   email: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
+  name: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
   passwordHash: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true, unique: true })
@@ -38,8 +41,20 @@ export class User {
   @Column({ type: 'boolean', default: false })
   emailVerified: boolean;
 
-  @Column({ type: 'varchar', length: 20, default: 'active' })
+  @Column({ type: 'varchar', length: 20, default: 'pending' })
   status: string;
+
+  @Column({ type: 'varchar', length: 5, nullable: true })
+  resetOtp: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  resetOtpExpiresAt: Date | null;
+
+  @Column({ type: 'varchar', length: 5, nullable: true })
+  verificationOtp: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  verificationOtpExpiresAt: Date | null;
 
   @CreateDateColumn()
   createdAt: Date;
