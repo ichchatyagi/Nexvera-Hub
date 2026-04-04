@@ -95,4 +95,13 @@ export class EnrollmentsService {
 
     return { success: true, data: enrollment };
   }
+
+  async findByCourse(courseId: string) {
+    if (!Types.ObjectId.isValid(courseId)) throw new NotFoundException('Invalid Course ID');
+    return this.enrollmentModel.find({ course_id: new Types.ObjectId(courseId) }).exec();
+  }
+
+  async findByStudent(studentId: string) {
+    return this.enrollmentModel.find({ student_id: studentId }).exec();
+  }
 }

@@ -2,9 +2,10 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, ILike } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from './entities/user.entity';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -95,5 +96,43 @@ export class UsersService {
       status: 'active',
     });
     return this.userRepository.save(newUser);
+  }
+
+  async listUsers(filters: {
+    role?: UserRole;
+    status?: string;
+    search?: string;
+  }): Promise<User[]> {
+    const where: any = {};
+
+    if (filters.role) where.role = filters.role;
+    if (filters.status) where.status = filters.status;
+    if (filters.search) where.email = ILike(`%${filters.search}%`);
+
+    return this.userRepository.find({
+      where,
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async updateRole(userId: string, role: UserRole): Promise<User> {
+    const user = await this.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+
+    user.role = role;
+    return this.userRepository.save(user);
+  }
+
+  async updateStatus(userId: string, status: string): Promise<User> {
+    const user = await this.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+
+    const validStatuses = ['active', 'suspended', 'pending'];
+    if (!validStatuses.includes(status)) {
+      throw new BadRequestException(`Invalid status: ${status}`);
+    }
+
+    user.status = status;
+    return this.userRepository.save(user);
   }
 }

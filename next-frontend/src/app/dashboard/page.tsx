@@ -20,7 +20,8 @@ import {
   ArrowUpRight,
   TrendingDown,
   Activity,
-  AlertCircle
+  AlertCircle,
+  Shield
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -111,9 +112,21 @@ const Dashboard = () => {
               Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 text-6xl">{user?.name}</span>
             </motion.h1>
           </div>
-          <div className="flex items-center gap-3 bg-white px-6 py-3 rounded-2xl border border-slate-100 shadow-sm self-start md:self-auto">
-             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">System Live • {user?.role}</span>
+          <div className="flex flex-col md:flex-row items-center gap-4 self-start md:self-auto">
+             {user?.role === 'admin' && (
+               <Link 
+                 href="/admin"
+                 className="flex items-center gap-3 bg-slate-950 text-white px-6 py-3 rounded-2xl border border-slate-900 shadow-2xl shadow-slate-900/20 hover:bg-black transition-all group scale-105"
+               >
+                  <Shield size={14} className="text-blue-500 group-hover:rotate-12 transition-transform" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Authority Console</span>
+                  <ArrowUpRight size={14} className="text-white/40" />
+               </Link>
+             )}
+             <div className="flex items-center gap-3 bg-white px-6 py-3 rounded-2xl border border-slate-100 shadow-sm">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">System Live • {user?.role}</span>
+             </div>
           </div>
         </div>
 

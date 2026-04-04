@@ -8,6 +8,7 @@ import {
   Filter, 
   Edit, 
   Trash2, 
+  Users,
   UserPlus, 
   BookOpen, 
   Loader2,
@@ -68,15 +69,8 @@ const AdminCoursesDashboard = () => {
   const [isLeadInstructor, setIsLeadInstructor] = useState(false);
 
   useEffect(() => {
-    if (!isLoadingAuth) {
-      if (!user) {
-        router.push('/login');
-      } else if (user.role !== 'admin') {
-        toast.error('Unauthorized access');
-        router.push('/dashboard');
-      } else {
-        fetchCourses();
-      }
+    if (!isLoadingAuth && user?.role === 'admin') {
+      fetchCourses();
     }
   }, [user, isLoadingAuth]);
 
@@ -84,7 +78,6 @@ const AdminCoursesDashboard = () => {
     try {
       setIsLoading(true);
       const response: any = await api.get('/courses');
-      // Shared api client unwraps {success, data}
       setCourses(response.data || []);
     } catch (error) {
       toast.error('Failed to load courses');
@@ -208,27 +201,27 @@ const AdminCoursesDashboard = () => {
     }
   };
 
-  if (isLoading || isLoadingAuth) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
-        <Loader2 className="animate-spin text-blue-600 mb-4" size={48} />
-        <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">Initializing Admin Console</p>
+      <div className="flex flex-col items-center justify-center py-32">
+        <Loader2 className="animate-spin text-blue-600 mb-4" size={32} />
+        <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">Retrieving Catalog Data</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/50 pt-12 pb-24">
-      <div className="container mx-auto px-6 lg:px-12">
-        {/* Header */}
+    <div className="px-12 pb-24">
+      <div className="container mx-auto">
+        {/* Header - toned down as layout has main console title */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-16 gap-8">
           <div>
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-2">
               <Shield size={14} className="text-blue-600" />
-              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-600">Nexvera Authority</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-600">Global Catalog Ops</span>
             </div>
-            <h1 className="text-4xl lg:text-5xl font-black text-slate-950 uppercase tracking-tighter">
-              Catalog <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">Operation</span>
+            <h1 className="text-4xl font-black text-slate-950 uppercase tracking-tighter">
+              Manage <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">Assets</span>
             </h1>
           </div>
           
@@ -351,6 +344,13 @@ const AdminCoursesDashboard = () => {
                     </td>
                     <td className="px-8 py-6 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <button 
+                          onClick={() => router.push(`/admin/enrollments/course/${course.id}`)}
+                          className="p-3 rounded-2xl bg-slate-50 text-slate-400 hover:bg-white hover:text-cyan-600 hover:shadow-xl hover:shadow-cyan-500/10 transition-all border border-transparent hover:border-slate-100"
+                          title="View Enrollments"
+                        >
+                          <Users size={16} />
+                        </button>
                         <button 
                           onClick={() => handleOpenCourseModal(course)}
                           className="p-3 rounded-2xl bg-slate-50 text-slate-400 hover:bg-white hover:text-blue-600 hover:shadow-xl hover:shadow-blue-500/10 transition-all border border-transparent hover:border-slate-100"

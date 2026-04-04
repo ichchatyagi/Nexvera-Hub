@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { LiveClass, LiveClassSchema } from './schemas/live-class.schema';
 import { LiveClassesService } from './live-classes.service';
 import { LiveClassesController } from './live-classes.controller';
+import { AdminLiveClassesController } from './admin-live-classes.controller';
 import { AppConfigModule } from '../app-config/app-config.module';
 
 @Module({
@@ -14,7 +15,7 @@ import { AppConfigModule } from '../app-config/app-config.module';
     AppConfigModule,
   ],
   providers: [LiveClassesService],
-  controllers: [LiveClassesController],
+  controllers: [LiveClassesController, AdminLiveClassesController],
   exports: [LiveClassesService],
 })
 export class LiveClassesModule {}

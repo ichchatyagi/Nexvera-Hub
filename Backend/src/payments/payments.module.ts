@@ -6,6 +6,7 @@ import { TeacherPayout } from './entities/payout.entity';
 import { PaymentsService } from './services/payments.service';
 import { PayoutsService } from './services/payouts.service';
 import { InstructorEarningsController, PaymentsController } from './payments.controller';
+import { AdminTransactionsController } from './admin-transactions.controller';
 import { Course, CourseSchema } from '../courses/schemas/course.schema';
 import { Enrollment, EnrollmentSchema } from '../enrollments/schemas/enrollment.schema';
 import { AppConfigModule } from '../app-config/app-config.module';
@@ -21,7 +22,7 @@ import { EnrollmentsModule } from '../enrollments/enrollments.module';
     AppConfigModule,
     EnrollmentsModule,
   ],
-  controllers: [InstructorEarningsController, PaymentsController],
+  controllers: [InstructorEarningsController, PaymentsController, AdminTransactionsController],
   providers: [PaymentsService, PayoutsService],
   exports: [PaymentsService, PayoutsService],
 })

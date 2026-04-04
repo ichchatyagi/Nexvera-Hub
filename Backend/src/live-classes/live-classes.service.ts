@@ -471,6 +471,60 @@ export class LiveClassesService {
     };
   }
 
+
+  // ─── Admin Monitoring ─────────────────────────────────────────────────────
+
+  /**
+   * Lists all live classes with optional filters for administrative monitoring.
+   */
+  async adminFindAll(filters: {
+    status?: LiveClassStatus | string;
+    courseId?: string;
+    teacherId?: string;
+    fromDate?: string;
+    toDate?: string;
+  }) {
+    const query: any = {};
+
+    if (filters.status) {
+      query.status = filters.status;
+    }
+    if (filters.courseId && Types.ObjectId.isValid(filters.courseId)) {
+      query.course_id = new Types.ObjectId(filters.courseId);
+    }
+    if (filters.teacherId) {
+      query.teacher_id = filters.teacherId;
+    }
+    if (filters.fromDate || filters.toDate) {
+      query.scheduled_start = {};
+      if (filters.fromDate) {
+        query.scheduled_start.$gte = new Date(filters.fromDate);
+      }
+      if (filters.toDate) {
+        const end = new Date(filters.toDate);
+        end.setHours(23, 59, 59, 999);
+        query.scheduled_start.$lte = end;
+      }
+    }
+
+    return this.liveClassModel
+      .find(query)
+      .sort({ scheduled_start: -1 })
+      .exec();
+  }
+
+  /**
+   * Fetches a single live class by ID for admin view.
+   */
+  async adminFindOne(id: string) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new NotFoundException('Invalid live class ID');
+    }
+    const lc = await this.liveClassModel.findById(id).exec();
+    if (!lc) throw new NotFoundException('Live class not found');
+    return lc;
+  }
+
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
   /**
