@@ -85,10 +85,14 @@ const CourseDetail = () => {
       // Check enrollment status if authenticated
       if (isAuthenticated) {
         try {
-          const enrollmentRes = await api.get(`/enrollments/check/${courseData.id}`);
-          setIsEnrolled(enrollmentRes.data.isEnrolled);
+          // Use progress endpoint to check enrollment
+          const progressRes = await api.get(`/courses/${courseData.id}/progress`);
+          // If the request succeeds, the user is enrolled
+          setIsEnrolled(true);
         } catch (e) {
-          console.error('Error checking enrollment:', e);
+          // If 403/404, user is likely not enrolled
+          setIsEnrolled(false);
+          console.log('User not enrolled in this course');
         }
       }
     } catch (error) {
@@ -106,12 +110,81 @@ const CourseDetail = () => {
     }
 
     try {
-      toast.loading('Enrolling in course...', { id: 'enroll' });
-      await api.post(`/enrollments`, { course_id: course?.id });
-      setIsEnrolled(true);
-      toast.success('Successfully enrolled!', { id: 'enroll' });
+      toast.loading('Initializing checkout...', { id: 'payment' });
+      
+      // 1. Create Razorpay Order via Backend
+      const orderRes = await api.post('/payments/order', { courseId: course?.id });
+      const { keyId, orderId, amount, currency } = orderRes.data;
+
+      // 2. Load Razorpay script dynamically
+      if (!(window as any).Razorpay) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+          script.async = true;
+          script.onload = resolve;
+          script.onerror = () => reject(new Error('Failed to load Razorpay SDK'));
+          document.body.appendChild(script);
+        });
+      }
+
+      // 3. Configure Razorpay options
+      const options = {
+        key: keyId,
+        amount: amount,
+        currency: currency,
+        name: 'Nexvera Hub',
+        description: `Course: ${course?.title}`,
+        order_id: orderId,
+        handler: async (response: any) => {
+          try {
+            toast.loading('Verifying payment...', { id: 'payment' });
+            
+            const verifyRes = await api.post('/payments/verify', {
+              courseId: course?.id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+
+            if (verifyRes.data.enrolled) {
+              setIsEnrolled(true);
+              toast.success('Course purchased successfully!', { id: 'payment' });
+              // Refresh to unlock lessons
+              fetchCourseData();
+            } else {
+              toast.error('Payment verification failed', { id: 'payment' });
+            }
+          } catch (err: any) {
+            console.error('Verification error:', err);
+            toast.error(err.response?.data?.message || 'Payment verification failed', { id: 'payment' });
+          }
+        },
+        prefill: {
+          name: user?.name || '',
+          email: user?.email || '',
+        },
+        theme: {
+          color: '#2563eb', // blue-600
+        },
+        modal: {
+          ondismiss: () => {
+            toast.dismiss('payment');
+          }
+        }
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      
+      rzp.on('payment.failed', function (response: any) {
+        toast.error(`Payment failed: ${response.error.description}`, { id: 'payment' });
+      });
+
+      rzp.open();
+      toast.dismiss('payment');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Enrollment failed', { id: 'enroll' });
+      console.error('Payment initialization error:', error);
+      toast.error(error.response?.data?.message || 'Failed to start purchase flow', { id: 'payment' });
     }
   };
 
@@ -233,7 +306,7 @@ const CourseDetail = () => {
                     : 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:scale-[1.02] shadow-blue-200'
                   }`}
                 >
-                  {isEnrolled ? 'Continue Learning' : 'Enroll Now'}
+                  {isEnrolled ? 'Continue Learning' : `Buy Course | ₹${course.price.toLocaleString()}`}
                 </button>
 
                 <div className="mt-10 space-y-4">
