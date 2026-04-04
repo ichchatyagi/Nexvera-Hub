@@ -36,8 +36,16 @@ interface CourseForm {
   slug: string;
   short_description: string;
   description: string;
-  category: string;
-  price: number;
+  category: {
+    main: string;
+    sub: string;
+    tags: string[];
+  };
+  pricing: {
+    type: 'free' | 'paid' | 'subscription';
+    price: number;
+    currency: string;
+  };
   level: string;
   thumbnail_url: string;
 }
@@ -49,6 +57,12 @@ const AdminCoursesDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCourses, setTotalCourses] = useState(0);
+  const limit = 10;
+  
   // Modals state
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
   const [isInstructorModalOpen, setIsInstructorModalOpen] = useState(false);
@@ -58,9 +72,17 @@ const AdminCoursesDashboard = () => {
     slug: '',
     short_description: '',
     description: '',
-    category: '',
-    price: 0,
-    level: 'Beginner',
+    category: {
+      main: '',
+      sub: '',
+      tags: []
+    },
+    pricing: {
+      type: 'paid',
+      price: 0,
+      currency: 'INR'
+    },
+    level: 'beginner',
     thumbnail_url: ''
   });
   
@@ -70,15 +92,19 @@ const AdminCoursesDashboard = () => {
 
   useEffect(() => {
     if (!isLoadingAuth && user?.role === 'admin') {
-      fetchCourses();
+      fetchCourses(currentPage);
     }
-  }, [user, isLoadingAuth]);
+  }, [user, isLoadingAuth, currentPage]);
 
-  const fetchCourses = async () => {
+  const fetchCourses = async (page = 1) => {
     try {
       setIsLoading(true);
-      const response: any = await api.get('/courses');
+      const response: any = await api.get(`/courses?status=all&page=${page}&limit=${limit}`);
       setCourses(response.data || []);
+      if (response.meta?.pagination) {
+        setTotalPages(response.meta.pagination.total_pages);
+        setTotalCourses(response.meta.pagination.total);
+      }
     } catch (error) {
       toast.error('Failed to load courses');
     } finally {
@@ -90,14 +116,22 @@ const AdminCoursesDashboard = () => {
     if (course) {
       setSelectedCourse(course);
       setCourseForm({
-        id: course.id,
+        id: course.id || course._id,
         title: course.title,
         slug: course.slug,
         short_description: course.short_description || '',
         description: course.description || '',
-        category: course.category,
-        price: course.price,
-        level: course.level,
+        category: {
+            main: course.category?.main || '',
+            sub: course.category?.sub || '',
+            tags: course.category?.tags || []
+        },
+        pricing: {
+            type: course.pricing?.type || 'paid',
+            price: course.pricing?.price || 0,
+            currency: course.pricing?.currency || 'INR'
+        },
+        level: course.level || 'beginner',
         thumbnail_url: course.thumbnail_url || ''
       });
     } else {
@@ -107,9 +141,17 @@ const AdminCoursesDashboard = () => {
         slug: '',
         short_description: '',
         description: '',
-        category: '',
-        price: 0,
-        level: 'Beginner',
+        category: {
+            main: '',
+            sub: '',
+            tags: []
+        },
+        pricing: {
+            type: 'paid',
+            price: 0,
+            currency: 'INR'
+        },
+        level: 'beginner',
         thumbnail_url: ''
       });
     }
@@ -121,18 +163,24 @@ const AdminCoursesDashboard = () => {
     try {
       toast.loading(selectedCourse ? 'Updating course...' : 'Creating course...', { id: 'course-save' });
       
+      // Exclude id from the payload to avoid backend validation errors (whitelist: true)
+      const { id, ...payload } = courseForm;
+      
       if (selectedCourse) {
-        await api.put(`/courses/${selectedCourse.id}`, courseForm);
+        // Use either id or mongo _id for the URL, depending on what's available
+        const courseId = selectedCourse.id || selectedCourse._id;
+        await api.put(`/courses/${courseId}`, payload);
         toast.success('Course updated successfully', { id: 'course-save' });
       } else {
-        await api.post('/courses', courseForm);
+        await api.post('/courses', payload);
         toast.success('Course created successfully', { id: 'course-save' });
       }
       
       setIsCourseModalOpen(false);
       fetchCourses();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Action failed', { id: 'course-save' });
+      const msg = error.response?.data?.message;
+      toast.error(Array.isArray(msg) ? msg.join(', ') : (msg || 'Action failed'), { id: 'course-save' });
     }
   };
 
@@ -140,11 +188,12 @@ const AdminCoursesDashboard = () => {
     const newStatus = course.status === 'published' ? 'draft' : 'published';
     try {
       const loadingToast = toast.loading(`${newStatus === 'published' ? 'Publishing' : 'Unpublishing'} course...`);
-      await api.post(`/courses/${course.id}/publish`, { status: newStatus });
+      await api.post(`/courses/${course._id}/publish`, { status: newStatus });
       toast.success(`Course ${newStatus}`, { id: loadingToast });
       fetchCourses();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Toggle status failed');
+      const msg = error.response?.data?.message;
+      toast.error(Array.isArray(msg) ? msg.join(', ') : (msg || 'Toggle status failed'));
     }
   };
 
@@ -182,7 +231,8 @@ const AdminCoursesDashboard = () => {
       setSelectedCourse(updatedRes.data);
       fetchCourses();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Assignment failed', { id: 'assign' });
+      const msg = error.response?.data?.message;
+      toast.error(Array.isArray(msg) ? msg.join(', ') : (msg || 'Assignment failed'), { id: 'assign' });
     }
   };
 
@@ -197,7 +247,8 @@ const AdminCoursesDashboard = () => {
       setSelectedCourse(updatedRes.data);
       fetchCourses();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Removal failed', { id: 'remove' });
+      const msg = error.response?.data?.message;
+      toast.error(Array.isArray(msg) ? msg.join(', ') : (msg || 'Removal failed'), { id: 'remove' });
     }
   };
 
@@ -240,7 +291,7 @@ const AdminCoursesDashboard = () => {
              { label: 'Total Assets', value: courses.length, icon: <Layers size={18} /> },
              { label: 'Live Courses', value: courses.filter(c => c.status === 'published').length, icon: <Globe size={18} className="text-green-500" /> },
              { label: 'In Production', value: courses.filter(c => c.status !== 'published').length, icon: <Clock size={18} className="text-orange-500" /> },
-             { label: 'Revenue Pool', value: `₹${courses.reduce((acc, c) => acc + c.price, 0).toLocaleString()}`, icon: <Tag size={18} className="text-blue-500" /> },
+             { label: 'Revenue Pool', value: `₹${courses.reduce((acc, c) => acc + (c.pricing?.price || 0), 0).toLocaleString()}`, icon: <Tag size={18} className="text-blue-500" /> },
            ].map((stat, i) => (
              <div key={i} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
@@ -285,7 +336,7 @@ const AdminCoursesDashboard = () => {
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {courses.filter(c => c.title.toLowerCase().includes(searchTerm.toLowerCase())).map((course) => (
-                  <tr key={course.id} className="hover:bg-slate-50/30 transition-colors group">
+                  <tr key={course.id || course._id} className="hover:bg-slate-50/30 transition-colors group">
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-4">
                         <div className="w-14 h-14 rounded-2xl bg-slate-100 overflow-hidden shrink-0 border border-slate-200 shadow-sm">
@@ -298,7 +349,7 @@ const AdminCoursesDashboard = () => {
                         <div>
                           <p className="text-sm font-black text-slate-900 uppercase tracking-tight mb-1">{course.title}</p>
                           <div className="flex items-center gap-3">
-                             <span className="text-[9px] font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-md">{course.category}</span>
+                             <span className="text-[9px] font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-md">{course.category?.main || 'Uncategorized'}</span>
                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{course.level}</span>
                           </div>
                         </div>
@@ -340,12 +391,12 @@ const AdminCoursesDashboard = () => {
                       </div>
                     </td>
                     <td className="px-8 py-6">
-                       <span className="text-sm font-black text-slate-950 tracking-tighter">₹{course.price.toLocaleString()}</span>
+                        <span className="text-sm font-black text-slate-950 tracking-tighter">₹{(course.pricing?.price || 0).toLocaleString()}</span>
                     </td>
                     <td className="px-8 py-6 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button 
-                          onClick={() => router.push(`/admin/enrollments/course/${course.id}`)}
+                          onClick={() => router.push(`/admin/enrollments/course/${course.id || course._id}`)}
                           className="p-3 rounded-2xl bg-slate-50 text-slate-400 hover:bg-white hover:text-cyan-600 hover:shadow-xl hover:shadow-cyan-500/10 transition-all border border-transparent hover:border-slate-100"
                           title="View Enrollments"
                         >
@@ -358,7 +409,7 @@ const AdminCoursesDashboard = () => {
                           <Edit size={16} />
                         </button>
                         <button 
-                          onClick={() => handleDelete(course.id)}
+                          onClick={() => handleDelete(course.id || course._id)}
                           className="p-3 rounded-2xl bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-all"
                         >
                           <Trash2 size={16} />
@@ -370,6 +421,48 @@ const AdminCoursesDashboard = () => {
               </tbody>
             </table>
           </div>
+          
+          {/* Pagination Controls */}
+          {courses.length > 0 && totalPages > 1 && (
+            <div className="px-8 py-6 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
+              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                Showing <span className="text-slate-900">{courses.length}</span> of <span className="text-slate-900">{totalCourses}</span> Assets
+              </div>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:border-blue-200 transition-all disabled:opacity-30 disabled:cursor-not-allowed group shadow-sm"
+                >
+                  <ArrowRight size={16} className="rotate-180 group-hover:-translate-x-1 transition-transform" />
+                </button>
+                
+                <div className="flex items-center gap-1">
+                   {[...Array(totalPages)].map((_, i) => (
+                     <button
+                       key={i + 1}
+                       onClick={() => setCurrentPage(i + 1)}
+                       className={`w-10 h-10 rounded-xl text-[10px] font-black transition-all ${
+                         currentPage === i + 1 
+                         ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' 
+                         : 'bg-white text-slate-400 border border-slate-100 hover:border-blue-100'
+                       }`}
+                     >
+                       {i + 1}
+                     </button>
+                   ))}
+                </div>
+
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:border-blue-200 transition-all disabled:opacity-30 disabled:cursor-not-allowed group shadow-sm"
+                >
+                  <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            </div>
+          )}
           
           {courses.length === 0 && (
             <div className="py-32 text-center">
@@ -450,15 +543,28 @@ const AdminCoursesDashboard = () => {
 
                       <div className="grid grid-cols-2 gap-6">
                         <div>
-                          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Category</label>
+                          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Main Category</label>
                           <input 
                             required
-                            value={courseForm.category}
-                            onChange={(e) => setCourseForm({ ...courseForm, category: e.target.value })}
+                            value={courseForm.category.main}
+                            onChange={(e) => setCourseForm({ ...courseForm, category: { ...courseForm.category, main: e.target.value } })}
                             className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-200 font-bold text-sm"
-                            placeholder="Trading"
+                            placeholder="Design"
                           />
                         </div>
+                        <div>
+                          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Sub Category</label>
+                          <input 
+                            required
+                            value={courseForm.category.sub}
+                            onChange={(e) => setCourseForm({ ...courseForm, category: { ...courseForm.category, sub: e.target.value } })}
+                            className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-200 font-bold text-sm"
+                            placeholder="UI/UX"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-6">
                         <div>
                           <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Difficulty Level</label>
                           <select 
@@ -466,10 +572,21 @@ const AdminCoursesDashboard = () => {
                             onChange={(e) => setCourseForm({ ...courseForm, level: e.target.value })}
                             className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-200 font-bold text-sm appearance-none"
                           >
-                             <option value="Beginner">Beginner</option>
-                             <option value="Intermediate">Intermediate</option>
-                             <option value="Advanced">Advanced</option>
-                             <option value="Expert">Expert</option>
+                             <option value="beginner">Beginner</option>
+                             <option value="intermediate">Intermediate</option>
+                             <option value="advanced">Advanced</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Pricing Type</label>
+                          <select 
+                            value={courseForm.pricing.type}
+                            onChange={(e) => setCourseForm({ ...courseForm, pricing: { ...courseForm.pricing, type: e.target.value as any } })}
+                            className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-200 font-bold text-sm appearance-none"
+                          >
+                             <option value="paid">Paid (One-time)</option>
+                             <option value="free">Free</option>
+                             <option value="subscription">Subscription</option>
                           </select>
                         </div>
                       </div>
@@ -480,8 +597,8 @@ const AdminCoursesDashboard = () => {
                           <input 
                             type="number"
                             required
-                            value={courseForm.price}
-                            onChange={(e) => setCourseForm({ ...courseForm, price: parseInt(e.target.value) })}
+                            value={courseForm.pricing.price}
+                            onChange={(e) => setCourseForm({ ...courseForm, pricing: { ...courseForm.pricing, price: parseInt(e.target.value) } })}
                             className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-200 font-bold text-sm pl-12"
                           />
                           <IndianRupee size={14} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" />

@@ -24,34 +24,42 @@ import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 
 interface Lesson {
-  id: string;
+  lesson_id: string;
   title: string;
-  duration: number;
-  type: 'video' | 'article' | 'quiz';
-  video_id?: string;
+  duration_minutes: number;
+  type: string;
+  is_preview: boolean;
 }
 
 interface Section {
-  id: string;
+  section_id: string;
   title: string;
   lessons: Lesson[];
 }
 
 interface CourseDetail {
   id: string;
+  _id: string;
   slug: string;
   title: string;
   description: string;
-  teacher_name: string;
-  teacher_bio: string;
-  price: number;
-  rating: number;
-  review_count: number;
+  short_description: string;
+  category: {
+    main: string;
+    sub: string;
+  };
+  pricing: {
+    price: number;
+    currency: string;
+  };
+  stats: {
+    average_rating: number;
+    total_reviews: number;
+  };
   level: string;
-  category: string;
   thumbnail_url: string;
   total_lessons: number;
-  total_duration: number;
+  total_duration_hours: number;
 }
 
 const CourseDetail = () => {
@@ -76,17 +84,17 @@ const CourseDetail = () => {
       setCourse(courseData);
 
       // Fetch curriculum
-      const curriculumRes = await api.get(`/courses/${courseData.id}/curriculum`);
+      const curriculumRes = await api.get(`/courses/${courseData._id || courseData.id}/curriculum`);
       setCurriculum(curriculumRes.data || []);
       if (curriculumRes.data?.length > 0) {
-        setActiveSection(curriculumRes.data[0].id);
+        setActiveSection(curriculumRes.data[0].section_id);
       }
 
       // Check enrollment status if authenticated
       if (isAuthenticated) {
         try {
           // Use progress endpoint to check enrollment
-          const progressRes = await api.get(`/courses/${courseData.id}/progress`);
+          const progressRes = await api.get(`/courses/${courseData._id || courseData.id}/progress`);
           // If the request succeeds, the user is enrolled
           setIsEnrolled(true);
         } catch (e) {
@@ -113,7 +121,7 @@ const CourseDetail = () => {
       toast.loading('Initializing checkout...', { id: 'payment' });
       
       // 1. Create Razorpay Order via Backend
-      const orderRes = await api.post('/payments/order', { courseId: course?.id });
+      const orderRes = await api.post('/payments/order', { courseId: course?._id || course?.id });
       const { keyId, orderId, amount, currency } = orderRes.data;
 
       // 2. Load Razorpay script dynamically
@@ -141,7 +149,7 @@ const CourseDetail = () => {
             toast.loading('Verifying payment...', { id: 'payment' });
             
             const verifyRes = await api.post('/payments/verify', {
-              courseId: course?.id,
+              courseId: course?._id || course?.id,
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
@@ -222,12 +230,12 @@ const CourseDetail = () => {
             <div className="lg:col-span-8">
               <div className="flex flex-wrap items-center gap-4 mb-8">
                 <span className="bg-blue-600/20 backdrop-blur-md px-4 py-2 rounded-xl text-blue-400 text-[10px] font-black uppercase tracking-widest border border-blue-600/20">
-                  {course.category}
+                  {course.category?.main || 'General'}
                 </span>
                 <div className="flex items-center gap-1 text-orange-400">
                   <Star fill="currentColor" size={14} />
-                  <span className="text-xs font-black text-white">{course.rating}</span>
-                  <span className="text-white/40 text-[10px] font-bold">({course.review_count} reviews)</span>
+                  <span className="text-xs font-black text-white">{course.stats?.average_rating || 'New'}</span>
+                  <span className="text-white/40 text-[10px] font-bold">({course.stats?.total_reviews || 0} reviews)</span>
                 </div>
               </div>
 
@@ -262,7 +270,7 @@ const CourseDetail = () => {
                   <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Duration</span>
                   <div className="flex items-center gap-2">
                     <Clock size={18} className="text-orange-400" />
-                    <span className="text-sm font-bold uppercase tracking-tight">{Math.round(course.total_duration)} Min</span>
+                    <span className="text-sm font-bold uppercase tracking-tight">{course.total_duration_hours || 0} Hours</span>
                   </div>
                 </div>
               </div>
@@ -288,10 +296,10 @@ const CourseDetail = () => {
                 </div>
 
                 <div className="flex items-center justify-between mb-8 px-2">
-                   <div>
-                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Lifetime Access</p>
-                     <p className="text-3xl font-black text-slate-950 tracking-tighter">₹{course.price.toLocaleString()}</p>
-                   </div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Lifetime Access</p>
+                      <p className="text-3xl font-black text-slate-950 tracking-tighter">₹{(course.pricing?.price || 0).toLocaleString()}</p>
+                    </div>
                    <div className="text-right">
                      <span className="text-slate-300 text-xs font-black line-through">₹2,999</span>
                      <span className="block text-green-500 text-[10px] font-black uppercase tracking-widest mt-1">Special Launch</span>
@@ -299,14 +307,14 @@ const CourseDetail = () => {
                 </div>
 
                 <button 
-                  onClick={isEnrolled ? () => router.push(`/courses/${course.id}/lessons/${curriculum[0]?.lessons[0]?.id}`) : handleEnroll}
+                  onClick={isEnrolled ? () => router.push(`/courses/${course._id || course.id}/lessons/${curriculum[0]?.lessons[0]?.lesson_id}`) : handleEnroll}
                   className={`w-full py-6 rounded-[1.8rem] font-black uppercase tracking-widest text-xs transition-all active:scale-95 shadow-2xl ${
                     isEnrolled 
                     ? 'bg-slate-950 text-white hover:bg-black shadow-slate-900/20' 
                     : 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:scale-[1.02] shadow-blue-200'
                   }`}
                 >
-                  {isEnrolled ? 'Continue Learning' : `Buy Course | ₹${course.price.toLocaleString()}`}
+                  {isEnrolled ? 'Continue Learning' : `Buy Course | ₹${(course.pricing?.price || 0).toLocaleString()}`}
                 </button>
 
                 <div className="mt-10 space-y-4">
@@ -344,9 +352,9 @@ const CourseDetail = () => {
               
               <div className="space-y-4">
                 {curriculum.map((section) => (
-                  <div key={section.id} className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden shadow-sm">
+                  <div key={section.section_id} className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden shadow-sm">
                     <button 
-                      onClick={() => setActiveSection(activeSection === section.id ? null : section.id)}
+                      onClick={() => setActiveSection(activeSection === section.section_id ? null : section.section_id)}
                       className="w-full flex items-center justify-between p-8 hover:bg-slate-50 transition-colors text-left outline-none"
                     >
                       <div className="flex items-center gap-6">
@@ -355,16 +363,16 @@ const CourseDetail = () => {
                          </div>
                          <div>
                             <h4 className="font-black text-slate-900 uppercase tracking-tight text-lg">{section.title}</h4>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">
-                               {section.lessons.length} Modules • {section.lessons.reduce((acc, l) => acc + l.duration, 0)} Min
-                            </p>
+                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">
+                                {section.lessons.length} Modules • {section.lessons.reduce((acc, l) => acc + (l.duration_minutes || 0), 0)} Min
+                             </p>
                          </div>
                       </div>
-                      <ChevronDown size={20} className={`text-slate-400 transition-transform ${activeSection === section.id ? 'rotate-180' : ''}`} />
+                      <ChevronDown size={20} className={`text-slate-400 transition-transform ${activeSection === section.section_id ? 'rotate-180' : ''}`} />
                     </button>
                     
                     <AnimatePresence>
-                      {activeSection === section.id && (
+                      {activeSection === section.section_id && (
                         <motion.div 
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: "auto", opacity: 1 }}
@@ -372,9 +380,9 @@ const CourseDetail = () => {
                           className="overflow-hidden border-t border-slate-100"
                         >
                           <div className="p-4 space-y-2">
-                             {section.lessons.map((lesson) => (
+                              {section.lessons.map((lesson) => (
                                <div 
-                                 key={lesson.id}
+                                 key={lesson.lesson_id}
                                  className="flex items-center justify-between p-4 rounded-xl hover:bg-blue-50/50 transition-all group"
                                >
                                   <div className="flex items-center gap-4">
@@ -386,7 +394,7 @@ const CourseDetail = () => {
                                      </span>
                                   </div>
                                   <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest px-3">
-                                     {lesson.duration}m
+                                     {lesson.duration_minutes}m
                                   </span>
                                </div>
                              ))}
@@ -406,20 +414,16 @@ const CourseDetail = () => {
                  <div className="bg-white p-10 rounded-[3rem] border border-slate-100 flex flex-col md:flex-row gap-10 items-center md:items-start shadow-sm">
                     <div className="w-40 h-40 rounded-[2.5rem] bg-gradient-to-br from-blue-600 to-cyan-500 p-1 shrink-0 overflow-hidden shadow-2xl">
                        <div className="w-full h-full bg-white rounded-[2.3rem] flex items-center justify-center text-blue-600 text-6xl font-black">
-                         {isEnrolled && course.teacher_name ? course.teacher_name.charAt(0) : "N"}
+                         NX
                        </div>
                     </div>
                     <div className="flex-1 text-center md:text-left">
                        <h4 className="text-2xl font-black text-slate-900 uppercase tracking-tighter mb-2">
-                         {isEnrolled && course.teacher_name ? course.teacher_name : "Expert Nexvera Instructor"}
+                         Nexvera Hub Expert
                        </h4>
                        <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] mb-6 block">Nexvera Academic Faculty</span>
                        <p className="text-base text-slate-500 leading-relaxed font-medium">
-                          {isEnrolled && course.teacher_bio 
-                            ? course.teacher_bio 
-                            : isEnrolled 
-                              ? "Your instructor is currently being assigned to this cohort. You will be notified before the first live session."
-                              : "This course is delivered by Nexvera's elite faculty. Our instructors are industry veterans chosen for their technical expertise and pedagogical excellence."}
+                          This course is delivered by Nexvera's elite faculty. Our instructors are industry veterans chosen for their technical expertise and pedagogical excellence.
                        </p>
                     </div>
                  </div>

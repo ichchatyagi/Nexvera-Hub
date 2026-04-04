@@ -33,7 +33,8 @@ api.interceptors.response.use(
     if (response.data && response.data.success === true && response.data.data !== undefined) {
       return {
         ...response,
-        data: response.data.data
+        data: response.data.data,
+        meta: response.data.meta, // Preserve meta for pagination etc.
       };
     }
     return response;
