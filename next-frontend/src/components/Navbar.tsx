@@ -140,7 +140,7 @@ const Navbar = () => {
                 <div className="hidden lg:flex items-center justify-center gap-8 text-slate-600 font-medium text-[15px] absolute left-1/2 -translate-x-1/2">
                     <Link href="/" className={pathname === "/" ? "text-blue-600 font-semibold" : "hover:text-blue-600 transition-colors"}>Home</Link>
                     <NavDropdown title="About" items={aboutItems} />
-                    <Link href="/course" className={pathname === "/course" ? "text-blue-600 font-semibold" : "hover:text-blue-600 transition-colors"}>Courses</Link>
+                    <Link href="/courses" className={pathname === "/courses" ? "text-blue-600 font-semibold" : "hover:text-blue-600 transition-colors"}>Courses</Link>
                     <NavDropdown title="Resources" items={resourceItems} />
                     <NavDropdown title="Career" items={careerItems} />
                     <Link href="/contact" className={pathname === "/contact" ? "text-blue-600 font-semibold" : "hover:text-blue-600 transition-colors"}>Contact</Link>
@@ -183,12 +183,12 @@ const Navbar = () => {
                                             </div>
                                             
                                             <Link 
-                                                href={user?.role === 'teacher' ? '/teacher' : '/dashboard'} 
+                                                href={user?.role === 'admin' ? '/admin/courses' : user?.role === 'teacher' ? '/teacher/dashboard' : '/dashboard'} 
                                                 className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-all"
                                                 onClick={() => setIsUserMenuOpen(false)}
                                             >
                                                 <LayoutDashboard size={18} />
-                                                Dashboard
+                                                {user?.role === 'admin' ? 'Admin Catalog' : 'Dashboard'}
                                             </Link>
                                             
                                             <Link 

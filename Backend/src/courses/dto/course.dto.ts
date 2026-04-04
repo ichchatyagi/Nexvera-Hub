@@ -61,6 +61,15 @@ export class CoursePricingDto {
   currency?: string;
 }
 
+export class AssignInstructorDto {
+  @IsString()
+  @IsNotEmpty()
+  instructor_id: string;
+
+  @IsOptional()
+  is_lead?: boolean;
+}
+
 // ----------------------------- Create / Update -----------------------------
 export class CreateCourseDto {
   @IsString()
@@ -78,6 +87,15 @@ export class CreateCourseDto {
   @IsString()
   @IsOptional()
   short_description?: string;
+
+  @IsString()
+  @IsOptional()
+  lead_instructor_id?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  assigned_instructor_ids?: string[];
 
   @ValidateNested()
   @Type(() => CourseCategoryDto)
@@ -114,6 +132,15 @@ export class UpdateCourseDto {
   @IsString()
   @IsOptional()
   short_description?: string;
+
+  @IsString()
+  @IsOptional()
+  lead_instructor_id?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  assigned_instructor_ids?: string[];
 
   @ValidateNested()
   @Type(() => CourseCategoryDto)

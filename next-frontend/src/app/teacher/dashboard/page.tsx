@@ -23,6 +23,7 @@ const TeacherDashboard = () => {
   const { user } = useAuth();
   const [courses, setCourses] = useState<any[]>([]);
   const [liveClasses, setLiveClasses] = useState<any[]>([]);
+  const [earnings, setEarnings] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -32,13 +33,17 @@ const TeacherDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
-      // Fetch teacher's courses (assuming filtering is handled on backend or via dedicated endpoint)
-      const coursesRes = await api.get('/courses'); 
-      setCourses(coursesRes.data.data?.filter((c: any) => c.teacher_id === user?.id) || []);
+      // Fetch teacher's assigned courses from the consolidated endpoint
+      const coursesRes = await api.get('/teacher/courses'); 
+      setCourses(coursesRes.data || []);
 
       // Fetch teacher's live classes
       const liveRes = await api.get('/live-classes');
       setLiveClasses(liveRes.data?.filter((l: any) => l.status !== 'completed') || []);
+
+      // Fetch instructor earnings (calculated from assignments)
+      const earningsRes = await api.get('/instructor/earnings');
+      setEarnings(earningsRes.data);
     } catch (error) {
       toast.error('Failed to load dashboard metrics');
       console.error(error);
@@ -48,10 +53,10 @@ const TeacherDashboard = () => {
   };
 
   const stats = [
-    { label: 'Active Students', value: '1,248', icon: <Users size={20} />, color: 'bg-blue-600' },
-    { label: 'Courses Published', value: courses.length.toString(), icon: <BookOpen size={20} />, color: 'bg-cyan-500' },
+    { label: 'Active Students', value: (earnings?.breakdown?.reduce((acc: number, curr: any) => acc + curr.students, 0) || 0).toLocaleString(), icon: <Users size={20} />, color: 'bg-blue-600' },
+    { label: 'Assigned Courses', value: courses.length.toString(), icon: <BookOpen size={20} />, color: 'bg-cyan-500' },
     { label: 'Live Sessions', value: liveClasses.length.toString(), icon: <Video size={20} />, color: 'bg-indigo-600' },
-    { label: 'Revenue (MTD)', value: '₹42,500', icon: <TrendingUp size={20} />, color: 'bg-green-600' },
+    { label: 'Instructor Earnings (Assigned)', value: `₹${(earnings?.totalPending || 0).toLocaleString()}`, icon: <TrendingUp size={20} />, color: 'bg-green-600' },
   ];
 
   if (isLoading) {
@@ -85,10 +90,12 @@ const TeacherDashboard = () => {
             </motion.h1>
           </div>
           
-          <button className="flex items-center gap-3 px-8 py-4 bg-slate-950 text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-2xl shadow-slate-900/10 hover:bg-black transition-all active:scale-95 group">
-             <Plus size={18} className="group-hover:rotate-90 transition-transform" />
-             Create New Course
-          </button>
+          {user?.role === 'admin' && (
+            <button className="flex items-center gap-3 px-8 py-4 bg-slate-950 text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-2xl shadow-slate-900/10 hover:bg-black transition-all active:scale-95 group">
+               <Plus size={18} className="group-hover:rotate-90 transition-transform" />
+               Create New Course
+            </button>
+          )}
         </div>
 
         {/* Stats Grid */}

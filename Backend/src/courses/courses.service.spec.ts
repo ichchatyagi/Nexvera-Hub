@@ -51,19 +51,56 @@ describe('CoursesService', () => {
   });
 
   describe('createCourse', () => {
-    it('should create a course as a teacher', async () => {
-      const dto = { title: 'Test Course', slug: 'test-course' };
-      mockCourseModel.create.mockResolvedValue({ _id: '1', teacher_id: 't1', ...dto });
+    it('should create a course as an admin', async () => {
+      const dto = { title: 'Test Course', slug: 'test-course', lead_instructor_id: 't1' };
+      mockCourseModel.create.mockResolvedValue({ _id: '1', ...dto });
 
-      const result = await service.create('t1', dto);
+      const result = await service.create(dto);
 
       expect(result.success).toBe(true);
       expect(result.data.title).toBe('Test Course');
       expect(mockCourseModel.create).toHaveBeenCalledWith({
         ...dto,
-        teacher_id: 't1',
         status: 'draft',
       });
+    });
+  });
+
+  describe('findAssignedToTeacher', () => {
+    it('should return courses where teacher is lead or assigned', async () => {
+      const mockCourses = [{ _id: 'c1', title: 'Course 1' }];
+      mockCourseModel.find.mockResolvedValue(mockCourses);
+
+      const result = await service.findAssignedToTeacher('t1');
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual(mockCourses);
+      expect(mockCourseModel.find).toHaveBeenCalledWith({
+        $or: [
+          { lead_instructor_id: 't1' },
+          { assigned_instructor_ids: 't1' }
+        ]
+      });
+    });
+  });
+
+  describe('getTeacherCourseView', () => {
+    it('should return course detail if assigned', async () => {
+      const courseId = new Types.ObjectId().toString();
+      const mockCourse = { _id: courseId, title: 'Course 1' };
+      mockCourseModel.findOne.mockResolvedValue(mockCourse);
+
+      const result = await service.getTeacherCourseView(courseId, 't1');
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual(mockCourse);
+    });
+
+    it('should throw ForbiddenException if not assigned', async () => {
+      const courseId = new Types.ObjectId().toString();
+      mockCourseModel.findOne.mockResolvedValue(null);
+
+      await expect(service.getTeacherCourseView(courseId, 't1')).rejects.toThrow(ForbiddenException);
     });
   });
 

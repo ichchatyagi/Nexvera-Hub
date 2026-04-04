@@ -13,7 +13,8 @@ import {
   Calendar,
   Loader2,
   CheckCircle2,
-  Video
+  Video,
+  Users
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -125,7 +126,18 @@ const StudentDashboard = () => {
                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100">{course.category}</span>
                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{course.level}</span>
                         </div>
-                        <h4 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-6 leading-tight truncate-2">{course.title}</h4>
+                        <h4 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-2 leading-tight truncate-2">{course.title}</h4>
+                        
+                        <div className="flex items-center gap-3 mb-6">
+                           <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                              <Users size={10} />
+                           </div>
+                           <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                             Mentor: <span className={course.teacher_name ? "text-blue-600" : "text-slate-300 italic"}>
+                               {course.teacher_name || "Assignment Pending"}
+                             </span>
+                           </p>
+                        </div>
                         
                         <div className="flex items-center gap-6">
                            <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">

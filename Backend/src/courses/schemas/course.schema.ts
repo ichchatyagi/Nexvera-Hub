@@ -122,8 +122,20 @@ export class Course {
   @Prop()
   short_description: string;
 
-  @Prop({ required: true, index: true })
-  teacher_id: string; // The UUID from PostgreSQL User
+  /**
+   * Lead/assigned instructor for this Nexvera-owned course.
+   * This is set internally by Nexvera Hub admins and is NOT chosen by students.
+   * Students purchase courses based on curriculum/brand, not by selecting a teacher.
+   */
+  @Prop({ required: false, index: true })
+  lead_instructor_id?: string; // UUID of the lead teacher assigned by Nexvera Hub (formerly teacher_id)
+
+  /**
+   * All instructors currently assigned to teach this course (cohort-level or course-level).
+   * Populated and managed by admins; students never specify this during enrollment.
+   */
+  @Prop({ type: [String], default: [] })
+  assigned_instructor_ids: string[];
 
   @Prop({ type: CourseCategory })
   category: CourseCategory;
