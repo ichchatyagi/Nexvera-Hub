@@ -32,19 +32,15 @@ const AdminEarningsReport = () => {
   const [instructorId, setInstructorId] = useState('');
 
   useEffect(() => {
-    if (!isLoadingAuth) {
-      if (!user || user.role !== 'admin') {
-        toast.error('Unauthorized access');
-        router.push('/dashboard');
-      }
+    if (!isLoadingAuth && user?.role === 'admin') {
+      // Logic for admin access already handled by layout, 
+      // but we keep this effect for any page-specific initializations if needed
     }
   }, [user, isLoadingAuth]);
 
   const fetchEarnings = async () => {
     try {
       setIsLoading(true);
-      // For now, reusing the instructor earnings endpoint
-      // Historically, admins might have a parameterized version like /admin/instructors/:id/earnings
       const response: any = await api.get('/instructor/earnings');
       setEarnings(response.data);
       toast.success('Calculated latest yields');
@@ -55,35 +51,32 @@ const AdminEarningsReport = () => {
     }
   };
 
-  if (isLoadingAuth) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
-        <Loader2 className="animate-spin text-blue-600 mb-6" size={48} />
-        <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">Initializing Authority Node</p>
+      <div className="flex flex-col items-center justify-center py-32">
+        <Loader2 className="animate-spin text-blue-600 mb-6" size={32} />
+        <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">Processing Yield Data</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-transparent pt-12 pb-24">
-      <div className="container mx-auto px-6 lg:px-12">
-        {/* Header */}
+    <div className="px-12 pb-24">
+      <div className="container mx-auto">
+        {/* Header - toned down */}
         <div className="mb-16 flex flex-col md:flex-row md:items-center justify-between gap-8">
            <div>
-              <Link 
-                href="/admin/courses" 
-                className="flex items-center gap-3 text-slate-400 hover:text-slate-900 transition-colors mb-6 group"
-              >
-                 <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                 <span className="text-[10px] font-black uppercase tracking-widest">Back to Catalog</span>
-              </Link>
-              <h1 className="text-4xl lg:text-5xl font-black text-slate-950 uppercase tracking-tighter leading-none">
+              <div className="flex items-center gap-3 mb-2">
+                 <Shield size={14} className="text-blue-600" />
+                 <span className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-600">Personnel Audit Module</span>
+              </div>
+              <h1 className="text-4xl font-black text-slate-950 uppercase tracking-tighter leading-none">
                 Instructor <span className="text-blue-600">Earnings</span> Report
               </h1>
-              <p className="text-slate-400 font-medium mt-4">Authority view for inspecting faculty yields and pending settlements.</p>
+              <p className="text-slate-400 text-sm font-medium mt-4">Authority view for inspecting faculty yields and settlements.</p>
            </div>
            
-           <div className="flex bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
+           <div className="flex bg-white p-2 rounded-2xl border border-slate-100 shadow-sm self-start">
               <button className="px-6 py-2 bg-slate-950 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Real-time Estimates</button>
               <button className="px-6 py-2 text-slate-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:text-slate-900 transition-colors">Settlement History</button>
            </div>

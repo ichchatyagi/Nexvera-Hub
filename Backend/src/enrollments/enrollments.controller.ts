@@ -45,3 +45,22 @@ export class EnrollmentsController {
     return this.enrollmentsService.updateProgress(courseId, user.id, dto);
   }
 }
+
+@Controller('admin')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
+export class AdminEnrollmentsController {
+  constructor(private readonly enrollmentsService: EnrollmentsService) {}
+
+  @Get('courses/:id/enrollments')
+  async getCourseEnrollments(@Param('id') courseId: string) {
+    const list = await this.enrollmentsService.findByCourse(courseId);
+    return { success: true, data: list };
+  }
+
+  @Get('users/:userId/enrollments')
+  async getUserEnrollments(@Param('userId') userId: string) {
+    const list = await this.enrollmentsService.findByStudent(userId);
+    return { success: true, data: list };
+  }
+}

@@ -4,7 +4,10 @@ import {
   Put,
   Body,
   Param,
+  Query,
   UseGuards,
+  NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -51,5 +54,48 @@ export class UsersController {
   @Get('admin/dashboard')
   async adminDashboard() {
     return { success: true, data: { message: 'Admin dashboard – coming soon' } };
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Get()
+  async adminListUsers(
+    @Query('role') role?: UserRole,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+  ) {
+    const users = await this.usersService.listUsers({ role, status, search });
+    return { success: true, data: users.map(mapUserToResponse) };
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Get(':id')
+  async adminGetUser(@Param('id') id: string) {
+    const user = await this.usersService.findById(id);
+    if (!user) throw new NotFoundException('User not found');
+    return { success: true, data: mapUserToResponse(user) };
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Put(':id/role')
+  async adminUpdateRole(
+    @Param('id') id: string,
+    @Body('role') role: UserRole,
+  ) {
+    const updated = await this.usersService.updateRole(id, role);
+    return { success: true, data: mapUserToResponse(updated) };
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Put(':id/status')
+  async adminUpdateStatus(
+    @Param('id') id: string,
+    @Body('status') status: string,
+  ) {
+    const updated = await this.usersService.updateStatus(id, status);
+    return { success: true, data: mapUserToResponse(updated) };
   }
 }
