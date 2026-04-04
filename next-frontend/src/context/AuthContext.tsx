@@ -18,10 +18,11 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (data: any) => Promise<void>;
-  register: (data: any) => Promise<void>;
+  login: (data: any) => Promise<any>;
+  register: (data: any) => Promise<any>;
   logout: () => void;
   updateUser: (data: Partial<User>) => void;
+  manuallyVerify: (tokens: { accessToken: string; refreshToken: string; user: User }) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -61,8 +62,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (data: any) => {
     try {
       setIsLoading(true);
-      // api.ts interceptor unwraps {success, data} into the response.data field
       const response: any = await api.post('/auth/login', data);
+      
+      // Check if verification is needed (API returns status 200 but might have custom error response or success: false if handled)
+      // Actually my backend returns success: false with statusCode 403.
+      // Axios usually throws on 403. 
+      // But let's check the unwrapped response data.
+      if (response.data?.isVerified === false) {
+        return response.data; // Return to allow page to handle verification
+      }
+
       const { accessToken, refreshToken, user: userData } = response.data;
       
       setCookie('access_token', accessToken);
@@ -70,7 +79,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('access_token', accessToken);
       localStorage.setItem('refresh_token', refreshToken);
       
-      // Fallback for missing name field
       if (!userData.name && userData.email) {
         userData.name = userData.email.split('@')[0];
       }
@@ -78,7 +86,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(userData);
       toast.success('Successfully logged in!');
       router.push('/');
+      return response.data;
     } catch (error: any) {
+      // Special handle for 403 Account Unverified
+      if (error.response?.data?.statusCode === 403) {
+        return error.response.data;
+      }
       toast.error(error.response?.data?.message || 'Login failed');
       throw error;
     } finally {
@@ -89,8 +102,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (data: any) => {
     try {
       setIsLoading(true);
-      // api.ts interceptor unwraps {success, data} into the response.data field
       const response: any = await api.post('/auth/register', data);
+      
+      if (response.data?.isVerified === false) {
+        toast.success('Registration successful! Please verify your email.');
+        return response.data;
+      }
+
       const { accessToken, refreshToken, user: userData } = response.data;
       
       setCookie('access_token', accessToken);
@@ -98,7 +116,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('access_token', accessToken);
       localStorage.setItem('refresh_token', refreshToken);
       
-      // Fallback for missing name field
       if (!userData.name && userData.email) {
         userData.name = userData.email.split('@')[0];
       }
@@ -106,12 +123,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(userData);
       toast.success('Registration successful!');
       router.push('/');
+      return response.data;
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Registration failed');
       throw error;
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const manuallyVerify = (data: { accessToken: string; refreshToken: string; user: any }) => {
+    const { accessToken, refreshToken, user: userData } = data;
+    setCookie('access_token', accessToken);
+    setCookie('refresh_token', refreshToken);
+    localStorage.setItem('access_token', accessToken);
+    localStorage.setItem('refresh_token', refreshToken);
+    setUser(userData);
+    router.push('/');
   };
 
   const logout = () => {
@@ -131,7 +159,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, register, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, register, logout, updateUser, manuallyVerify }}>
       {children}
     </AuthContext.Provider>
   );

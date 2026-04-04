@@ -21,26 +21,29 @@ export class UsersService {
     email: string,
     password: string,
     role: UserRole,
+    name?: string,
   ): Promise<User> {
-    const existing = await this.userRepository.findOne({ where: { email } });
+    const normalizedEmail = email.toLowerCase();
+    const existing = await this.userRepository.findOne({ where: { email: normalizedEmail } });
     if (existing) {
       throw new ConflictException('Email already registered');
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
     const user = this.userRepository.create({
-      email,
+      email: normalizedEmail,
+      name,
       passwordHash,
       role,
       emailVerified: false,
-      status: 'active',
+      status: 'pending',
     });
 
     return this.userRepository.save(user);
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.userRepository.findOne({ where: { email } });
+    return this.userRepository.findOne({ where: { email: email.toLowerCase() } });
   }
 
   async findById(id: string): Promise<User | null> {
@@ -80,7 +83,8 @@ export class UsersService {
     if (user) return user;
 
     // Try find by email (link existing account)
-    user = await this.userRepository.findOne({ where: { email } });
+    const normalizedEmail = email.toLowerCase();
+    user = await this.userRepository.findOne({ where: { email: normalizedEmail } });
     if (user) {
       user.googleId = googleId;
       if (emailVerified) user.emailVerified = true;
@@ -89,7 +93,7 @@ export class UsersService {
 
     // Create brand-new user
     const newUser = this.userRepository.create({
-      email,
+      email: normalizedEmail,
       googleId,
       role: UserRole.STUDENT,
       emailVerified,
@@ -133,6 +137,45 @@ export class UsersService {
     }
 
     user.status = status;
+    return this.userRepository.save(user);
+  }
+
+  async setResetOtp(email: string, otp: string, expiresAt: Date): Promise<User> {
+    const user = await this.findByEmail(email);
+    if (!user) throw new NotFoundException('User not found');
+
+    user.resetOtp = otp;
+    user.resetOtpExpiresAt = expiresAt;
+    return this.userRepository.save(user);
+  }
+
+  async updatePassword(userId: string, passwordHash: string): Promise<User> {
+    const user = await this.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+
+    user.passwordHash = passwordHash;
+    user.resetOtp = null;
+    user.resetOtpExpiresAt = null;
+    return this.userRepository.save(user);
+  }
+
+  async setVerificationOtp(email: string, otp: string, expiresAt: Date): Promise<User> {
+    const user = await this.findByEmail(email);
+    if (!user) throw new NotFoundException('User not found');
+
+    user.verificationOtp = otp;
+    user.verificationOtpExpiresAt = expiresAt;
+    return this.userRepository.save(user);
+  }
+
+  async activateUser(userId: string): Promise<User> {
+    const user = await this.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+
+    user.emailVerified = true;
+    user.status = 'active';
+    user.verificationOtp = null;
+    user.verificationOtpExpiresAt = null;
     return this.userRepository.save(user);
   }
 }

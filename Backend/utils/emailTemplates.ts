@@ -669,3 +669,229 @@ Get consultancy support to choose the right path for your career.
 </body>
 </html>
 `;
+export const otpTemplate = (data: { name: string; otp: string }) => `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nexvera Hub Password Reset OTP</title>
+</head>
+
+<body style="margin:0; background:linear-gradient(to bottom right, #e6f0ff, #4a7bdc); font-family:Arial, sans-serif;">
+
+<table width="100%" cellspacing="0" cellpadding="0">
+<tr>
+<td align="center">
+
+<!-- Main Container -->
+<table width="600" cellspacing="0" cellpadding="0" style="background:#f5f7fb; margin-top:40px; border-radius:20px;">
+
+<!-- Logo -->
+<tr>
+<td align="center">
+<br>
+<img src="https://nexverahub.com/logo.png" width="150">
+</td>
+</tr>
+
+<!-- Icon -->
+<tr>
+<td align="center">
+<br>
+<div style="width:80px; height:80px; background:#3b6edc; border-radius:50%; line-height:80px; color:white; font-size:40px;">
+🔑
+</div>
+</td>
+</tr>
+
+<!-- Heading -->
+<tr>
+<td align="center">
+<h2 style="color:#1e2a55;">Password Reset Request</h2>
+<p style="color:#3b6edc; font-weight:bold;">Security Verification Required</p>
+</td>
+</tr>
+
+<!-- Content -->
+<tr>
+<td style="padding-left:40px; padding-right:40px;">
+<p><b>Hi ${data.name},</b></p>
+
+<p style="color:#555;">
+We received a request to reset the password for your Nexvera Hub account. Use the OTP below to proceed with the reset.
+</p>
+</td>
+</tr>
+
+<!-- OTP Box -->
+<tr>
+<td align="center">
+<div style="background:#ffffff; border: 2px dashed #3b6edc; border-radius:12px; padding: 20px; display: inline-block; margin: 20px 0;">
+    <span style="font-family: 'Courier New', Courier, monospace; font-size: 36px; font-weight: 900; color: #1e2a55; letter-spacing: 12px; text-transform: uppercase;">${data.otp}</span>
+</div>
+<p style="color: #64748b; font-size: 12px; margin-bottom: 20px;">This code is valid for 10 minutes.</p>
+</td>
+</tr>
+
+<!-- Warning Box -->
+<tr>
+<td align="center">
+
+<table width="520" cellspacing="0" cellpadding="0" style="background:#fff1f1; border-radius:10px;">
+
+<tr>
+<td style="padding: 20px;">
+<p style="margin: 0; color: #991b1b; font-size: 14px;">
+<b>Didn't request this?</b> If you didn't initiate this request, you can safely ignore this email. Your account remains secure.
+</p>
+</td>
+</tr>
+
+</table>
+
+</td>
+</tr>
+
+<!-- Signature -->
+<tr>
+<td align="center">
+<br>
+<p>Best Regards,</p>
+<b>The Nexvera Hub Security Team</b>
+</td>
+</tr>
+
+<!-- Footer -->
+<tr>
+<td align="center" style="background:linear-gradient(to right, #4a7bdc, #3b6edc); color:white; border-bottom-left-radius:20px; border-bottom-right-radius:20px;">
+
+<br>
+
+<p>Securing Your Future.</p>
+
+<p style="font-size:12px;">
+🌐 <a href="https://www.nexverahub.com/" style="color:white; text-decoration:none;">www.nexverahub.com</a> &nbsp;&nbsp;
+✉ contact@nexverahub.com
+</p>
+
+<p style="font-size:12px;">
+©️ 2026 Nexvera Hub. All rights reserved.
+</p>
+
+<br>
+
+</td>
+</tr>
+
+</table>
+
+</td>
+</tr>
+</table>
+
+</body>
+</html>
+`;
+
+export const verificationTemplate = (data: { name: string; otp: string }) => `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Verify Your Nexvera Hub Account</title>
+</head>
+
+<body style="margin:0; background:linear-gradient(to bottom right, #e6f0ff, #4a7bdc); font-family:Arial, sans-serif;">
+
+<table width="100%" cellspacing="0" cellpadding="0">
+<tr>
+<td align="center">
+
+<!-- Main Container -->
+<table width="600" cellspacing="0" cellpadding="0" style="background:#f5f7fb; margin-top:40px; border-radius:20px;">
+
+<!-- Logo -->
+<tr>
+<td align="center">
+<br>
+<img src="https://nexverahub.com/logo.png" width="150">
+</td>
+</tr>
+
+<!-- Icon -->
+<tr>
+<td align="center">
+<br>
+<div style="width:80px; height:80px; background:#3b6edc; border-radius:50%; line-height:80px; color:white; font-size:40px;">
+📧
+</div>
+</td>
+</tr>
+
+<!-- Heading -->
+<tr>
+<td align="center">
+<h2 style="color:#1e2a55;">Verify Your Identity</h2>
+<p style="color:#3b6edc; font-weight:bold;">Final Step to Join Nexvera Hub</p>
+</td>
+</tr>
+
+<!-- Content -->
+<tr>
+<td style="padding-left:40px; padding-right:40px;">
+<p><b>Hi ${data.name},</b></p>
+
+<p style="color:#555;">
+Thank you for starting your journey with Nexvera Hub! To activate your account and access the platform, please verify your email address using the code below.
+</p>
+</td>
+</tr>
+
+<!-- OTP Box -->
+<tr>
+<td align="center">
+<div style="background:#ffffff; border: 2px dashed #3b6edc; border-radius:12px; padding: 20px; display: inline-block; margin: 20px 0;">
+    <span style="font-family: 'Courier New', Courier, monospace; font-size: 36px; font-weight: 900; color: #1e2a55; letter-spacing: 12px; text-transform: uppercase;">${data.otp}</span>
+</div>
+<p style="color: #64748b; font-size: 12px; margin-bottom: 20px;">This verification code is valid for 15 minutes.</p>
+</td>
+</tr>
+
+<!-- Signature -->
+<tr>
+<td align="center">
+<br>
+<p>Welcome to the Elite,</p>
+<b>The Nexvera Hub Onboarding Team</b>
+</td>
+</tr>
+
+<!-- Footer -->
+<tr>
+<td align="center" style="background:linear-gradient(to right, #4a7bdc, #3b6edc); color:white; border-bottom-left-radius:20px; border-bottom-right-radius:20px;">
+
+<br>
+
+<p>Your Success Story Starts Here.</p>
+
+<p style="font-size:12px;">
+🌐 <a href="https://www.nexverahub.com/" style="color:white; text-decoration:none;">www.nexverahub.com</a> &nbsp;&nbsp;
+✉ contact@nexverahub.com
+</p>
+
+<p style="font-size:12px;">
+©️ 2026 Nexvera Hub. All rights reserved.
+</p>
+
+<br>
+
+</td>
+</tr>
+
+</table>
+
+</td>
+</tr>
+</table>
+
+</body>
+</html>
+`;

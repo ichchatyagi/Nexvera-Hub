@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -9,7 +10,7 @@ import { UsersService } from '../users/users.service';
 import { ContactService } from '../contact/contact.service';
 import { AppConfigService } from '../app-config/app-config.service';
 import { User, UserRole } from '../users/entities/user.entity';
-import { RegisterDto, LoginDto, RefreshTokenDto } from './dto/auth.dto';
+import { RegisterDto, LoginDto, RefreshTokenDto, ForgotPasswordDto, ResetPasswordDto, VerifyOtpDto } from './dto/auth.dto';
 import { mapUserToResponse } from '../users/dto/user-response.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
 
@@ -67,19 +68,36 @@ export class AuthService {
       );
     }
 
-    const user = await this.usersService.create(dto.email, dto.password, role);
-    const tokens = this.buildTokens(user);
+    const user = await this.usersService.create(
+      dto.email,
+      dto.password,
+      role,
+      dto.name,
+    );
 
-    // Send Signup Email (Async, don't wait to avoid slowing down response)
-    console.log('Register success, initiating signup email...');
-    const fallbackName = dto.email.split('@')[0];
-    this.contactService.sendSignupEmail(user.email, fallbackName).catch((err) => {
-      console.error('Failed to send signup email:', err);
+    // Generate Verification OTP
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let otp = '';
+    for (let i = 0; i < 5; i++) {
+      otp += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+
+    await this.usersService.setVerificationOtp(user.email, otp, expiresAt);
+
+    // Send Verification Email
+    const displayName = user.name || user.email.split('@')[0];
+    this.contactService.sendVerificationEmail(user.email, displayName, otp).catch((err) => {
+      console.error('Failed to send verification email:', err);
     });
 
     return {
       success: true,
-      data: { user: mapUserToResponse(user), ...tokens },
+      message: 'Registration successful. Please verify your email.',
+      data: { 
+        user: { email: user.email, name: user.name, status: user.status },
+        isVerified: false 
+      },
     };
   }
 
@@ -98,12 +116,21 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
+    if (user.status === 'pending' || !user.emailVerified) {
+      return {
+        success: false,
+        statusCode: 403,
+        message: 'Account not verified. Please verify your email.',
+        data: { email: user.email, isVerified: false }
+      };
+    }
+
     const tokens = this.buildTokens(user);
 
     // Send Login Email (Async)
     console.log('Login success, initiating login email...');
-    const fallbackName = user.email.split('@')[0];
-    this.contactService.sendLoginEmail(user.email, fallbackName).catch((err) => {
+    const displayName = user.name || user.email.split('@')[0];
+    this.contactService.sendLoginEmail(user.email, displayName).catch((err) => {
       console.error('Failed to send login email:', err);
     });
 
@@ -165,21 +192,138 @@ export class AuthService {
   // forgot / reset password (stubs)
   // -----------------------------------------------------------------------
 
-  async forgotPassword(email: string) {
-    // TODO: generate reset token, store in DB, send email
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const user = await this.usersService.findByEmail(dto.email);
+    // Even if user not found, we return success to prevent email enumeration
+    if (!user) {
+      return {
+        success: true,
+        data: { message: 'If this email exists, a reset code has been sent' },
+      };
+    }
+
+    // Generate 5-character alphanumeric OTP in uppercase
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Avoid ambiguous chars
+    let otp = '';
+    for (let i = 0; i < 5; i++) {
+      otp += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await this.usersService.setResetOtp(user.email, otp, expiresAt);
+
+    // Send OTP Email
+    const displayName = user.name || user.email.split('@')[0];
+    this.contactService.sendOtpEmail(user.email, displayName, otp).catch((err) => {
+      console.error('Failed to send OTP email:', err);
+    });
+
     return {
       success: true,
-      data: { message: 'If this email exists, a reset link has been sent' },
+      data: { message: 'If this email exists, a reset code has been sent' },
     };
   }
 
-  async resetPassword(_token: string, _newPassword: string) {
-    // TODO: verify reset token from DB, hash newPassword, update user
-    return { success: true, data: { message: 'Password reset — implement token verification' } };
+  async verifyOtp(dto: VerifyOtpDto) {
+    const user = await this.usersService.findByEmail(dto.email);
+    if (!user || !user.resetOtp || !user.resetOtpExpiresAt) {
+      throw new UnauthorizedException('Invalid or expired OTP');
+    }
+
+    if (new Date() > user.resetOtpExpiresAt) {
+      throw new UnauthorizedException('OTP has expired');
+    }
+
+    if (user.resetOtp.toUpperCase() !== dto.otp.toUpperCase()) {
+      throw new UnauthorizedException('Invalid OTP');
+    }
+
+    return {
+      success: true,
+      data: { message: 'OTP verified successfully' },
+    };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const user = await this.usersService.findByEmail(dto.email);
+    if (!user || !user.resetOtp || !user.resetOtpExpiresAt) {
+      throw new UnauthorizedException('Invalid or expired OTP');
+    }
+
+    if (new Date() > user.resetOtpExpiresAt) {
+      throw new UnauthorizedException('OTP has expired');
+    }
+
+    if (user.resetOtp.toUpperCase() !== dto.otp.toUpperCase()) {
+      throw new UnauthorizedException('Invalid OTP');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, 10);
+    await this.usersService.updatePassword(user.id, passwordHash);
+
+    return {
+      success: true,
+      data: { message: 'Password has been reset successfully' },
+    };
+  }
+
+  async verifyRegistrationOtp(dto: VerifyOtpDto) {
+    const user = await this.usersService.findByEmail(dto.email);
+    if (!user || user.status !== 'pending' || !user.verificationOtp || !user.verificationOtpExpiresAt) {
+      throw new UnauthorizedException('Invalid verification request');
+    }
+
+    if (new Date() > user.verificationOtpExpiresAt) {
+      throw new UnauthorizedException('Verification code has expired');
+    }
+
+    if (user.verificationOtp.toUpperCase() !== dto.otp.toUpperCase()) {
+      throw new UnauthorizedException('Invalid verification code');
+    }
+
+    const updatedUser = await this.usersService.activateUser(user.id);
+    const tokens = this.buildTokens(updatedUser);
+
+    // Send Welcome Email now that they are verified
+    console.log('Email verified, initiating welcome email...');
+    const displayName = updatedUser.name || updatedUser.email.split('@')[0];
+    this.contactService.sendSignupEmail(updatedUser.email, displayName).catch((err) => {
+      console.error('Failed to send signup email:', err);
+    });
+
+    return {
+      success: true,
+      message: 'Account verified successfully!',
+      data: { user: mapUserToResponse(updatedUser), ...tokens },
+    };
+  }
+
+  async resendVerificationOtp(email: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user || user.status !== 'pending') {
+      throw new BadRequestException('Verification not required for this account');
+    }
+
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let otp = '';
+    for (let i = 0; i < 5; i++) {
+      otp += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+    await this.usersService.setVerificationOtp(user.email, otp, expiresAt);
+    const displayName = user.name || user.email.split('@')[0];
+    await this.contactService.sendVerificationEmail(user.email, displayName, otp);
+
+    return {
+      success: true,
+      message: 'New verification code sent!',
+    };
   }
 
   async verifyEmail(_token: string) {
-    // TODO: mark user.emailVerified = true based on signed token
-    return { success: true, data: { message: 'Email verification — implement token lookup' } };
+    // Legacy support for token-based verification if needed
+    return { success: true, data: { message: 'Email verification — use OTP portal' } };
   }
 }

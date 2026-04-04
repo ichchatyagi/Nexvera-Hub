@@ -15,6 +15,7 @@ import {
   GoogleAuthDto,
   ForgotPasswordDto,
   ResetPasswordDto,
+  VerifyOtpDto,
 } from './dto/auth.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 
@@ -24,8 +25,18 @@ export class AuthController {
 
   @Post('register')
   register(@Body() dto: RegisterDto) {
-    console.log(`[AuthController] Received register request for: ${dto.email}`);
+    console.log(`[AuthController] Received register request for: \${dto.email}`);
     return this.authService.register(dto);
+  }
+
+  @Post('verify-registration-otp')
+  verifyRegistrationOtp(@Body() dto: VerifyOtpDto) {
+    return this.authService.verifyRegistrationOtp(dto);
+  }
+
+  @Post('resend-verification-otp')
+  resendVerificationOtp(@Body('email') email: string) {
+    return this.authService.resendVerificationOtp(email);
   }
 
   @Post('login')
@@ -52,12 +63,17 @@ export class AuthController {
 
   @Post('forgot-password')
   forgotPassword(@Body() dto: ForgotPasswordDto) {
-    return this.authService.forgotPassword(dto.email);
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Post('verify-otp')
+  verifyOtp(@Body() dto: VerifyOtpDto) {
+    return this.authService.verifyOtp(dto);
   }
 
   @Post('reset-password')
   resetPassword(@Body() dto: ResetPasswordDto) {
-    return this.authService.resetPassword(dto.token, dto.newPassword);
+    return this.authService.resetPassword(dto);
   }
 
   @Get('verify-email/:token')

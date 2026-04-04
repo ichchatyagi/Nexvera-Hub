@@ -9,6 +9,10 @@ import {
 import { UserRole } from '../../users/entities/user.entity';
 
 export class RegisterDto {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
   @IsEmail()
   email: string;
 
@@ -48,10 +52,22 @@ export class ForgotPasswordDto {
   email: string;
 }
 
-export class ResetPasswordDto {
+export class VerifyOtpDto {
+  @IsEmail()
+  email: string;
+
   @IsString()
   @IsNotEmpty()
-  token: string;
+  otp: string;
+}
+
+export class ResetPasswordDto {
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  otp: string;
 
   @IsString()
   @MinLength(8)
