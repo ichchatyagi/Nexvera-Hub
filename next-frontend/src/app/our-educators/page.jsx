@@ -118,8 +118,8 @@ const OurEducators = () => {
                                 transition={{ delay: 0.3 }}
                                 className="flex flex-wrap justify-center lg:justify-start gap-6"
                             >
-                                <Link href="/course" className="group bg-gradient-to-r from-blue-700 to-blue-900 border border-white/10 text-white font-black px-10 py-5 rounded-2xl shadow-2xl hover:shadow-blue-500/20 transition-all active:scale-95 flex items-center gap-4 uppercase tracking-widest text-xs">
-                                    View Courses
+                                <Link href="/courses" className="group bg-gradient-to-r from-blue-700 to-blue-900 border border-white/10 text-white font-black px-10 py-5 rounded-2xl shadow-2xl hover:shadow-blue-500/20 transition-all active:scale-95 flex items-center gap-4 uppercase tracking-widest text-xs">
+                                    View Catalog
                                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </Link>
                                 <Link href="/contact" className="bg-white border border-slate-200 text-slate-800 font-black px-10 py-5 rounded-2xl shadow-xl hover:shadow-2xl transition-all active:scale-95 flex items-center gap-4 uppercase tracking-widest text-xs">
@@ -156,9 +156,9 @@ const OurEducators = () => {
                         {/* Growth Level Section */}
                         <div className="flex flex-col">
                             <SectionHeader 
-                                title="Growth Level"
-                                subtitle="Elite industry practitioners providing high-growth mentorship. Private enrollment details revealed to students."
-                                badge="Exclusive Tier"
+                                title="Academic Faculty"
+                                subtitle="Elite industry practitioners assigned by Nexvera Hub for specialized mentorship. Instructor details are revealed to enrolled students."
+                                badge="Expert Tier"
                                 icon={GraduationCap}
                             />
                             

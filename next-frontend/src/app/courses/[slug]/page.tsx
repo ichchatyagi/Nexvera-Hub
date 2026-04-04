@@ -168,12 +168,12 @@ const CourseDetail = () => {
 
               <div className="flex flex-wrap items-center gap-12 pt-8 border-t border-white/10">
                 <div className="flex flex-col gap-2">
-                  <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Instructor</span>
+                  <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Provider</span>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-blue-500 font-bold">
-                       {course.teacher_name.charAt(0)}
+                    <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-[10px]">
+                       NX
                     </div>
-                    <span className="text-sm font-bold uppercase tracking-tight">{course.teacher_name}</span>
+                    <span className="text-sm font-bold uppercase tracking-tight">Nexvera Hub Official</span>
                   </div>
                 </div>
 
@@ -328,19 +328,25 @@ const CourseDetail = () => {
 
             <div className="mb-20">
                  <h2 className="text-3xl font-black text-slate-950 uppercase tracking-tighter mb-8 border-l-4 border-cyan-400 pl-6">
-                   Instructor <span className="text-cyan-500">Mentorship</span>
+                   Academic <span className="text-cyan-500">Mentorship</span>
                  </h2>
                  <div className="bg-white p-10 rounded-[3rem] border border-slate-100 flex flex-col md:flex-row gap-10 items-center md:items-start shadow-sm">
                     <div className="w-40 h-40 rounded-[2.5rem] bg-gradient-to-br from-blue-600 to-cyan-500 p-1 shrink-0 overflow-hidden shadow-2xl">
-                       <div className="w-full h-full bg-white rounded-[2.3rem] flex items-center justify-center text- blue-600 text-6xl font-black">
-                          {course.teacher_name.charAt(0)}
+                       <div className="w-full h-full bg-white rounded-[2.3rem] flex items-center justify-center text-blue-600 text-6xl font-black">
+                         {isEnrolled && course.teacher_name ? course.teacher_name.charAt(0) : "N"}
                        </div>
                     </div>
                     <div className="flex-1 text-center md:text-left">
-                       <h4 className="text-2xl font-black text-slate-900 uppercase tracking-tighter mb-2">{course.teacher_name}</h4>
-                       <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] mb-6 block">Senior Academic Mentor</span>
+                       <h4 className="text-2xl font-black text-slate-900 uppercase tracking-tighter mb-2">
+                         {isEnrolled && course.teacher_name ? course.teacher_name : "Expert Nexvera Instructor"}
+                       </h4>
+                       <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] mb-6 block">Nexvera Academic Faculty</span>
                        <p className="text-base text-slate-500 leading-relaxed font-medium">
-                          {course.teacher_bio || "Expert educator with a passion for simplifying complex academic concepts and guiding students toward excellence."}
+                          {isEnrolled && course.teacher_bio 
+                            ? course.teacher_bio 
+                            : isEnrolled 
+                              ? "Your instructor is currently being assigned to this cohort. You will be notified before the first live session."
+                              : "This course is delivered by Nexvera's elite faculty. Our instructors are industry veterans chosen for their technical expertise and pedagogical excellence."}
                        </p>
                     </div>
                  </div>

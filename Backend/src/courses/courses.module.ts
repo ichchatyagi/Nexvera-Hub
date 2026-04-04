@@ -4,6 +4,7 @@ import { Course, CourseSchema } from './schemas/course.schema';
 import { Review, ReviewSchema } from './schemas/review.schema';
 import { CoursesService } from './courses.service';
 import { CoursesController } from './courses.controller';
+import { TeacherCoursesController } from './teacher-courses.controller';
 
 @Module({
   imports: [
@@ -13,7 +14,7 @@ import { CoursesController } from './courses.controller';
     ]),
   ],
   providers: [CoursesService],
-  controllers: [CoursesController],
+  controllers: [CoursesController, TeacherCoursesController],
   exports: [CoursesService],
 })
 export class CoursesModule {}

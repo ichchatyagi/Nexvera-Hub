@@ -41,6 +41,9 @@ export class User {
   @Column({ type: 'varchar', length: 20, default: 'active' })
   status: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  stripeAccountId: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

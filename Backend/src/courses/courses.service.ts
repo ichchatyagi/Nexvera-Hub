@@ -3,7 +3,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Course, CourseDocument } from './schemas/course.schema';
 import { Review, ReviewDocument } from './schemas/review.schema';
-import { CreateCourseDto, UpdateCourseDto, CreateReviewDto } from './dto/course.dto';
+import { CreateCourseDto, UpdateCourseDto, CreateReviewDto, AssignInstructorDto } from './dto/course.dto';
+import { CreateSectionDto, UpdateSectionDto, CreateLessonDto, UpdateLessonDto } from './dto/curriculum.dto';
 
 @Injectable()
 export class CoursesService {
@@ -62,41 +63,35 @@ export class CoursesService {
     return { success: true, data: course.curriculum };
   }
 
-  async create(teacherId: string, createDto: CreateCourseDto) {
+  async create(createDto: CreateCourseDto) {
     const created = await this.courseModel.create({
       ...createDto,
-      teacher_id: teacherId,
       status: 'draft',
     });
     return { success: true, data: created };
   }
 
-  async update(id: string, teacherId: string, updateDto: UpdateCourseDto) {
+  async update(id: string, updateDto: UpdateCourseDto) {
     if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Invalid ID');
     const course = await this.courseModel.findById(id).exec();
     if (!course) throw new NotFoundException('Course not found');
     
-    // Check ownership
-    if (course.teacher_id !== teacherId) throw new ForbiddenException('Not your course');
-
     Object.assign(course, updateDto);
     await course.save();
 
     return { success: true, data: course };
   }
 
-  async remove(id: string, teacherId: string) {
+  async remove(id: string) {
     if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Invalid ID');
     const course = await this.courseModel.findById(id).exec();
     if (!course) throw new NotFoundException('Course not found');
-    
-    if (course.teacher_id !== teacherId) throw new ForbiddenException('Not your course');
 
     await this.courseModel.findByIdAndDelete(id).exec();
     return { success: true, data: { deleted: true } };
   }
 
-  async publish(id: string, teacherId: string, status: string) {
+  async publish(id: string, status: string) {
     if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Invalid ID');
     if (!['pending_review', 'published', 'draft'].includes(status)) {
         status = 'pending_review';
@@ -104,8 +99,6 @@ export class CoursesService {
 
     const course = await this.courseModel.findById(id).exec();
     if (!course) throw new NotFoundException('Course not found');
-    
-    if (course.teacher_id !== teacherId) throw new ForbiddenException('Not your course');
 
     course.status = status;
     if (status === 'published') {
@@ -113,6 +106,161 @@ export class CoursesService {
     }
     await course.save();
     return { success: true, data: course };
+  }
+
+  async findAssignedToTeacher(teacherId: string) {
+    // Returns courses where the teacher is either lead or in assigned list.
+    const courses = await this.courseModel.find({
+      $or: [
+        { lead_instructor_id: teacherId },
+        { assigned_instructor_ids: teacherId }
+      ]
+    }).exec();
+    
+    return { success: true, data: courses };
+  }
+
+  async getTeacherCourseView(id: string, teacherId: string) {
+    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Invalid ID');
+    
+    const course = await this.courseModel.findOne({
+      _id: new Types.ObjectId(id),
+      $or: [
+        { lead_instructor_id: teacherId },
+        { assigned_instructor_ids: teacherId }
+      ]
+    }).exec();
+
+    if (!course) throw new ForbiddenException('Not assigned to this course');
+
+    // In a mature app, this would include roster, schedule, etc.
+    return { success: true, data: course };
+  }
+
+  // ── Admin Assignment ──────────────────────────────────────────────────
+
+  async assignInstructor(id: string, dto: AssignInstructorDto) {
+    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Invalid ID');
+    const course = await this.courseModel.findById(id).exec();
+    if (!course) throw new NotFoundException('Course not found');
+
+    if (dto.is_lead) {
+      course.lead_instructor_id = dto.instructor_id;
+    }
+
+    if (!course.assigned_instructor_ids.includes(dto.instructor_id)) {
+      course.assigned_instructor_ids.push(dto.instructor_id);
+    }
+
+    await course.save();
+    return { success: true, data: course };
+  }
+
+  async unassignInstructor(id: string, instructorId: string) {
+    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Invalid ID');
+    const course = await this.courseModel.findById(id).exec();
+    if (!course) throw new NotFoundException('Course not found');
+
+    course.assigned_instructor_ids = course.assigned_instructor_ids.filter(id => id !== instructorId);
+    
+    if (course.lead_instructor_id === instructorId) {
+      course.lead_instructor_id = undefined; // Or leave TODO for reassignment
+    }
+
+    await course.save();
+    return { success: true, data: course };
+  }
+
+  // ── Teacher Curriculum Management ──────────────────────────────────────
+
+  async addSectionForTeacher(id: string, teacherId: string, dto: CreateSectionDto) {
+    const { data: course } = await this.getTeacherCourseView(id, teacherId);
+    
+    const newSection = {
+      section_id: new Types.ObjectId(),
+      title: dto.title,
+      order: dto.order ?? course.curriculum.length,
+      lessons: [],
+    };
+
+    course.curriculum.push(newSection);
+    await course.save();
+    return { success: true, data: newSection };
+  }
+
+  async updateSectionForTeacher(id: string, teacherId: string, sectionId: string, dto: UpdateSectionDto) {
+    const { data: course } = await this.getTeacherCourseView(id, teacherId);
+    
+    const sectionIndex = course.curriculum.findIndex(s => s.section_id.toString() === sectionId);
+    if (sectionIndex === -1) throw new NotFoundException('Section not found');
+
+    if (dto.title) course.curriculum[sectionIndex].title = dto.title;
+    if (dto.order !== undefined) course.curriculum[sectionIndex].order = dto.order;
+
+    await course.save();
+    return { success: true, data: course.curriculum[sectionIndex] };
+  }
+
+  async addLessonForTeacher(id: string, teacherId: string, sectionId: string, dto: CreateLessonDto) {
+    const { data: course } = await this.getTeacherCourseView(id, teacherId);
+    
+    const sectionIndex = course.curriculum.findIndex(s => s.section_id.toString() === sectionId);
+    if (sectionIndex === -1) throw new NotFoundException('Section not found');
+
+    const content: any = {};
+    if (dto.content) {
+      if (dto.content.video_id) content.video_id = new Types.ObjectId(dto.content.video_id);
+      if (dto.content.live_class_id) content.live_class_id = new Types.ObjectId(dto.content.live_class_id);
+      if (dto.content.quiz_id) content.quiz_id = new Types.ObjectId(dto.content.quiz_id);
+      if (dto.content.resource_url) content.resource_url = dto.content.resource_url;
+    }
+
+    const newLesson = {
+      lesson_id: new Types.ObjectId(),
+      title: dto.title,
+      type: dto.type,
+      order: dto.order ?? course.curriculum[sectionIndex].lessons.length,
+      duration_minutes: dto.duration_minutes,
+      is_preview: dto.is_preview ?? false,
+      content,
+    };
+
+    course.curriculum[sectionIndex].lessons.push(newLesson as any);
+    await course.save();
+    return { success: true, data: newLesson };
+  }
+
+  async updateLessonForTeacher(id: string, teacherId: string, sectionId: string, lessonId: string, dto: UpdateLessonDto) {
+    const { data: course } = await this.getTeacherCourseView(id, teacherId);
+    
+    const sectionIndex = course.curriculum.findIndex(s => s.section_id.toString() === sectionId);
+    if (sectionIndex === -1) throw new NotFoundException('Section not found');
+
+    const lessonIndex = course.curriculum[sectionIndex].lessons.findIndex(l => l.lesson_id.toString() === lessonId);
+    if (lessonIndex === -1) throw new NotFoundException('Lesson not found');
+
+    const lesson = course.curriculum[sectionIndex].lessons[lessonIndex];
+    if (dto.title) lesson.title = dto.title;
+    if (dto.type) lesson.type = dto.type;
+    if (dto.order !== undefined) lesson.order = dto.order;
+    if (dto.duration_minutes !== undefined) lesson.duration_minutes = dto.duration_minutes;
+    if (dto.is_preview !== undefined) lesson.is_preview = dto.is_preview;
+    
+    if (dto.content) {
+      if (!lesson.content) {
+        lesson.content = {} as any;
+      }
+      const content = lesson.content!;
+      if (dto.content.video_id) content.video_id = new Types.ObjectId(dto.content.video_id);
+      if (dto.content.live_class_id) content.live_class_id = new Types.ObjectId(dto.content.live_class_id);
+      if (dto.content.quiz_id) content.quiz_id = new Types.ObjectId(dto.content.quiz_id);
+      if (dto.content.resource_url) content.resource_url = dto.content.resource_url;
+    }
+
+    course.curriculum[sectionIndex].lessons[lessonIndex] = lesson;
+    await course.save();
+    
+    return { success: true, data: lesson };
   }
 
   // REVIEWS

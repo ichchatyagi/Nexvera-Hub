@@ -89,7 +89,7 @@ const CourseCatalog = () => {
                    type="text"
                    value={searchTerm}
                    onChange={(e) => setSearchTerm(e.target.value)}
-                   placeholder="Search for courses, teachers, or topics..."
+                   placeholder="Search our catalog of elite curriculums..."
                    className="w-full py-4 bg-transparent outline-none text-slate-700 font-bold placeholder:text-slate-300"
                  />
                </div>
