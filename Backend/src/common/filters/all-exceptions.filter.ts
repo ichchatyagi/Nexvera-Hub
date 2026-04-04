@@ -15,19 +15,30 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    const message =
+    const exceptionResponse =
       exception instanceof HttpException
         ? exception.getResponse()
         : 'Internal server error';
 
-    this.logger.error(`HTTP Status: ${status} Error Message: ${JSON.stringify(message)}`, exception instanceof Error ? exception.stack : '');
+    // If it's a validation error, standard Nest response is { message: string[], error: string, statusCode: number }
+    // We want to extract the message field which is often a string or string array.
+    let displayMessage: string | string[];
+
+    if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
+      const respObj = exceptionResponse as any;
+      displayMessage = respObj.message || JSON.stringify(respObj);
+    } else {
+      displayMessage = exceptionResponse as string;
+    }
+
+    this.logger.error(`HTTP Status: ${status} Error Message: ${JSON.stringify(displayMessage)}`, exception instanceof Error ? exception.stack : '');
 
     response.status(status).json({
       success: false,
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
-      message,
+      message: displayMessage,
     });
   }
 }

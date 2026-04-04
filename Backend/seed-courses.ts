@@ -1,3 +1,7 @@
+import { NestFactory } from '@nestjs/core';
+import { CoursesService } from './src/courses/courses.service';
+import { AppModule } from './src/app.module';
+
 const itCourseLessons = [
     "Introduction to Technology", "Development Environment Setup", "Core Syntax & Variables", "Data Structures Fundamentals",
     "Logic & Control Flow", "Functions & Scope", "Modular Programming Architecture", "File I/O and Persistence",
@@ -7,9 +11,9 @@ const itCourseLessons = [
     "Software Implementation Phase", "Final Certification Assessment"
 ];
 
-const generateLevels = (subject, hook, outcomes, category, basePrice) => {
-    return (["beginner", "intermediate", "advanced"]).map((level, idx) => {
-        const prices = { 
+const generateLevels = (subject: string, hook: string, outcomes: string[], category: string, basePrice: number) => {
+    return (["beginner", "intermediate", "advanced"] as const).map((level, idx) => {
+        const prices: Record<string, number[]> = { 
             "Python Programming Fundamentals": [649, 1189, 1899], 
             "Web Development Bootcamp": [729, 1349, 1979], 
             "Cybersecurity Essentials": [819, 1219, 2099], 
@@ -30,7 +34,7 @@ const generateLevels = (subject, hook, outcomes, category, basePrice) => {
             short_description: hook,
             category: { main: category, sub: subject, tags: outcomes },
             pricing: { 
-                type: "paid", 
+                type: 'paid', 
                 price: price, 
                 currency: "INR" 
             },
@@ -53,7 +57,12 @@ const generateLevels = (subject, hook, outcomes, category, basePrice) => {
     });
 };
 
-export const itCoursesDetails = [
+async function bootstrap() {
+  const app = await NestFactory.createApplicationContext(AppModule);
+  const coursesService = app.get(CoursesService);
+  const courseModel = (coursesService as any).courseModel;
+
+  const itCourses = [
     ...generateLevels("Python Programming Fundamentals", "Stop writing code. Start engineering solutions.", ["Python", "Logic", "Automation"], "Information Technology", 649),
     ...generateLevels("Web Development Bootcamp", "The Internet is your canvas. Learn to build the digital world.", ["HTML/CSS", "JavaScript", "React"], "Information Technology", 729),
     ...generateLevels("Cybersecurity Essentials", "The digital world is under attack. Become the shield.", ["Networking", "Defense", "Security"], "Information Technology", 819),
@@ -64,5 +73,25 @@ export const itCoursesDetails = [
     ...generateLevels("Networking and System Administration", "Control the wire.", ["OSI Model", "Routers", "SysAdmin"], "Information Technology", 1049),
     ...generateLevels("Database Design & SQL", "Data is the New Oil.", ["SQL", "Normalization", "Architecture"], "Information Technology", 639),
     ...generateLevels("Ethical Hacking and Penetration Testing", "Be the Ethical Shield.", ["Exploits", "Pen-testing", "Ethics"], "Information Technology", 879)
-];
-export const itCoursesDetailsPart2 = [];
+  ];
+
+  console.log(`Seeding ${itCourses.length} IT courses...`);
+  
+  for (const course of itCourses) {
+    try {
+      await courseModel.create(course);
+      console.log(`+ Created: ${course.title}`);
+    } catch (e: any) {
+      if (e.code === 11000) {
+        console.log(`- Skiped (Duplicate): ${course.title}`);
+      } else {
+        console.log(`- Error creating ${course.title}: ${e.message}`);
+      }
+    }
+  }
+  
+  await app.close();
+  console.log('Seeding completed successfully.');
+}
+
+bootstrap();

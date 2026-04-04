@@ -18,9 +18,18 @@ export class CoursesService {
     if (query.category) filters['category.main'] = query.category;
     if (query.level) filters.level = query.level;
     if (query.price_type) filters['pricing.type'] = query.price_type;
+    if (query.search) {
+      filters.$or = [
+        { title: { $regex: query.search, $options: 'i' } },
+        { description: { $regex: query.search, $options: 'i' } }
+      ];
+    }
     // Default to published courses for the public listing.
-    // Pass ?status=draft etc. only if you expose a specific admin endpoint later.
-    filters.status = query.status ?? 'published';
+    if (query.status === 'all') {
+      // Don't filter by status to show all (draft, published, etc.)
+    } else {
+      filters.status = query.status ?? 'published';
+    }
 
     // Pagination
     const page = parseInt(query.page, 10) || 1;

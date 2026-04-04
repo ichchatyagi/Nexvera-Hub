@@ -9,7 +9,7 @@ import {
   ValidateNested,
   IsArray,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 // ----------------------------- Enums as strings ----------------------------
 export enum CoursePricingType {
@@ -99,19 +99,24 @@ export class CreateCourseDto {
 
   @ValidateNested()
   @Type(() => CourseCategoryDto)
-  @IsOptional()
-  category?: CourseCategoryDto;
+  @IsNotEmpty()
+  category: CourseCategoryDto;
 
   @ValidateNested()
   @Type(() => CoursePricingDto)
-  @IsOptional()
-  pricing?: CoursePricingDto;
+  @IsNotEmpty()
+  pricing: CoursePricingDto;
 
   @IsString()
   @IsOptional()
   language?: string;
 
+  @IsString()
+  @IsOptional()
+  thumbnail_url?: string;
+
   @IsIn(Object.values(CourseLevel))
+  @Transform(({ value }) => value?.toLowerCase())
   @IsOptional()
   level?: CourseLevel;
 }
@@ -156,7 +161,12 @@ export class UpdateCourseDto {
   @IsOptional()
   language?: string;
 
+  @IsString()
+  @IsOptional()
+  thumbnail_url?: string;
+
   @IsIn(Object.values(CourseLevel))
+  @Transform(({ value }) => value?.toLowerCase())
   @IsOptional()
   level?: CourseLevel;
 

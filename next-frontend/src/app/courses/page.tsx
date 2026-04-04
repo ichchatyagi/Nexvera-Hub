@@ -9,15 +9,23 @@ import toast from 'react-hot-toast';
 
 interface Course {
   id: string;
+  _id: string;
   slug: string;
   title: string;
   description: string;
-  teacher_name: string;
-  price: number;
-  rating: number;
-  review_count: number;
+  category: {
+    main: string;
+    sub: string;
+  };
+  pricing: {
+    price: number;
+    currency: string;
+  };
+  stats: {
+    average_rating: number;
+    total_reviews: number;
+  };
   level: string;
-  category: string;
   thumbnail_url: string;
 }
 
@@ -27,7 +35,7 @@ const CourseCatalog = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
 
-  const categories = ['All', 'Development', 'Design', 'Business', 'Marketing', 'Data Science'];
+  const categories = ['All', 'Information Technology', 'Development', 'Design', 'Business', 'Marketing', 'Data Science'];
 
   useEffect(() => {
     fetchCourses();
@@ -41,7 +49,7 @@ const CourseCatalog = () => {
       if (searchTerm) params.search = searchTerm;
       
       const response = await api.get('/courses', { params });
-      setCourses(response.data.data || []); // NestJS returns { data, total, page, limit }
+      setCourses(response.data || []); // api interceptor already returns response.data.data
     } catch (error) {
       toast.error('Failed to load courses');
       console.error(error);
@@ -127,7 +135,7 @@ const CourseCatalog = () => {
             <AnimatePresence>
               {courses.map((course, idx) => (
                 <motion.div
-                  key={course.id}
+                  key={course.id || course._id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
@@ -149,7 +157,7 @@ const CourseCatalog = () => {
                       )}
                       <div className="absolute top-4 left-4">
                         <span className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-slate-900 text-[9px] font-black uppercase tracking-widest border border-white">
-                          {course.category}
+                          {course.category?.main || 'General'}
                         </span>
                       </div>
                     </div>
@@ -159,10 +167,10 @@ const CourseCatalog = () => {
                     <div className="flex items-center gap-2 mb-3">
                       <div className="flex items-center text-orange-400 gap-0.5">
                         <Star size={12} fill="currentColor" />
-                        <span className="text-xs font-black text-slate-900 ml-1">{course.rating || 'New'}</span>
+                        <span className="text-xs font-black text-slate-900 ml-1">{course.stats?.average_rating || 'New'}</span>
                       </div>
                       <span className="text-slate-300 mx-1">•</span>
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{course.review_count} Reviews</span>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{course.stats?.total_reviews || 0} Reviews</span>
                     </div>
 
                     <Link href={`/courses/${course.slug}`}>
@@ -179,7 +187,7 @@ const CourseCatalog = () => {
                       <div>
                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Tuition Fee</p>
                         <p className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 tracking-tighter">
-                          ₹{course.price.toLocaleString()}
+                          ₹{(course.pricing?.price || 0).toLocaleString()}
                         </p>
                       </div>
                       <Link 
