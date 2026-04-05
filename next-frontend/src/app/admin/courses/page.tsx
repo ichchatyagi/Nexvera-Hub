@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import { 
   Plus, 
   Search, 
@@ -339,9 +340,9 @@ const AdminCoursesDashboard = () => {
                   <tr key={course.id || course._id} className="hover:bg-slate-50/30 transition-colors group">
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-slate-100 overflow-hidden shrink-0 border border-slate-200 shadow-sm">
+                        <div className="w-14 h-14 rounded-2xl bg-slate-100 overflow-hidden shrink-0 border border-slate-200 shadow-sm relative">
                           {course.thumbnail_url ? (
-                             <img src={course.thumbnail_url} className="w-full h-full object-cover" alt="" />
+                             <Image src={course.thumbnail_url} className="object-cover" fill alt="" />
                           ) : (
                              <div className="w-full h-full flex items-center justify-center text-slate-300"><BookOpen size={20} /></div>
                           )}

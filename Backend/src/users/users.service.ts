@@ -52,21 +52,37 @@ export class UsersService {
 
   async updateProfile(
     userId: string,
-    _dto: UpdateProfileDto,
+    dto: UpdateProfileDto,
   ): Promise<User> {
     const user = await this.findById(userId);
     if (!user) throw new NotFoundException('User not found');
 
-    // TODO: When the `user_profiles` and `teacher_profiles` tables are added
-    //       (per IMPLEMENTATION_PLAN_PART2.md), move non-core fields
-    //       (firstName, lastName, bio, country, timezone, language, phone,
-    //       avatarUrl) into those entities and wire them here.
-    //
-    // The `User` entity only carries authentication-level columns (email, role,
-    // status, emailVerified). There are currently no fields from UpdateProfileDto
-    // that map directly to User, so we return the user as-is until the
-    // ProfilesModule is implemented.
-    return user;
+    // Update fields from DTO
+    if (dto.firstName !== undefined) user.firstName = dto.firstName;
+    if (dto.lastName !== undefined) user.lastName = dto.lastName;
+    if (dto.bio !== undefined) user.bio = dto.bio;
+    if (dto.country !== undefined) user.country = dto.country;
+    if (dto.timezone !== undefined) user.timezone = dto.timezone;
+    if (dto.language !== undefined) user.language = dto.language;
+    if (dto.phone !== undefined) user.phone = dto.phone;
+    if (dto.avatarUrl !== undefined) user.avatarUrl = dto.avatarUrl;
+
+    // Update role-specific fields
+    if (dto.headline !== undefined) user.headline = dto.headline;
+    if (dto.expertise !== undefined) user.expertise = dto.expertise;
+    if (dto.qualifications !== undefined) user.qualifications = dto.qualifications;
+    if (dto.yearsExperience !== undefined) user.yearsExperience = dto.yearsExperience;
+    if (dto.hourlyRate !== undefined) user.hourlyRate = dto.hourlyRate;
+    if (dto.educationLevel !== undefined) user.educationLevel = dto.educationLevel;
+    if (dto.interests !== undefined) user.interests = dto.interests;
+    if (dto.learningGoals !== undefined) user.learningGoals = dto.learningGoals;
+
+    // Update name field as well for backward compatibility
+    if (dto.firstName || dto.lastName) {
+      user.name = `${dto.firstName || ''} ${dto.lastName || ''}`.trim();
+    }
+
+    return this.userRepository.save(user);
   }
 
   async listTeachers(): Promise<User[]> {

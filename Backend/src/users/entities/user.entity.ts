@@ -56,6 +56,56 @@ export class User {
   @Column({ type: 'timestamp', nullable: true })
   verificationOtpExpiresAt: Date | null;
 
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  firstName: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  lastName: string;
+
+  @Column({ type: 'text', nullable: true })
+  bio: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  country: string;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  timezone: string;
+
+  @Column({ type: 'varchar', length: 10, default: 'en' })
+  language: string;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  phone: string;
+
+  @Column({ type: 'text', nullable: true })
+  avatarUrl: string;
+
+  // Teacher Specific
+  @Column({ type: 'varchar', length: 200, nullable: true })
+  headline: string;
+
+  @Column({ type: 'simple-array', nullable: true })
+  expertise: string[];
+
+  @Column({ type: 'text', nullable: true })
+  qualifications: string;
+
+  @Column({ type: 'int', default: 0 })
+  yearsExperience: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  hourlyRate: number;
+
+  // Student Specific
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  educationLevel: string;
+
+  @Column({ type: 'simple-array', nullable: true })
+  interests: string[];
+
+  @Column({ type: 'text', nullable: true })
+  learningGoals: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

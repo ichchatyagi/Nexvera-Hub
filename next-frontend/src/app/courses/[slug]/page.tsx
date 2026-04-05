@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, 
@@ -283,12 +284,19 @@ const CourseDetail = () => {
                 className="bg-white rounded-[2.5rem] shadow-2xl p-8 sticky top-32"
               >
                 <div className="relative h-56 rounded-[2rem] overflow-hidden mb-8 shadow-xl shadow-blue-500/10">
-                  <img 
-                    src={course.thumbnail_url} 
-                    alt={course.title} 
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center">
+                  {course.thumbnail_url ? (
+                    <Image 
+                      src={course.thumbnail_url} 
+                      alt={course.title} 
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white/20">
+                       <BookOpen size={64} />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center z-10">
                     <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-xl border border-white/30 flex items-center justify-center text-white cursor-pointer hover:scale-110 transition-transform">
                        <Play fill="currentColor" size={24} className="ml-1" />
                     </div>
