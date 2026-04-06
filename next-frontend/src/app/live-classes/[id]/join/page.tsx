@@ -29,6 +29,8 @@ const JoinLiveClass = () => {
   const [isJoined, setIsJoined] = useState(false);
   const [isCamOn, setIsCamOn] = useState(true);
   const [isMicOn, setIsMicOn] = useState(true);
+  const [classStatus, setClassStatus] = useState<string>('');
+  const [isClassOwner, setIsClassOwner] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -40,6 +42,12 @@ const JoinLiveClass = () => {
       setIsLoading(true);
       const response = await api.post(`/live-classes/${id}/join`);
       setTokenData(response.data);
+      setClassStatus(response.data.status);
+      
+      // Check if current user is the owner/teacher
+      if (user && response.data.teacher_id === user.id) {
+        setIsClassOwner(true);
+      }
     } catch (error) {
       toast.error('Failed to obtain real-time token');
       console.error(error);
@@ -51,7 +59,31 @@ const JoinLiveClass = () => {
 
   const handleJoin = async () => {
     setIsJoined(true);
-    toast.success('Successfully joined live session');
+    toast.success('Securely connected to faculty stream');
+  };
+
+  const handleStartClass = async () => {
+    try {
+      toast.loading('Initializing broadcast signal...', { id: 'class-action' });
+      await api.post(`/live-classes/${id}/start`);
+      setClassStatus('live');
+      toast.success('Broadcast is now LIVE', { id: 'class-action' });
+    } catch (error) {
+      toast.error('Failed to initiate broadcast', { id: 'class-action' });
+    }
+  };
+
+  const handleEndClass = async () => {
+    if (!confirm('This will terminate the broadcast for all participants. Proceed?')) return;
+    try {
+      toast.loading('Terminating signal...', { id: 'class-action' });
+      await api.post(`/live-classes/${id}/end`);
+      setClassStatus('ended');
+      toast.success('Session finalized', { id: 'class-action' });
+      router.push('/teacher/dashboard');
+    } catch (error) {
+      toast.error('Failed to terminate session', { id: 'class-action' });
+    }
   };
 
   if (isLoading) {
@@ -98,12 +130,26 @@ const JoinLiveClass = () => {
                   <p className="text-white/40 text-lg leading-relaxed mb-10 font-medium max-w-sm mx-auto">
                     Your session is authorized. Activate your media devices to proceed.
                   </p>
-                  <button 
-                    onClick={handleJoin}
-                    className="px-14 py-6 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black uppercase tracking-widest text-xs rounded-[2.5rem] shadow-2xl shadow-blue-500/20 hover:scale-105 transition-all active:scale-95"
-                  >
-                    Enter Live Hub
-                  </button>
+                  {isClassOwner && classStatus === 'scheduled' ? (
+                    <button 
+                      onClick={handleStartClass}
+                      className="px-14 py-6 bg-red-600 text-white font-black uppercase tracking-widest text-xs rounded-[2.5rem] shadow-2xl shadow-red-500/20 hover:scale-105 transition-all active:scale-95 animate-pulse"
+                    >
+                      Initialize Live Broadcast
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={handleJoin}
+                      disabled={classStatus === 'scheduled' && !isClassOwner}
+                      className={`px-14 py-6 font-black uppercase tracking-widest text-xs rounded-[2.5rem] shadow-2xl transition-all active:scale-95 ${
+                        classStatus === 'scheduled' && !isClassOwner
+                          ? 'bg-slate-800 text-white/20 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-blue-500/20 hover:scale-105'
+                      }`}
+                    >
+                      {classStatus === 'scheduled' ? 'Awaiting Instructor...' : 'Enter Live Hub'}
+                    </button>
+                  )}
                </div>
              ) : (
                <div className="w-full h-full relative p-10">
@@ -137,7 +183,7 @@ const JoinLiveClass = () => {
            <div className="space-y-4">
               <div className="p-5 bg-white/5 border border-white/5 rounded-2xl">
                  <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Channel ID</p>
-                 <p className="text-xs font-bold text-white uppercase tracking-tight truncate">{tokenData?.channelName || 'NEX-HUB-ALPHA'}</p>
+                 <p className="text-xs font-bold text-white uppercase tracking-tight truncate">{tokenData?.channel_name || 'NEX-HUB-ALPHA'}</p>
               </div>
            </div>
         </div>

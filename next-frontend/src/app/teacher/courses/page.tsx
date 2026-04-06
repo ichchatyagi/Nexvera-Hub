@@ -85,10 +85,10 @@ const TeacherDashboard = () => {
         {/* Stats Summary */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
            {[
-             { label: 'Assigned Assets', value: courses.length, icon: <BookOpen className="text-blue-600" /> },
-             { label: 'Total Learners', value: '1,240', icon: <Users className="text-cyan-500" /> },
-             { label: 'Content Duration', value: '48h 20m', icon: <Clock className="text-orange-500" /> },
-             { label: 'Average Quality', value: '4.8★', icon: <Award className="text-yellow-500" /> },
+             { label: 'Assigned Assets', value: courses.length.toString(), icon: <BookOpen className="text-blue-600" /> },
+             { label: 'Total Learners', value: (courses.reduce((acc, c) => acc + (c.stats?.enrollments || 0), 0)).toLocaleString(), icon: <Users className="text-cyan-500" /> },
+             { label: 'Content Duration', value: (courses.reduce((acc, c) => acc + (c.total_duration_hours || 0), 0)) + 'h', icon: <Clock className="text-orange-500" /> },
+             { label: 'Average Quality', value: (courses.length > 0 ? (courses.reduce((acc, c) => acc + (c.stats?.average_rating || 0), 0) / courses.length).toFixed(1) : '0.0') + '★', icon: <Award className="text-yellow-500" /> },
            ].map((stat, i) => (
              <div key={i} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 transition-all group">
                 <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
@@ -102,9 +102,9 @@ const TeacherDashboard = () => {
 
         {/* Course Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-           {courses.map((course) => (
+           {courses.map((course, i) => (
              <motion.div 
-               key={course.id}
+               key={course._id || course.id || i}
                initial={{ opacity: 0, y: 20 }}
                animate={{ opacity: 1, y: 0 }}
                className="bg-white rounded-[3rem] border border-slate-100 overflow-hidden shadow-sm group hover:border-blue-200 transition-all flex flex-col md:flex-row"
@@ -124,7 +124,7 @@ const TeacherDashboard = () => {
                    <div>
                       <div className="flex items-center gap-3 mb-4">
                          <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-lg">
-                           {course.category}
+                           {course.category?.main || 'Uncategorized'}
                          </span>
                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                            {course.level}
@@ -147,7 +147,7 @@ const TeacherDashboard = () => {
                          </div>
                       </div>
                       <Link 
-                        href={`/teacher/courses/${course.id}/curriculum`}
+                        href={`/teacher/courses/${course._id || course.id}/curriculum`}
                         className="flex items-center gap-3 px-8 py-4 bg-slate-950 text-white font-black uppercase tracking-widest text-[9px] rounded-2xl shadow-xl shadow-slate-900/10 hover:bg-black transition-all active:scale-95 group/btn"
                       >
                          Assemble Curriculum
