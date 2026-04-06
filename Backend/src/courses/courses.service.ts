@@ -218,9 +218,15 @@ export class CoursesService {
 
     const content: any = {};
     if (dto.content) {
-      if (dto.content.video_id) content.video_id = new Types.ObjectId(dto.content.video_id);
-      if (dto.content.live_class_id) content.live_class_id = new Types.ObjectId(dto.content.live_class_id);
-      if (dto.content.quiz_id) content.quiz_id = new Types.ObjectId(dto.content.quiz_id);
+      if (dto.content.video_id && Types.ObjectId.isValid(dto.content.video_id)) {
+        content.video_id = new Types.ObjectId(dto.content.video_id);
+      }
+      if (dto.content.live_class_id && Types.ObjectId.isValid(dto.content.live_class_id)) {
+        content.live_class_id = new Types.ObjectId(dto.content.live_class_id);
+      }
+      if (dto.content.quiz_id && Types.ObjectId.isValid(dto.content.quiz_id)) {
+        content.quiz_id = new Types.ObjectId(dto.content.quiz_id);
+      }
       if (dto.content.resource_url) content.resource_url = dto.content.resource_url;
     }
 
@@ -260,9 +266,15 @@ export class CoursesService {
         lesson.content = {} as any;
       }
       const content = lesson.content!;
-      if (dto.content.video_id) content.video_id = new Types.ObjectId(dto.content.video_id);
-      if (dto.content.live_class_id) content.live_class_id = new Types.ObjectId(dto.content.live_class_id);
-      if (dto.content.quiz_id) content.quiz_id = new Types.ObjectId(dto.content.quiz_id);
+      if (dto.content.video_id && Types.ObjectId.isValid(dto.content.video_id)) {
+        content.video_id = new Types.ObjectId(dto.content.video_id);
+      }
+      if (dto.content.live_class_id && Types.ObjectId.isValid(dto.content.live_class_id)) {
+        content.live_class_id = new Types.ObjectId(dto.content.live_class_id);
+      }
+      if (dto.content.quiz_id && Types.ObjectId.isValid(dto.content.quiz_id)) {
+        content.quiz_id = new Types.ObjectId(dto.content.quiz_id);
+      }
       if (dto.content.resource_url) content.resource_url = dto.content.resource_url;
     }
 
