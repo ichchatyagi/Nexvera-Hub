@@ -137,7 +137,7 @@ const Home = () => {
                                 >
                                     Book Free Demo
                                 </button>
-                                <Link href="/course" className="flex items-center justify-center gap-2 text-blue-600 font-black text-[10px] uppercase tracking-widest hover:translate-x-1 transition-transform">
+                                <Link href="/tuition" className="flex items-center justify-center gap-2 text-blue-600 font-black text-[10px] uppercase tracking-widest hover:translate-x-1 transition-transform">
                                     View Subject Coverage <ChevronRight className="w-4 h-4" />
                                 </Link>
                             </div>

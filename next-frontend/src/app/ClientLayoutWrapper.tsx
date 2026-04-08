@@ -17,17 +17,18 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
   const pathname = usePathname();
 
   const backgroundPages = [
-    '/', '/course', '/courses', '/about', '/blog', '/contact',
+    '/', '/course', '/courses', '/tuition', '/about', '/blog', '/contact',
     '/certifications', '/free-guides', '/roadmaps',
-    '/career-support', '/student-stories', '/faq', '/our-educators'
+    '/career-support', '/student-stories', '/faq', '/our-educators',
+    '/terms-and-conditions', '/privacy-policy', '/cookie-policy', '/refund-and-cancellation'
   ];
 
-  const showBackground = backgroundPages.includes(pathname) || 
-                         pathname.startsWith('/blog/') || 
-                         pathname.startsWith('/course/') || 
-                         pathname.startsWith('/courses/') || 
-                         pathname.startsWith('/guide/') || 
-                         pathname.startsWith('/faq/');
+  const showBackground = backgroundPages.includes(pathname) ||
+    pathname.startsWith('/blog/') ||
+    pathname.startsWith('/course/') ||
+    pathname.startsWith('/courses/') ||
+    pathname.startsWith('/guide/') ||
+    pathname.startsWith('/faq/');
 
   const isAuthPage = ['/login', '/register'].includes(pathname);
   const isCourseDetailPage = (pathname.startsWith('/course/') || pathname.startsWith('/courses/')) && pathname.split('/').filter(Boolean).length >= 3;

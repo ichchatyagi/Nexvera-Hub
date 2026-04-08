@@ -113,6 +113,19 @@ const TuitionSyllabusEditor = () => {
     }
   };
 
+  const handlePublishSubject = async () => {
+    if (!window.confirm('Are you sure you want to publish this subject? This will make it visible to all students.')) return;
+
+    try {
+      toast.loading('Synchronizing academic registry...', { id: 'publish' });
+      await api.put(`/teacher/tuition/subjects/${subjectId}/publish`);
+      toast.success('Subject published successfully!', { id: 'publish' });
+      fetchSubjectAndSyllabus();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Publication failed', { id: 'publish' });
+    }
+  };
+
   // Section Handlers
   const handleOpenSectionModal = (section: any = null) => {
     if (section) {
@@ -228,6 +241,14 @@ const TuitionSyllabusEditor = () => {
               }`}>
                 {subject?.status || 'draft'}
               </span>
+              {subject?.status === 'draft' && (
+                <button 
+                  onClick={handlePublishSubject}
+                  className="px-6 py-2 bg-orange-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all active:scale-95"
+                >
+                  Publish Subject
+                </button>
+              )}
               <div className="w-px h-6 bg-slate-200 mx-2" />
               <div className="flex flex-col items-end">
                  <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">Nexus Academic Shield</span>

@@ -11,7 +11,7 @@ export class CoursesService {
   constructor(
     @InjectModel(Course.name) private courseModel: Model<CourseDocument>,
     @InjectModel(Review.name) private reviewModel: Model<ReviewDocument>,
-  ) {}
+  ) { }
 
   async findAll(query: any = {}) {
     const filters: any = {};
@@ -24,7 +24,7 @@ export class CoursesService {
         { description: { $regex: query.search, $options: 'i' } }
       ];
     }
-    
+
     if (query.product_type) {
       filters.product_type = query.product_type;
     } else {
@@ -82,7 +82,7 @@ export class CoursesService {
 
   async findTuitionClasses(query: any = {}) {
     const filters: any = { product_type: 'tuition' };
-    
+
     if (query.status === 'all') {
       // Don't filter by status
     } else {
@@ -126,30 +126,30 @@ export class CoursesService {
       .findOne(filters)
       .select('-tuition_meta.subjects.syllabus')
       .exec();
-      
+
     if (!course) throw new NotFoundException('Tuition class not found');
     return { success: true, data: course };
   }
 
   async findTuitionSubject(classId: string, subjectSlug: string) {
     if (!Types.ObjectId.isValid(classId)) throw new NotFoundException('Invalid class ID');
-    
-    const filters = { 
+
+    const filters = {
       _id: new Types.ObjectId(classId),
-      product_type: 'tuition', 
-      status: 'published' 
+      product_type: 'tuition',
+      status: 'published'
     };
-    
+
     // We fetch the whole document instead of complex projection, to ensure we can correctly validate
     const course = await this.courseModel.findOne(filters).exec();
     if (!course || !course.tuition_meta) throw new NotFoundException('Tuition class not found');
-    
+
     const subject = course.tuition_meta.subjects?.find(
       s => s.slug === subjectSlug && s.status === 'published'
     );
-    
+
     if (!subject) throw new NotFoundException('Tuition subject not found');
-    
+
     return { success: true, data: subject };
   }
 
@@ -165,7 +165,7 @@ export class CoursesService {
     if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Invalid ID');
     const course = await this.courseModel.findById(id).exec();
     if (!course) throw new NotFoundException('Course not found');
-    
+
     Object.assign(course, updateDto);
     await course.save();
 
@@ -184,7 +184,7 @@ export class CoursesService {
   async publish(id: string, status: string) {
     if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Invalid ID');
     if (!['pending_review', 'published', 'draft'].includes(status)) {
-        status = 'pending_review';
+      status = 'pending_review';
     }
 
     const course = await this.courseModel.findById(id).exec();
@@ -192,7 +192,7 @@ export class CoursesService {
 
     course.status = status;
     if (status === 'published') {
-        course.published_at = new Date();
+      course.published_at = new Date();
     }
     await course.save();
     return { success: true, data: course };
@@ -206,13 +206,13 @@ export class CoursesService {
         { assigned_instructor_ids: teacherId }
       ]
     }).exec();
-    
+
     return { success: true, data: courses };
   }
 
   async getTeacherCourseView(id: string, teacherId: string) {
     if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Invalid ID');
-    
+
     const course = await this.courseModel.findOne({
       _id: new Types.ObjectId(id),
       $or: [
@@ -252,7 +252,7 @@ export class CoursesService {
     if (!course) throw new NotFoundException('Course not found');
 
     course.assigned_instructor_ids = course.assigned_instructor_ids.filter(id => id !== instructorId);
-    
+
     if (course.lead_instructor_id === instructorId) {
       course.lead_instructor_id = undefined; // Or leave TODO for reassignment
     }
@@ -265,7 +265,7 @@ export class CoursesService {
 
   async addSectionForTeacher(id: string, teacherId: string, dto: CreateSectionDto) {
     const { data: course } = await this.getTeacherCourseView(id, teacherId);
-    
+
     const newSection = {
       section_id: new Types.ObjectId(),
       title: dto.title,
@@ -280,7 +280,7 @@ export class CoursesService {
 
   async updateSectionForTeacher(id: string, teacherId: string, sectionId: string, dto: UpdateSectionDto) {
     const { data: course } = await this.getTeacherCourseView(id, teacherId);
-    
+
     const sectionIndex = course.curriculum.findIndex(s => s.section_id.toString() === sectionId);
     if (sectionIndex === -1) throw new NotFoundException('Section not found');
 
@@ -293,7 +293,7 @@ export class CoursesService {
 
   async addLessonForTeacher(id: string, teacherId: string, sectionId: string, dto: CreateLessonDto) {
     const { data: course } = await this.getTeacherCourseView(id, teacherId);
-    
+
     const sectionIndex = course.curriculum.findIndex(s => s.section_id.toString() === sectionId);
     if (sectionIndex === -1) throw new NotFoundException('Section not found');
 
@@ -328,7 +328,7 @@ export class CoursesService {
 
   async updateLessonForTeacher(id: string, teacherId: string, sectionId: string, lessonId: string, dto: UpdateLessonDto) {
     const { data: course } = await this.getTeacherCourseView(id, teacherId);
-    
+
     const sectionIndex = course.curriculum.findIndex(s => s.section_id.toString() === sectionId);
     if (sectionIndex === -1) throw new NotFoundException('Section not found');
 
@@ -341,7 +341,7 @@ export class CoursesService {
     if (dto.order !== undefined) lesson.order = dto.order;
     if (dto.duration_minutes !== undefined) lesson.duration_minutes = dto.duration_minutes;
     if (dto.is_preview !== undefined) lesson.is_preview = dto.is_preview;
-    
+
     if (dto.content) {
       if (!lesson.content) {
         lesson.content = {} as any;
@@ -361,14 +361,14 @@ export class CoursesService {
 
     course.curriculum[sectionIndex].lessons[lessonIndex] = lesson;
     await course.save();
-    
+
     return { success: true, data: lesson };
   }
 
   // REVIEWS
   async getReviews(courseId: string, query: any = {}) {
     if (!Types.ObjectId.isValid(courseId)) throw new NotFoundException('Invalid ID');
-    
+
     const page = parseInt(query.page, 10) || 1;
     const limit = parseInt(query.limit, 10) || 10;
     const skip = (page - 1) * limit;
@@ -402,27 +402,27 @@ export class CoursesService {
     // Check if already reviewed
     const existing = await this.reviewModel.findOne({ course_id: new Types.ObjectId(courseId), student_id: studentId });
     if (existing) {
-        throw new ForbiddenException('You have already reviewed this course');
+      throw new ForbiddenException('You have already reviewed this course');
     }
 
     const review = await this.reviewModel.create({
-        course_id: new Types.ObjectId(courseId),
-        student_id: studentId,
-        rating: dto.rating,
-        review_text: dto.review_text,
+      course_id: new Types.ObjectId(courseId),
+      student_id: studentId,
+      rating: dto.rating,
+      review_text: dto.review_text,
     });
 
     // Update course stats
     const course = await this.courseModel.findById(courseId);
     if (course) {
-        const { stats } = course;
-        stats.total_reviews += 1;
-        // recalculate average rating
-        // For accurate recalculation we should query all reviews, but for now exact math:
-        // new_avg = (old_avg * (n-1) + new_rating) / n
-        stats.average_rating = ((stats.average_rating * (stats.total_reviews - 1)) + dto.rating) / stats.total_reviews;
-        course.stats = stats;
-        await course.save();
+      const { stats } = course;
+      stats.total_reviews += 1;
+      // recalculate average rating
+      // For accurate recalculation we should query all reviews, but for now exact math:
+      // new_avg = (old_avg * (n-1) + new_rating) / n
+      stats.average_rating = ((stats.average_rating * (stats.total_reviews - 1)) + dto.rating) / stats.total_reviews;
+      course.stats = stats;
+      await course.save();
     }
 
     return { success: true, data: review };

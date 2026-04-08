@@ -7,7 +7,7 @@ const Footer = () => {
     return (
         <footer className="bg-white/80 backdrop-blur-md border-t border-slate-100 pt-16 pb-8">
             <div className="container mx-auto px-6 lg:px-12">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
                     {/* COLUMN 1 — Nexvera Hub Branding */}
                     <div className="flex flex-col items-center">
                         <Link href="/" className="inline-block mb-4">
@@ -59,6 +59,17 @@ const Footer = () => {
                             <li><Link href="/student-stories" className="text-slate-500 hover:text-blue-600 font-semibold transition-all">Success Stories</Link></li>
                             <li><Link href="/faq" className="text-slate-500 hover:text-blue-600 font-semibold transition-all">FAQ</Link></li>
                             <li><Link href="/contact" className="text-slate-500 hover:text-blue-600 font-semibold transition-all">Contact</Link></li>
+                        </ul>
+                    </div>
+
+                    {/* COLUMN 5 — Legal */}
+                    <div>
+                        <h4 className="text-slate-900 font-black text-sm uppercase tracking-wider mb-6">Legal</h4>
+                        <ul className="space-y-4">
+                            <li><Link href="/terms-and-conditions" className="text-slate-500 hover:text-blue-600 font-semibold transition-all">Terms & Conditions</Link></li>
+                            <li><Link href="/privacy-policy" className="text-slate-500 hover:text-blue-600 font-semibold transition-all">Privacy Policy</Link></li>
+                            <li><Link href="/cookie-policy" className="text-slate-500 hover:text-blue-600 font-semibold transition-all">Cookie Policy</Link></li>
+                            <li><Link href="/refund-and-cancellation" className="text-slate-500 hover:text-blue-600 font-semibold transition-all">Refund & Cancellation</Link></li>
                         </ul>
                     </div>
                 </div>

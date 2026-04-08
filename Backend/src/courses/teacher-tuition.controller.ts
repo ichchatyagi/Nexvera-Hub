@@ -70,4 +70,9 @@ export class TeacherTuitionController {
   ) {
     return this.teacherTuitionService.updateLesson(subjectId, user.id, sectionId, lessonId, dto);
   }
+
+  @Put(':subjectId/publish')
+  publishSubject(@CurrentUser() user: User, @Param('subjectId') subjectId: string) {
+    return this.teacherTuitionService.publishSubject(subjectId, user.id);
+  }
 }

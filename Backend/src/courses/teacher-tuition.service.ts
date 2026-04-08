@@ -229,4 +229,14 @@ export class TeacherTuitionService {
 
     return { success: true, data: lesson };
   }
+
+  async publishSubject(subjectId: string, teacherId: string) {
+    const { course, subjectIndex, subject } = await this.getCourseAndAssignedSubject(subjectId, teacherId);
+    
+    subject.status = 'published';
+    course.tuition_meta!.subjects[subjectIndex] = subject;
+    
+    await course.save();
+    return { success: true, data: { status: 'published' } };
+  }
 }
