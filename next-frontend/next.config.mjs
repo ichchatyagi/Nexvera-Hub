@@ -4,9 +4,10 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'cdn.pixabay.com',
+        hostname: 'pixabay.com',
         pathname: '/**',
       },
+
       {
         protocol: 'https',
         hostname: 'images.pexels.com',
@@ -15,6 +16,16 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.bing.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'static.wixstatic.com',
         pathname: '/**',
       }
     ],

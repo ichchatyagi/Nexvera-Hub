@@ -51,6 +51,18 @@ interface CourseForm {
   thumbnail_url: string;
 }
 
+const isDirectImageUrl = (url: string) => {
+  if (!url) return false;
+  // If it's a bing search URL or doesn't look like a direct image link, it might fail or crash
+  if (url.includes('bing.com/images/search')) return false;
+  // If it's a data URI it's fine
+  if (url.startsWith('data:')) return true;
+  // If it starts with / it's a local asset
+  if (url.startsWith('/')) return true;
+  // basic check for http/https
+  return url.startsWith('http');
+};
+
 const AdminCoursesDashboard = () => {
   const { user, isLoading: isLoadingAuth } = useAuth();
   const router = useRouter();
@@ -368,7 +380,7 @@ const AdminCoursesDashboard = () => {
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-4">
                         <div className="w-14 h-14 rounded-2xl bg-slate-100 overflow-hidden shrink-0 border border-slate-200 shadow-sm relative">
-                          {course.thumbnail_url ? (
+                          {course.thumbnail_url && isDirectImageUrl(course.thumbnail_url) ? (
                              <Image src={course.thumbnail_url} className="object-cover" fill alt="" />
                           ) : (
                              <div className="w-full h-full flex items-center justify-center text-slate-300"><BookOpen size={20} /></div>

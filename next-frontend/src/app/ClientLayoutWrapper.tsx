@@ -17,7 +17,7 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
   const pathname = usePathname();
 
   const backgroundPages = [
-    '/', '/course', '/about', '/blog', '/contact',
+    '/', '/course', '/courses', '/about', '/blog', '/contact',
     '/certifications', '/free-guides', '/roadmaps',
     '/career-support', '/student-stories', '/faq', '/our-educators'
   ];
@@ -25,11 +25,12 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
   const showBackground = backgroundPages.includes(pathname) || 
                          pathname.startsWith('/blog/') || 
                          pathname.startsWith('/course/') || 
+                         pathname.startsWith('/courses/') || 
                          pathname.startsWith('/guide/') || 
                          pathname.startsWith('/faq/');
 
   const isAuthPage = ['/login', '/register'].includes(pathname);
-  const isCourseDetailPage = pathname.startsWith('/course/') && pathname.split('/').filter(Boolean).length >= 3;
+  const isCourseDetailPage = (pathname.startsWith('/course/') || pathname.startsWith('/courses/')) && pathname.split('/').filter(Boolean).length >= 3;
 
   return (
     <AuthProvider>

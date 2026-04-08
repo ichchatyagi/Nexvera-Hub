@@ -81,7 +81,7 @@ const Home = () => {
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                         {categoryData.slice(0, 11).map((cat, index) => (
                             <Link
-                                href={{ pathname: '/course', query: { category: cat.name } }}
+                                href={{ pathname: '/courses', query: { category: cat.name } }}
                                 key={index}
                                 className="group flex flex-col items-center justify-center gap-6 px-4 sm:px-6 py-10 rounded-[2.5rem] font-bold transition-all duration-500 hover:scale-[1.05] active:scale-95 bg-white/50 backdrop-blur-xl border border-white hover:border-blue-200 hover:shadow-2xl hover:shadow-blue-500/10"
                             >
@@ -91,7 +91,7 @@ const Home = () => {
                                 <span className="text-[10px] uppercase tracking-[0.25em] font-black text-center text-slate-500 group-hover:text-slate-900 transition-colors">{cat.name}</span>
                             </Link>
                         ))}
-                        <Link href="/course" className="flex flex-col items-center justify-center gap-4 px-6 py-10 rounded-[2.5rem] font-black text-[10px] uppercase tracking-[0.2em] bg-slate-950 text-white hover:bg-black transition-all">
+                        <Link href="/courses" className="flex flex-col items-center justify-center gap-4 px-6 py-10 rounded-[2.5rem] font-black text-[10px] uppercase tracking-[0.2em] bg-slate-950 text-white hover:bg-black transition-all">
                             <Rocket className="w-10 h-10 mb-2" />
                             More
                         </Link>
@@ -107,7 +107,7 @@ const Home = () => {
                             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-[0.4em] mb-8">
                                 Academic Mastery <GraduationCap className="w-3 h-3" />
                             </motion.div>
-                            
+
                             <h2 className="text-4xl lg:text-7xl font-black text-slate-900 uppercase tracking-tighter mb-8 leading-[0.95]">
                                 Premium <br />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">ONLINE</span> <br />

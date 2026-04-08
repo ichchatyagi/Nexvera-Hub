@@ -17,7 +17,7 @@ async function bootstrap() {
 
   // CORS Configuration
   app.enableCors({
-    origin: appConfigService.environment === 'development' ? '*' : appConfigService.corsOrigins,
+    origin: appConfigService.corsOrigins,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
