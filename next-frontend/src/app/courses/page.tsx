@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { Search, SlidersHorizontal, BookOpen, Star, Users, ChevronRight, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
+import IconRenderer from '@/components/IconRenderer';
 
 interface Course {
   id: string;
@@ -34,9 +35,18 @@ const CourseCatalog = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeCategory, setActiveCategory] = useState('All');
+  const [activeCategory, setActiveCategory] = useState('Artificial Intelligence');
 
-  const categories = ['All', 'Information Technology', 'Sales and Marketing', 'Artificial Intelligence', 'Data Science', 'Design', 'Languages', 'Business', 'Entrepreneurship'];
+  const categories = [
+    'Artificial Intelligence', 
+    'Information Technology', 
+    'Sales and Marketing', 
+    'Data Science', 
+    'Design', 
+    'Languages', 
+    'Business', 
+    'Entrepreneurship'
+  ];
 
   useEffect(() => {
     fetchCourses();
@@ -45,8 +55,7 @@ const CourseCatalog = () => {
   const fetchCourses = async () => {
     try {
       setIsLoading(true);
-      const params: any = {};
-      if (activeCategory !== 'All') params.category = activeCategory;
+      const params: any = { category: activeCategory };
       if (searchTerm) params.search = searchTerm;
 
       const response = await api.get('/courses', { params });
@@ -107,17 +116,22 @@ const CourseCatalog = () => {
               </button>
             </form>
 
-            <div className="flex flex-wrap items-center justify-center gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {categories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
-                  className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${activeCategory === cat
-                      ? 'bg-slate-950 text-white border-slate-950 shadow-xl'
-                      : 'bg-white text-slate-500 border-slate-100 hover:border-blue-200 hover:text-blue-600'
+                  className={`flex flex-col items-center justify-center p-6 rounded-[2rem] transition-all duration-500 border ${activeCategory === cat
+                      ? 'bg-slate-950 text-white border-slate-950 shadow-2xl shadow-blue-500/20 scale-[1.02]'
+                      : 'bg-white text-slate-500 border-slate-100 hover:border-blue-200 hover:text-blue-600 hover:bg-blue-50/30'
                     }`}
                 >
-                  {cat}
+                  <div className={`mb-3 transition-transform duration-500 ${activeCategory === cat ? 'scale-110' : 'opacity-70'}`}>
+                    <IconRenderer icon={cat} className="w-6 h-6" />
+                  </div>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-center leading-tight">
+                    {cat}
+                  </span>
                 </button>
               ))}
             </div>

@@ -11,7 +11,7 @@ const itCourseLessons = [
     "Software Implementation Phase", "Final Certification Assessment"
 ];
 
-const generateLevels = (subject: string, hook: string, outcomes: string[], category: string, basePrice: number) => {
+const generateLevels = (subject: string, hook: string, outcomes: string[], category: string, basePrice: number, thumbnail: string) => {
     return (["beginner", "intermediate", "advanced"] as const).map((level, idx) => {
         const prices: Record<string, number[]> = { 
             "Python Programming Fundamentals": [649, 1189, 1899], 
@@ -40,7 +40,7 @@ const generateLevels = (subject: string, hook: string, outcomes: string[], categ
             },
             level: level,
             language: "English",
-            thumbnail_url: `/images/courses/default.png`,
+            thumbnail_url: `/images/courses/${thumbnail}`,
             status: "published",
             outcomes: outcomes,
             requirements: ["Basic computer literacy", "Stable internet connection"],
@@ -63,33 +63,51 @@ async function bootstrap() {
   const courseModel = (coursesService as any).courseModel;
 
   const itCourses = [
-    ...generateLevels("Python Programming Fundamentals", "Stop writing code. Start engineering solutions.", ["Python", "Logic", "Automation"], "Artificial Intelligence", 649),
-    ...generateLevels("Web Development Bootcamp", "The Internet is your canvas. Learn to build the digital world.", ["HTML/CSS", "JavaScript", "React"], "Design", 729),
-    ...generateLevels("Cybersecurity Essentials", "The digital world is under attack. Become the shield.", ["Networking", "Defense", "Security"], "Information Technology", 819),
-    ...generateLevels("Cloud Computing with AWS", "Master the AWS ecosystem and cloud architecture.", ["AWS", "Infrastructure", "Scalability"], "Information Technology", 679),
-    ...generateLevels("Data Structures & Algorithms", "Code that scales is the goal.", ["Algorithms", "Complexity", "Efficiency"], "Data Science", 1149),
-    ...generateLevels("Mobile App Development", "Build native-feeling apps for iOS and Android.", ["Mobile", "UI/UX", "State Management"], "Design", 929),
-    ...generateLevels("DevOps & CI/CD Practices", "Automate the Future.", ["Docker", "Kubernetes", "Pipelines"], "Information Technology", 749),
-    ...generateLevels("Networking and System Administration", "Control the wire.", ["OSI Model", "Routers", "SysAdmin"], "Information Technology", 1049),
-    ...generateLevels("Database Design & SQL", "Data is the New Oil.", ["SQL", "Normalization", "Architecture"], "Data Science", 639),
-    ...generateLevels("Ethical Hacking and Penetration Testing", "Be the Ethical Shield.", ["Exploits", "Pen-testing", "Ethics"], "Information Technology", 879),
+    // 1. Artificial Intelligence
+    ...generateLevels("Python Programming Fundamentals", "Stop writing code. Start engineering solutions.", ["Python", "Logic", "Automation"], "Artificial Intelligence", 649, "python-fundamentals.png"),
     
-    // New Categories
-    ...generateLevels("Digital Marketing Masterclass", "Sell anything to anyone, anywhere.", ["SEO", "Social Media", "Ads"], "Sales and Marketing", 549),
-    ...generateLevels("Professional Business English", "Speak the language of global success.", ["Communication", "Grammar", "Business"], "Languages", 499),
-    ...generateLevels("Modern Business Management", "Lead with data and empathy.", ["Strategy", "Leadership", "Finance"], "Business", 799),
-    ...generateLevels("The Startup Architect", "Turn your ideas into a scalable empire.", ["Innovation", "VC", "Growth"], "Entrepreneurship", 999)
+    // 2. Information Technology
+    ...generateLevels("Cybersecurity Essentials", "The digital world is under attack. Become the shield.", ["Networking", "Defense", "Security"], "Information Technology", 819, "cybersecurity.png"),
+    ...generateLevels("Cloud Computing with AWS", "Master the AWS ecosystem and cloud architecture.", ["AWS", "Infrastructure", "Scalability"], "Information Technology", 679, "cloud-aws.png"),
+    ...generateLevels("DevOps & CI/CD Practices", "Automate the Future.", ["Docker", "Kubernetes", "Pipelines"], "Information Technology", 749, "devops-cicd.png"),
+    ...generateLevels("Networking and System Administration", "Control the wire.", ["OSI Model", "Routers", "SysAdmin"], "Information Technology", 1049, "networking-sysadmin.png"),
+    ...generateLevels("Ethical Hacking and Penetration Testing", "Be the Ethical Shield.", ["Exploits", "Pen-testing", "Ethics"], "Information Technology", 879, "ethical-hacking.png"),
+
+    // 3. Sales and Marketing
+    ...generateLevels("Digital Marketing Masterclass", "Sell anything to anyone, anywhere.", ["SEO", "Social Media", "Ads"], "Sales and Marketing", 549, "api-dev.png"),
+
+    // 4. Data Science
+    ...generateLevels("Data Structures & Algorithms", "Code that scales is the goal.", ["Algorithms", "Complexity", "Efficiency"], "Data Science", 1149, "dsa-mastery.png"),
+    ...generateLevels("Database Design & SQL", "Data is the New Oil.", ["SQL", "Normalization", "Architecture"], "Data Science", 639, "database-sql.png"),
+
+    // 5. Design
+    ...generateLevels("Web Development Bootcamp", "The Internet is your canvas. Learn to build the digital world.", ["HTML/CSS", "JavaScript", "React"], "Design", 729, "web-dev-bootcamp.png"),
+    ...generateLevels("Mobile App Development", "Build native-feeling apps for iOS and Android.", ["Mobile", "UI/UX", "State Management"], "Design", 929, "mobile-app-dev.png"),
+
+    // 6. Languages
+    ...generateLevels("Professional Business English", "Speak the language of global success.", ["Communication", "Grammar", "Business"], "Languages", 499, "business-english.png"),
+
+    // 7. Business
+    ...generateLevels("Modern Business Management", "Lead with data and empathy.", ["Strategy", "Leadership", "Finance"], "Business", 799, "uiux-design.png"),
+
+    // 8. Entrepreneurship
+    ...generateLevels("The Startup Architect", "Turn your ideas into a scalable empire.", ["Innovation", "VC", "Growth"], "Entrepreneurship", 999, "ai-fundamentals.png")
   ];
 
-  console.log(`Seeding ${itCourses.length} IT courses...`);
+  console.log(`Seeding ${itCourses.length} courses across 8 categories...`);
+  
+  // Clear existing courses to avoid duplicates during re-seeding if desired, 
+  // but here we just rely on slug uniqueness provided by generateLevels
   
   for (const course of itCourses) {
     try {
       await courseModel.create(course);
-      console.log(`+ Created: ${course.title}`);
+      console.log(`+ Created: ${course.title} [${course.category.main}]`);
     } catch (e: any) {
       if (e.code === 11000) {
-        console.log(`- Skiped (Duplicate): ${course.title}`);
+        // Update existing if duplicate slug found to refresh data
+        await courseModel.findOneAndUpdate({ slug: course.slug }, course);
+        console.log(`~ Updated: ${course.title}`);
       } else {
         console.log(`- Error creating ${course.title}: ${e.message}`);
       }

@@ -54,15 +54,15 @@ const generateLevels = (subject, hook, outcomes, category, basePrice) => {
 };
 
 export const itCoursesDetails = [
-    ...generateLevels("Python Programming Fundamentals", "Stop writing code. Start engineering solutions.", ["Python", "Logic", "Automation"], "Information Technology", 649),
-    ...generateLevels("Web Development Bootcamp", "The Internet is your canvas. Learn to build the digital world.", ["HTML/CSS", "JavaScript", "React"], "Information Technology", 729),
+    ...generateLevels("Python Programming Fundamentals", "Stop writing code. Start engineering solutions.", ["Python", "Logic", "Automation"], "Artificial Intelligence", 649),
+    ...generateLevels("Web Development Bootcamp", "The Internet is your canvas. Learn to build the digital world.", ["HTML/CSS", "JavaScript", "React"], "Design", 729),
     ...generateLevels("Cybersecurity Essentials", "The digital world is under attack. Become the shield.", ["Networking", "Defense", "Security"], "Information Technology", 819),
     ...generateLevels("Cloud Computing with AWS", "Master the AWS ecosystem and cloud architecture.", ["AWS", "Infrastructure", "Scalability"], "Information Technology", 679),
-    ...generateLevels("Data Structures & Algorithms", "Code that scales is the goal.", ["Algorithms", "Complexity", "Efficiency"], "Information Technology", 1149),
-    ...generateLevels("Mobile App Development", "Build native-feeling apps for iOS and Android.", ["Mobile", "UI/UX", "State Management"], "Information Technology", 929),
+    ...generateLevels("Data Structures & Algorithms", "Code that scales is the goal.", ["Algorithms", "Complexity", "Efficiency"], "Data Science", 1149),
+    ...generateLevels("Mobile App Development", "Build native-feeling apps for iOS and Android.", ["Mobile", "UI/UX", "State Management"], "Design", 929),
     ...generateLevels("DevOps & CI/CD Practices", "Automate the Future.", ["Docker", "Kubernetes", "Pipelines"], "Information Technology", 749),
     ...generateLevels("Networking and System Administration", "Control the wire.", ["OSI Model", "Routers", "SysAdmin"], "Information Technology", 1049),
-    ...generateLevels("Database Design & SQL", "Data is the New Oil.", ["SQL", "Normalization", "Architecture"], "Information Technology", 639),
+    ...generateLevels("Database Design & SQL", "Data is the New Oil.", ["SQL", "Normalization", "Architecture"], "Data Science", 639),
     ...generateLevels("Ethical Hacking and Penetration Testing", "Be the Ethical Shield.", ["Exploits", "Pen-testing", "Ethics"], "Information Technology", 879)
 ];
 export const itCoursesDetailsPart2 = [];
