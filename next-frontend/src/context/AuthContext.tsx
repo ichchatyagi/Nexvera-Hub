@@ -12,6 +12,22 @@ interface User {
   name: string;
   role: 'student' | 'teacher' | 'admin';
   profile_picture?: string;
+  firstName?: string;
+  lastName?: string;
+  bio?: string;
+  country?: string;
+  timezone?: string;
+  language?: string;
+  phone?: string;
+  avatarUrl?: string;
+  headline?: string;
+  expertise?: string[];
+  qualifications?: string;
+  yearsExperience?: number;
+  hourlyRate?: number;
+  educationLevel?: string;
+  interests?: string[];
+  learningGoals?: string;
 }
 
 interface AuthContextType {

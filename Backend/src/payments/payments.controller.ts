@@ -20,7 +20,8 @@ export class InstructorEarningsController {
       throw new UnauthorizedException('Only instructors can view current earnings metadata');
     }
 
-    return this.payoutsService.calculateEarnings(user.id);
+    const result = await this.payoutsService.calculateEarnings(user.id);
+    return { success: true, data: result };
   }
 }
 

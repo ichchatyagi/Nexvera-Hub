@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import { 
   Plus, 
   Search, 
@@ -89,6 +90,8 @@ const AdminCoursesDashboard = () => {
   // Instructor management state
   const [newInstructorId, setNewInstructorId] = useState('');
   const [isLeadInstructor, setIsLeadInstructor] = useState(false);
+  const [instructors, setInstructors] = useState<any[]>([]);
+  const [isFetchingInstructors, setIsFetchingInstructors] = useState(false);
 
   useEffect(() => {
     if (!isLoadingAuth && user?.role === 'admin') {
@@ -208,18 +211,37 @@ const AdminCoursesDashboard = () => {
     }
   };
 
+  const fetchInstructors = async () => {
+    try {
+      setIsFetchingInstructors(true);
+      const response: any = await api.get('/users/teachers');
+      setInstructors(response.data || []);
+    } catch (error) {
+      toast.error('Failed to load instructors');
+    } finally {
+      setIsFetchingInstructors(false);
+    }
+  };
+
   const handleOpenInstructorModal = async (course: any) => {
     setSelectedCourse(course);
     setIsInstructorModalOpen(true);
     setNewInstructorId('');
     setIsLeadInstructor(false);
+    fetchInstructors();
   };
 
   const handleAssignInstructor = async () => {
     if (!newInstructorId) return;
+    const courseId = selectedCourse.id || selectedCourse._id;
+    if (!courseId) {
+      toast.error('Course ID missing');
+      return;
+    }
+
     try {
       toast.loading('Assigning instructor...', { id: 'assign' });
-      await api.post(`/courses/${selectedCourse.id}/assign-instructor`, {
+      await api.post(`/courses/${courseId}/assign-instructor`, {
         instructor_id: newInstructorId,
         is_lead: isLeadInstructor
       });
@@ -237,9 +259,15 @@ const AdminCoursesDashboard = () => {
   };
 
   const handleUnassignInstructor = async (instructorId: string) => {
+    const courseId = selectedCourse.id || selectedCourse._id;
+    if (!courseId) {
+      toast.error('Course ID missing');
+      return;
+    }
+
     try {
       toast.loading('Removing instructor...', { id: 'remove' });
-      await api.delete(`/courses/${selectedCourse.id}/instructors/${instructorId}`);
+      await api.delete(`/courses/${courseId}/instructors/${instructorId}`);
       toast.success('Instructor removed', { id: 'remove' });
       
       // Refresh current course details in state
@@ -339,9 +367,9 @@ const AdminCoursesDashboard = () => {
                   <tr key={course.id || course._id} className="hover:bg-slate-50/30 transition-colors group">
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-slate-100 overflow-hidden shrink-0 border border-slate-200 shadow-sm">
+                        <div className="w-14 h-14 rounded-2xl bg-slate-100 overflow-hidden shrink-0 border border-slate-200 shadow-sm relative">
                           {course.thumbnail_url ? (
-                             <img src={course.thumbnail_url} className="w-full h-full object-cover" alt="" />
+                             <Image src={course.thumbnail_url} className="object-cover" fill alt="" />
                           ) : (
                              <div className="w-full h-full flex items-center justify-center text-slate-300"><BookOpen size={20} /></div>
                           )}
@@ -703,14 +731,25 @@ const AdminCoursesDashboard = () => {
                     </h4>
                     <div className="flex flex-col gap-6">
                        <div className="relative">
-                          <input 
-                            value={newInstructorId}
-                            onChange={(e) => setNewInstructorId(e.target.value)}
-                            className="w-full px-6 py-4 bg-white border border-slate-100 rounded-2xl outline-none focus:border-blue-200 font-bold text-sm"
-                            placeholder="Instructor ID (UUID)"
-                          />
-                          <Search size={14} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300" />
-                       </div>
+                           <select 
+                             value={newInstructorId}
+                             onChange={(e) => setNewInstructorId(e.target.value)}
+                             className="w-full px-6 py-4 bg-white border border-slate-100 rounded-2xl outline-none focus:border-blue-200 font-bold text-sm appearance-none"
+                           >
+                             <option value="">Select Instructor</option>
+                             {instructors.map((instructor: any) => (
+                               <option key={instructor.id} value={instructor.id}>
+                                 {instructor.firstName || instructor.name || instructor.email} {instructor.lastName || ''}
+                               </option>
+                             ))}
+                           </select>
+                           <ChevronRight size={14} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none rotate-90" />
+                           {isFetchingInstructors && (
+                             <div className="absolute right-12 top-1/2 -translate-y-1/2">
+                               <Loader2 className="animate-spin text-blue-600" size={14} />
+                             </div>
+                           )}
+                        </div>
                        <div className="flex items-center justify-between px-2">
                           <label className="flex items-center gap-3 cursor-pointer group">
                              <div 
@@ -740,32 +779,39 @@ const AdminCoursesDashboard = () => {
                        <User size={14} className="text-cyan-500" /> Active Personnel
                     </h4>
                     <div className="space-y-4">
-                       {/* The current implementation only shows the teacher_name from the course details 
-                           This is a limitation of the current GET /courses return format. 
-                           In a real app, we'd iterate over an array of instructors if returned. 
-                           For now, we display based on course.teacher_name for visualization. */}
-                       {selectedCourse?.teacher_name ? (
-                          <div className="flex items-center justify-between p-6 bg-white border border-slate-100 rounded-2xl group hover:border-slate-200 transition-all">
-                             <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-xs">
-                                   {selectedCourse.teacher_name.charAt(0)}
-                                </div>
-                                <div>
-                                   <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{selectedCourse.teacher_name}</p>
-                                   <div className="flex items-center gap-2 mt-0.5">
-                                      <span className="text-[9px] font-black text-blue-600 border border-blue-100 bg-blue-50 px-2 py-0.5 rounded-md uppercase tracking-widest">Lead Instructor</span>
-                                   </div>
-                                </div>
-                             </div>
-                             {/* Note: we don't have the instructor_id in the basic course list, 
-                                 so unassign is disabled in this mockup unless we fetch it from elsewhere */}
-                             <button 
-                               onClick={() => toast.error('Instructor ID required for removal')}
-                               className="p-3 rounded-xl bg-slate-50 text-slate-300 hover:text-red-600 transition-colors"
-                             >
-                                <Trash2 size={16} />
-                             </button>
-                          </div>
+                       {selectedCourse?.assigned_instructor_ids?.length > 0 ? (
+                          selectedCourse.assigned_instructor_ids.map((instructorId: string) => {
+                            const instructorData = instructors.find(i => i.id === instructorId);
+                            const isLead = selectedCourse.lead_instructor_id === instructorId;
+                            
+                            return (
+                              <div key={instructorId} className="flex items-center justify-between p-6 bg-white border border-slate-100 rounded-2xl group hover:border-slate-200 transition-all">
+                                 <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-xs">
+                                       {(instructorData?.firstName || instructorData?.name || 'I').charAt(0)}
+                                    </div>
+                                    <div>
+                                       <p className="text-sm font-black text-slate-900 uppercase tracking-tight">
+                                         {instructorData ? `${instructorData.firstName || instructorData.name} ${instructorData.lastName || ''}` : 'Unknown Instructor'}
+                                       </p>
+                                       <div className="flex items-center gap-2 mt-0.5">
+                                          <span className={`text-[9px] font-black border px-2 py-0.5 rounded-md uppercase tracking-widest ${
+                                            isLead ? 'text-blue-600 border-blue-100 bg-blue-50' : 'text-slate-400 border-slate-100 bg-slate-50'
+                                          }`}>
+                                            {isLead ? 'Lead Instructor' : 'Assistant'}
+                                          </span>
+                                       </div>
+                                    </div>
+                                 </div>
+                                 <button 
+                                   onClick={() => handleUnassignInstructor(instructorId)}
+                                   className="p-3 rounded-xl bg-slate-50 text-slate-300 hover:text-red-600 transition-colors"
+                                 >
+                                    <Trash2 size={16} />
+                                 </button>
+                              </div>
+                            );
+                          })
                        ) : (
                           <div className="py-12 text-center border-2 border-dashed border-slate-100 rounded-[2rem]">
                              <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">No faculty assigned to this asset</p>

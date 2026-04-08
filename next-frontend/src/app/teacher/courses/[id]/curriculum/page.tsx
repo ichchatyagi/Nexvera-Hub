@@ -80,7 +80,7 @@ const CurriculumEditor = () => {
       } else if (user.role !== 'teacher' && user.role !== 'admin') {
         toast.error('Unauthorized access');
         router.push('/dashboard');
-      } else {
+      } else if (id) {
         fetchCourseAndCurriculum();
       }
     }
@@ -91,9 +91,20 @@ const CurriculumEditor = () => {
       setIsLoading(true);
       const response: any = await api.get(`/teacher/courses/${id}`);
       setCourse(response.data);
-      setCurriculum(response.data.curriculum || []);
-      if (response.data.curriculum?.length > 0 && !activeSectionId) {
-        setActiveSectionId(response.data.curriculum[0].id);
+      const mappedCurriculum = response.data.curriculum?.map((s: any) => ({
+        ...s,
+        id: s.section_id,
+        lessons: s.lessons?.map((l: any) => ({
+          ...l,
+          id: l.lesson_id,
+          type: l.type === 'resource' ? 'article' : l.type,
+          duration: l.duration_minutes,
+          video_id: l.content?.video_id
+        })) || []
+      })) || [];
+      setCurriculum(mappedCurriculum);
+      if (mappedCurriculum.length > 0 && !activeSectionId) {
+        setActiveSectionId(mappedCurriculum[0].id);
       }
     } catch (error) {
       toast.error('Failed to load curriculum');
@@ -163,11 +174,21 @@ const CurriculumEditor = () => {
     e.preventDefault();
     try {
       toast.loading('Processing content...', { id: 'lesson' });
+      const backendDto = {
+        title: lessonForm.title,
+        type: lessonForm.type === 'article' ? 'resource' : lessonForm.type,
+        duration_minutes: lessonForm.duration,
+        is_preview: lessonForm.is_preview,
+        content: {
+          video_id: lessonForm.video_id,
+          resource_url: lessonForm.type === 'article' ? lessonForm.content : undefined
+        }
+      };
       if (selectedLesson) {
-        await api.put(`/teacher/courses/${id}/sections/${selectedSection.id}/lessons/${selectedLesson.id}`, lessonForm);
+        await api.put(`/teacher/courses/${id}/sections/${selectedSection.id}/lessons/${selectedLesson.id}`, backendDto);
         toast.success('Lesson updated', { id: 'lesson' });
       } else {
-        await api.post(`/teacher/courses/${id}/sections/${selectedSection.id}/lessons`, lessonForm);
+        await api.post(`/teacher/courses/${id}/sections/${selectedSection.id}/lessons`, backendDto);
         toast.success('Lesson created', { id: 'lesson' });
       }
       setIsLessonModalOpen(false);

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Search, SlidersHorizontal, BookOpen, Star, Users, ChevronRight, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -145,17 +146,18 @@ const CourseCatalog = () => {
                    <Link href={`/courses/${course.slug}`}>
                     <div className="relative h-48 bg-slate-200 overflow-hidden">
                       {course.thumbnail_url ? (
-                        <img 
+                        <Image 
                           src={course.thumbnail_url} 
                           alt={course.title} 
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          fill
+                          className="object-cover group-hover:scale-110 transition-transform duration-700"
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white/20">
                            <BookOpen size={64} />
                         </div>
                       )}
-                      <div className="absolute top-4 left-4">
+                      <div className="absolute top-4 left-4 z-10">
                         <span className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-slate-900 text-[9px] font-black uppercase tracking-widest border border-white">
                           {course.category?.main || 'General'}
                         </span>

@@ -123,11 +123,15 @@ export class LiveClassesService {
       throw new BadRequestException('scheduled_end must be after scheduled_start');
     }
 
+    if (!dto.course_id || !Types.ObjectId.isValid(dto.course_id)) {
+      throw new BadRequestException('A valid course_id is required');
+    }
+
     const channelName = `nexvera-${randomUUID()}`;
 
     const liveClass = await this.liveClassModel.create({
       course_id: new Types.ObjectId(dto.course_id),
-      lesson_id: dto.lesson_id ? new Types.ObjectId(dto.lesson_id) : null,
+      lesson_id: dto.lesson_id && Types.ObjectId.isValid(dto.lesson_id) ? new Types.ObjectId(dto.lesson_id) : null,
       teacher_id: teacherId,
       title: dto.title,
       description: dto.description ?? null,
