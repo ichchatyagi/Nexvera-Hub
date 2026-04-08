@@ -1,9 +1,28 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsIn } from 'class-validator';
 
 export class CreateOrderDto {
   @IsString()
   @IsNotEmpty()
   courseId: string;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(['course', 'tuition'])
+  product_type?: string;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(['subject', 'class'])
+  access_scope?: string;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(['monthly', 'bundle'])
+  billing_mode?: string;
+
+  @IsString()
+  @IsOptional()
+  subjectId?: string;
 }
 
 export class VerifyRazorpayDto {

@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, OnModuleInit, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { InjectModel } from '@nestjs/mongoose';
@@ -9,7 +9,7 @@ import { AppConfigService } from '../../app-config/app-config.service';
 import { Transaction, TransactionStatus } from '../entities/transaction.entity';
 import { Course, CourseDocument } from '../../courses/schemas/course.schema';
 import { EnrollmentsService } from '../../enrollments/enrollments.service';
-import { VerifyRazorpayDto } from '../dto/razorpay.dto';
+import { VerifyRazorpayDto, CreateOrderDto } from '../dto/razorpay.dto';
 
 @Injectable()
 export class PaymentsService implements OnModuleInit {
@@ -34,7 +34,8 @@ export class PaymentsService implements OnModuleInit {
   /**
    * Create a Razorpay order for a student to purchase a course.
    */
-  async createCourseOrder(userId: string, courseId: string) {
+  async createCourseOrder(userId: string, dto: CreateOrderDto) {
+    const courseId = dto.courseId;
     if (!Types.ObjectId.isValid(courseId)) {
       throw new NotFoundException('Invalid Course ID format');
     }
@@ -44,8 +45,46 @@ export class PaymentsService implements OnModuleInit {
       throw new NotFoundException('Course not found or not available for purchase');
     }
 
-    const price = course.pricing?.price || 0;
-    const currency = course.pricing?.currency || 'INR';
+    let price = course.pricing?.price || 0;
+    let currency = course.pricing?.currency || 'INR';
+
+    if (course.product_type === 'tuition' || dto.product_type === 'tuition') {
+      if (!course.tuition_meta) throw new BadRequestException('Invalid tuition configuration');
+      if (course.product_type !== 'tuition') throw new BadRequestException('Mismatched product type');
+      
+      const isBundle = dto.billing_mode === 'bundle';
+      currency = course.tuition_meta.pricing?.currency || 'INR';
+
+      if (dto.access_scope === 'class') {
+        const pricing = course.tuition_meta.pricing;
+        if (isBundle) {
+          if (!pricing?.bundle_enabled) throw new BadRequestException('Class bundle purchase not enabled');
+          price = pricing.bundle_price || 0;
+        } else {
+          if (!pricing?.monthly_enabled) throw new BadRequestException('Class monthly purchase not enabled');
+          price = pricing.monthly_price || 0;
+        }
+      } else if (dto.access_scope === 'subject') {
+        if (!dto.subjectId) throw new BadRequestException('Missing subject ID');
+        const subject = course.tuition_meta.subjects.find(s => s.subject_id.toString() === dto.subjectId);
+        if (!subject || !subject.pricing) throw new BadRequestException('Invalid tuition subject or pricing');
+        
+        if (isBundle) {
+          if (!subject.pricing.bundle_enabled) throw new BadRequestException('Subject bundle purchase not enabled');
+          price = subject.pricing.bundle_price || 0;
+        } else {
+          if (!subject.pricing.monthly_enabled) throw new BadRequestException('Subject monthly purchase not enabled');
+          price = subject.pricing.monthly_price || 0;
+        }
+      } else {
+        throw new BadRequestException('Invalid access scope');
+      }
+
+      if (!price || price <= 0) {
+        throw new BadRequestException('Resolved tuition price cannot be zero or less');
+      }
+    }
+
     const amountInMinorUnit = Math.round(price * 100);
 
     // Create Razorpay Order
@@ -72,7 +111,11 @@ export class PaymentsService implements OnModuleInit {
       metadata: { 
         type: 'course_purchase', 
         courseTitle: course.title,
-        gateway: 'razorpay'
+        gateway: 'razorpay',
+        product_type: dto.product_type || course.product_type,
+        billing_mode: dto.billing_mode,
+        access_scope: dto.access_scope,
+        subjectId: dto.subjectId,
       },
     });
 
@@ -152,7 +195,7 @@ export class PaymentsService implements OnModuleInit {
     await this.transactionRepository.save(transaction);
 
     // Create enrollment
-    await this.enrollmentsService.enroll(courseId, userId);
+    await this.enrollmentsService.enroll(courseId, userId, transaction.metadata as any);
 
     return {
       success: true,

@@ -24,6 +24,12 @@ export class CoursesService {
         { description: { $regex: query.search, $options: 'i' } }
       ];
     }
+    
+    if (query.product_type) {
+      filters.product_type = query.product_type;
+    } else {
+      filters.product_type = { $ne: 'tuition' }; // Keep existing behavior for regular courses
+    }
     // Default to published courses for the public listing.
     if (query.status === 'all') {
       // Don't filter by status to show all (draft, published, etc.)
@@ -60,7 +66,7 @@ export class CoursesService {
   }
 
   async findBySlug(slug: string) {
-    const course = await this.courseModel.findOne({ slug }).exec();
+    const course = await this.courseModel.findOne({ slug, product_type: { $ne: 'tuition' } }).exec();
     if (!course) throw new NotFoundException('Course not found');
     return { success: true, data: course };
   }
@@ -72,11 +78,86 @@ export class CoursesService {
     return { success: true, data: course.curriculum };
   }
 
+  // ── Tuition Methods ──────────────────────────────────────────────────
+
+  async findTuitionClasses(query: any = {}) {
+    const filters: any = { product_type: 'tuition' };
+    
+    if (query.status === 'all') {
+      // Don't filter by status
+    } else {
+      filters.status = query.status ?? 'published';
+    }
+
+    if (query.class_level) {
+      filters['tuition_meta.class_level'] = Number(query.class_level);
+    }
+
+    const page = parseInt(query.page, 10) || 1;
+    const limit = parseInt(query.limit, 10) || 10;
+    const skip = (page - 1) * limit;
+
+    const data = await this.courseModel
+      .find(filters)
+      .skip(skip)
+      .limit(limit)
+      .select('-tuition_meta.subjects.syllabus') // exclude heavy payloads
+      .exec();
+
+    const total = await this.courseModel.countDocuments(filters);
+
+    return {
+      success: true,
+      data,
+      meta: {
+        pagination: {
+          page,
+          per_page: limit,
+          total,
+          total_pages: Math.ceil(total / limit),
+        },
+      },
+    };
+  }
+
+  async findTuitionClassBySlug(slug: string) {
+    const filters = { product_type: 'tuition', slug, status: 'published' };
+    const course = await this.courseModel
+      .findOne(filters)
+      .select('-tuition_meta.subjects.syllabus')
+      .exec();
+      
+    if (!course) throw new NotFoundException('Tuition class not found');
+    return { success: true, data: course };
+  }
+
+  async findTuitionSubject(classId: string, subjectSlug: string) {
+    if (!Types.ObjectId.isValid(classId)) throw new NotFoundException('Invalid class ID');
+    
+    const filters = { 
+      _id: new Types.ObjectId(classId),
+      product_type: 'tuition', 
+      status: 'published' 
+    };
+    
+    // We fetch the whole document instead of complex projection, to ensure we can correctly validate
+    const course = await this.courseModel.findOne(filters).exec();
+    if (!course || !course.tuition_meta) throw new NotFoundException('Tuition class not found');
+    
+    const subject = course.tuition_meta.subjects?.find(
+      s => s.slug === subjectSlug && s.status === 'published'
+    );
+    
+    if (!subject) throw new NotFoundException('Tuition subject not found');
+    
+    return { success: true, data: subject };
+  }
+
   async create(createDto: CreateCourseDto) {
     const created = await this.courseModel.create({
       ...createDto,
       status: 'draft',
-    });
+    } as any);
     return { success: true, data: created };
   }
 

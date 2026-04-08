@@ -141,6 +141,7 @@ const Navbar = () => {
                     <Link href="/" className={pathname === "/" ? "text-blue-600 font-semibold" : "hover:text-blue-600 transition-colors"}>Home</Link>
                     <NavDropdown title="About" items={aboutItems} />
                     <Link href="/courses" className={pathname === "/courses" ? "text-blue-600 font-semibold" : "hover:text-blue-600 transition-colors"}>Courses</Link>
+                    <Link href="/tuition" className={pathname?.startsWith("/tuition") ? "text-blue-600 font-semibold" : "hover:text-blue-600 transition-colors"}>Tuition</Link>
                     <NavDropdown title="Resources" items={resourceItems} />
                     <NavDropdown title="Career" items={careerItems} />
                     <Link href="/contact" className={pathname === "/contact" ? "text-blue-600 font-semibold" : "hover:text-blue-600 transition-colors"}>Contact</Link>
@@ -263,6 +264,14 @@ const Navbar = () => {
                                 className={`flex items-center justify-between w-full py-4 border-b border-slate-100 ${pathname === "/course" ? "text-blue-600 font-bold" : "hover:text-blue-600 transition-colors"}`}
                             >
                                 Courses
+                            </Link>
+
+                            <Link
+                                href="/tuition"
+                                onClick={closeMobileMenu}
+                                className={`flex items-center justify-between w-full py-4 border-b border-slate-100 ${pathname?.startsWith("/tuition") ? "text-blue-600 font-bold" : "hover:text-blue-600 transition-colors"}`}
+                            >
+                                Tuition
                             </Link>
 
                             <MobileNavDropdown title="Resources" items={resourceItems} closeMenu={closeMobileMenu} />

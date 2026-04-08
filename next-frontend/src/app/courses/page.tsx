@@ -200,7 +200,7 @@ const CourseCatalog = () => {
 
                     <div className="mt-auto pt-6 border-t border-slate-50 flex items-center justify-between">
                       <div>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Tuition Fee</p>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Course Fee</p>
                         <p className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 tracking-tighter">
                           ₹{(course.pricing?.price || 0).toLocaleString()}
                         </p>

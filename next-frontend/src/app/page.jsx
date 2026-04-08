@@ -111,7 +111,7 @@ const Home = () => {
                             <h2 className="text-4xl lg:text-7xl font-black text-slate-900 uppercase tracking-tighter mb-8 leading-[0.95]">
                                 Premium <br />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">ONLINE</span> <br />
-                                TUITIONS
+                                TUITION
                             </h2>
 
                             <p className="text-lg text-slate-500 font-medium leading-relaxed mb-12 max-w-xl mx-auto lg:mx-0">

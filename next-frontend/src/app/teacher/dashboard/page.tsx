@@ -14,7 +14,8 @@ import {
   Loader2,
   Clock,
   Play,
-  X
+  X,
+  GraduationCap
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -23,6 +24,7 @@ import toast from 'react-hot-toast';
 const TeacherDashboard = () => {
   const { user } = useAuth();
   const [courses, setCourses] = useState<any[]>([]);
+  const [tuitionSubjects, setTuitionSubjects] = useState<any[]>([]);
   const [liveClasses, setLiveClasses] = useState<any[]>([]);
   const [earnings, setEarnings] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,6 +55,14 @@ const TeacherDashboard = () => {
       const liveRes = await api.get('/live-classes/mine');
       setLiveClasses(liveRes.data?.filter((l: any) => l.status !== 'ended' && l.status !== 'cancelled') || []);
 
+      // Fetch teacher's assigned tuition subjects
+      try {
+        const tuitionRes = await api.get('/teacher/tuition/subjects');
+        setTuitionSubjects(tuitionRes.data || []);
+      } catch (e) {
+        console.error('Tuition fetch failed', e);
+      }
+
       // Fetch instructor earnings (calculated from assignments)
       const earningsRes = await api.get('/instructor/earnings');
       setEarnings(earningsRes.data);
@@ -80,6 +90,7 @@ const TeacherDashboard = () => {
   const stats = [
     { label: 'Active Students', value: (earnings?.breakdown?.reduce((acc: number, curr: any) => acc + curr.students, 0) || 0).toLocaleString(), icon: <Users size={20} />, color: 'bg-blue-600' },
     { label: 'Assigned Courses', value: courses.length.toString(), icon: <BookOpen size={20} />, color: 'bg-cyan-500' },
+    { label: 'Tuition Subjects', value: tuitionSubjects.length.toString(), icon: <GraduationCap size={20} />, color: 'bg-orange-500' },
     { label: 'Live Sessions', value: liveClasses.length.toString(), icon: <Video size={20} />, color: 'bg-indigo-600' },
     { label: 'Instructor Earnings (Assigned)', value: `$${(earnings?.totalPending || 0).toLocaleString()}`, icon: <TrendingUp size={20} />, color: 'bg-green-600' },
   ];
@@ -177,8 +188,46 @@ const TeacherDashboard = () => {
                    </Link>
                 </div>
               )) : (
-                <div className="p-20 text-center bg-white rounded-[3.5rem] border border-slate-100 border-dashed">
-                   <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No active courses published yet</p>
+                <div className="p-20 text-center bg-white rounded-[3.5rem] border border-slate-100 border-dashed text-slate-400 font-bold uppercase tracking-widest text-xs">
+                   No active courses published yet
+                </div>
+              )}
+            </div>
+
+            <h2 className="text-2xl font-black text-slate-950 uppercase tracking-tighter mb-8 mt-16 border-l-4 border-orange-500 pl-6 flex items-center justify-between">
+               <span>Tuition <span className="text-orange-500">Syllabuses</span></span>
+               <Link href="/teacher/tuition" className="text-[10px] text-slate-400 hover:text-blue-600 transition-colors uppercase tracking-[0.2em]">View All Subjects</Link>
+            </h2>
+
+            <div className="space-y-6">
+              {tuitionSubjects.length > 0 ? tuitionSubjects.slice(0, 3).map((item, i) => (
+                <div key={item.subject?.subject_id || i} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-8 hover:shadow-2xl hover:shadow-orange-500/5 transition-all">
+                   <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-600 shrink-0 shadow-inner">
+                      <GraduationCap size={32} />
+                   </div>
+                   <div className="flex-1 text-center md:text-left">
+                      <h4 className="text-[15px] font-black text-slate-900 uppercase tracking-tight mb-1">{item.subject?.name}</h4>
+                      <p className="text-[9px] text-slate-400 font-black uppercase tracking-[0.2em]">{item.class?.title} • GRADE {item.class?.class_level}</p>
+                   </div>
+                   <div className="flex items-center gap-6 px-8 border-x border-slate-100 hidden md:flex">
+                      <div className="text-center">
+                         <span className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${
+                           item.subject?.status === 'published' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-orange-50 text-orange-600 border-orange-100'
+                         }`}>
+                           {item.subject?.status || 'draft'}
+                         </span>
+                      </div>
+                   </div>
+                   <Link 
+                     href={`/teacher/tuition/${item.subject?.subject_id}`}
+                     className="p-4 rounded-2xl bg-orange-50 text-orange-600 hover:bg-orange-600 hover:text-white transition-all group"
+                   >
+                      <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                   </Link>
+                </div>
+              )) : (
+                <div className="p-20 text-center bg-white rounded-[3.5rem] border border-slate-100 border-dashed text-slate-400 font-bold uppercase tracking-widest text-xs">
+                   No assigned tuition subjects identified
                 </div>
               )}
             </div>

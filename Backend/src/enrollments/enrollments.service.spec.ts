@@ -5,10 +5,11 @@ import { Enrollment } from './schemas/enrollment.schema';
 import { Types } from 'mongoose';
 import { ConflictException } from '@nestjs/common';
 
-const mockEnrollmentModel = {
+const mockEnrollmentModel: any = {
   findOne: jest.fn(),
   create: jest.fn(),
   findById: jest.fn(),
+  find: jest.fn(),
 };
 
 describe('EnrollmentsService', () => {
@@ -80,6 +81,93 @@ describe('EnrollmentsService', () => {
       expect(result.success).toBe(true);
       expect(mockEnrollment.progress.percentage).toBe(50);
       expect(mockSave).toHaveBeenCalled();
+    });
+  });
+
+  describe('Tuition Extensions', () => {
+    it('should assign explicit metadata tuples correctly injecting natively avoiding collisions', async () => {
+       const courseId = new Types.ObjectId().toString();
+       const subjectId = new Types.ObjectId().toString();
+       mockEnrollmentModel.findOne.mockResolvedValue(null);
+       mockEnrollmentModel.create.mockImplementation((obj) => obj);
+
+       const result = await service.enroll(courseId, 's1', {
+         product_type: 'tuition',
+         access_scope: 'subject',
+         billing_mode: 'monthly',
+         subjectId
+       });
+
+       expect(result.success).toBe(true);
+       expect(mockEnrollmentModel.create).toHaveBeenCalledWith(expect.objectContaining({
+         product_type: 'tuition',
+         tuition_class_id: new Types.ObjectId(courseId),
+         tuition_subject_id: new Types.ObjectId(subjectId),
+         billing_mode: 'monthly'
+       }));
+    });
+
+    it('should accurately resolve hasTuitionAccess true for explicit subject queries actively natively', async () => {
+      const classId = new Types.ObjectId().toString();
+      const subjectId = new Types.ObjectId().toString();
+      
+      mockEnrollmentModel.find = jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue([{
+           product_type: 'tuition',
+           billing_mode: 'bundle',
+           access_scope: 'subject',
+           tuition_subject_id: new Types.ObjectId(subjectId)
+        }])
+      });
+
+      const access = await service.hasTuitionAccess('s1', classId, subjectId);
+      expect(access).toBe(true);
+    });
+
+    it('should resolve hasTuitionAccess true executing class delegations accurately covering underlying layers automatically', async () => {
+      const classId = new Types.ObjectId().toString();
+      const subjectId = new Types.ObjectId().toString();
+      
+      mockEnrollmentModel.find = jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue([{
+           product_type: 'tuition',
+           billing_mode: 'bundle',
+           access_scope: 'class',
+        }])
+      });
+
+      const access = await service.hasTuitionAccess('s1', classId, subjectId);
+      expect(access).toBe(true);
+    });
+
+    it('should resolve hasTuitionAccess false for expired monthly boundaries cleanly separating dead states gracefully natively', async () => {
+      const classId = new Types.ObjectId().toString();
+      const subjectId = new Types.ObjectId().toString();
+      
+      mockEnrollmentModel.find = jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue([{
+           product_type: 'tuition',
+           billing_mode: 'monthly',
+           access_scope: 'class',
+           billing_period_end: new Date(Date.now() - 100000) // EXPIRED!
+        }])
+      });
+
+      const access = await service.hasTuitionAccess('s1', classId, subjectId);
+      expect(access).toBe(false);
+    });
+
+    it('should verify standard fallback legacy flows safely ignoring extended payloads natively matching original test bounds', async () => {
+      const courseId = new Types.ObjectId().toString();
+      mockEnrollmentModel.findOne = jest.fn().mockResolvedValue(null);
+      mockEnrollmentModel.create = jest.fn().mockImplementation((obj) => obj);
+
+      const result = await service.enroll(courseId, 's1');
+
+      expect(result.success).toBe(true);
+      expect(mockEnrollmentModel.create).toHaveBeenCalledWith(expect.objectContaining({
+        product_type: 'course'
+      }));
     });
   });
 });
