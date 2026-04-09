@@ -132,55 +132,55 @@ const Contact = () => {
                         initial={{ opacity: 0, x: 30 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
-                        className="bg-white p-10 lg:p-16 rounded-[3.5rem] border-2 border-slate-100 shadow-2xl relative overflow-hidden group h-full flex flex-col justify-center"
+                        className="bg-white p-6 sm:p-10 lg:p-16 rounded-[2.5rem] sm:rounded-[3.5rem] border-2 border-slate-100 shadow-2xl relative overflow-hidden group h-full flex flex-col justify-center"
                     >
                         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full -mr-32 -mt-32 blur-3xl group-hover:scale-150 transition-transform duration-1000"></div>
 
                         <div className="relative z-10 flex flex-col h-full">
-                            <h3 className="text-3xl font-black text-slate-950 mb-10 tracking-tighter uppercase">Quick <span className="text-blue-600">Connect</span></h3>
+                            <h3 className="text-2xl sm:text-3xl font-black text-slate-950 mb-8 sm:mb-10 tracking-tighter uppercase">Quick <span className="text-blue-600">Connect</span></h3>
 
-                            <div className="space-y-10 flex-grow">
+                            <div className="space-y-8 sm:space-y-10 flex-grow">
                                 {/* Email Us */}
-                                <div className="flex items-center gap-6 group/item">
-                                    <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-[1.5rem] flex-shrink-0 flex items-center justify-center text-blue-600 shadow-inner group-hover/item:scale-110 group-hover/item:bg-blue-50 transition-all">
-                                        <Mail size={24} />
+                                <div className="flex items-center gap-4 sm:gap-6 group/item">
+                                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-[1.5rem] flex-shrink-0 flex items-center justify-center text-blue-600 shadow-inner group-hover/item:scale-110 group-hover/item:bg-blue-50 transition-all">
+                                        <Mail className="w-5 h-5 sm:w-6 sm:h-6" />
                                     </div>
-                                    <div>
+                                    <div className="flex-1 min-w-0">
                                         <h4 className="font-black text-slate-400 text-[9px] uppercase tracking-[0.3em] mb-1">Direct Email</h4>
-                                        <p className="text-slate-950 font-black text-lg tracking-tight hover:text-blue-600 transition-colors cursor-pointer leading-none">contact@nexverahub.com</p>
+                                        <p className="text-slate-950 font-black text-sm sm:text-lg tracking-tight hover:text-blue-600 transition-colors cursor-pointer leading-none break-all">contact@nexverahub.com</p>
                                     </div>
                                 </div>
 
                                 {/* Global Contact Lines */}
-                                <div className="flex items-start gap-6 group/item">
-                                    <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-[1.5rem] flex-shrink-0 flex items-center justify-center text-cyan-600 shadow-inner group-hover/item:scale-110 group-hover/item:bg-cyan-50 transition-all mt-1">
-                                        <Smartphone size={24} />
+                                <div className="flex items-start gap-4 sm:gap-6 group/item">
+                                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-[1.5rem] flex-shrink-0 flex items-center justify-center text-cyan-600 shadow-inner group-hover/item:scale-110 group-hover/item:bg-cyan-50 transition-all mt-1">
+                                        <Smartphone className="w-5 h-5 sm:w-6 sm:h-6" />
                                     </div>
-                                    <div className="space-y-4">
+                                    <div className="space-y-4 flex-1 min-w-0">
                                         <h4 className="font-black text-slate-400 text-[9px] uppercase tracking-[0.3em] mb-2">Global Comms</h4>
                                         <div>
                                             <p className="font-black text-slate-400 text-[8px] uppercase tracking-widest leading-none mb-1">India / Local Hub</p>
-                                            <p className="text-slate-950 font-black text-base tracking-tight leading-none">+91-9821000921</p>
+                                            <p className="text-slate-950 font-black text-sm sm:text-base tracking-tight leading-none">+91-9821000921</p>
                                         </div>
                                         <div>
                                             <p className="font-black text-slate-400 text-[8px] uppercase tracking-widest leading-none mb-1">US / North America</p>
-                                            <p className="text-slate-950 font-black text-base tracking-tight leading-none">+1-917-6721794</p>
+                                            <p className="text-slate-950 font-black text-sm sm:text-base tracking-tight leading-none">+1-917-6721794</p>
                                         </div>
                                         <div>
                                             <p className="font-black text-slate-400 text-[8px] uppercase tracking-widest leading-none mb-1">UK / European Hub</p>
-                                            <p className="text-slate-950 font-black text-base tracking-tight leading-none">+44-7520604822</p>
+                                            <p className="text-slate-950 font-black text-sm sm:text-base tracking-tight leading-none">+44-7520604822</p>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Our Timings */}
-                                <div className="flex items-center gap-6 group/item">
-                                    <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-[1.5rem] flex-shrink-0 flex items-center justify-center text-indigo-600 shadow-inner group-hover/item:scale-110 group-hover/item:bg-indigo-50 transition-all">
-                                        <Clock size={24} />
+                                <div className="flex items-center gap-4 sm:gap-6 group/item">
+                                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-[1.5rem] flex-shrink-0 flex items-center justify-center text-indigo-600 shadow-inner group-hover/item:scale-110 group-hover/item:bg-indigo-50 transition-all">
+                                        <Clock className="w-5 h-5 sm:w-6 sm:h-6" />
                                     </div>
-                                    <div>
+                                    <div className="flex-1 min-w-0">
                                         <h4 className="font-black text-slate-400 text-[9px] uppercase tracking-[0.3em] mb-1">Active Hours</h4>
-                                        <p className="text-slate-950 font-black text-lg tracking-tight leading-none">Mon - Sat: 9 AM - 6 PM</p>
+                                        <p className="text-slate-950 font-black text-sm sm:text-lg tracking-tight leading-none">Mon - Sat: 9 AM - 6 PM</p>
                                     </div>
                                 </div>
                             </div>

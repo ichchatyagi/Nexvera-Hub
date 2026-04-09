@@ -100,6 +100,83 @@ const MobileNavDropdown = ({ title, items, closeMenu }) => {
     );
 };
 
+const countries = [
+    { code: 'IN', name: 'India', flag: '🇮🇳' },
+    { code: 'US', name: 'United States', flag: '🇺🇸' },
+    { code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
+    { code: 'CA', name: 'Canada', flag: '🇨🇦' },
+    { code: 'AU', name: 'Australia', flag: '🇦🇺' },
+    { code: 'EU', name: 'Europe', flag: '🇪🇺' },
+    { code: 'DE', name: 'Germany', flag: '🇩🇪' },
+    { code: 'FR', name: 'France', flag: '🇫🇷' },
+    { code: 'IT', name: 'Italy', flag: '🇮🇹' },
+    { code: 'ES', name: 'Spain', flag: '🇪🇸' },
+    { code: 'JP', name: 'Japan', flag: '🇯🇵' },
+    { code: 'CN', name: 'China', flag: '🇨🇳' },
+    { code: 'SG', name: 'Singapore', flag: '🇸🇬' },
+    { code: 'AE', name: 'UAE', flag: '🇦🇪' },
+    { code: 'ZA', name: 'South Africa', flag: '🇿🇦' },
+    { code: 'BR', name: 'Brazil', flag: '🇧🇷' },
+    { code: 'MX', name: 'Mexico', flag: '🇲🇽' },
+    { code: 'KR', name: 'South Korea', flag: '🇰🇷' },
+    { code: 'NZ', name: 'New Zealand', flag: '🇳🇿' },
+    { code: 'CH', name: 'Switzerland', flag: '🇨🇭' },
+    { code: 'SE', name: 'Sweden', flag: '🇸🇪' },
+    { code: 'NL', name: 'Netherlands', flag: '🇳🇱' },
+    { code: 'NO', name: 'Norway', flag: '🇳🇴' },
+    { code: 'DK', name: 'Denmark', flag: '🇩🇰' },
+    { code: 'FI', name: 'Finland', flag: '🇫🇮' },
+    { code: 'IE', name: 'Ireland', flag: '🇮🇪' },
+    { code: 'IL', name: 'Israel', flag: '🇮🇱' },
+];
+
+const CountryDropdown = () => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [selectedCountry, setSelectedCountry] = useState(countries[0]);
+
+    return (
+        <div 
+            className="relative group lg:mr-2"
+            onMouseEnter={() => setIsOpen(true)}
+            onMouseLeave={() => setIsOpen(false)}
+        >
+            <button className="flex items-center gap-1.5 px-2 py-2 text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors focus:outline-none rounded-xl hover:bg-slate-50">
+                <span className="hidden sm:inline-block text-xs font-semibold">{selectedCountry.name}</span>
+                <span className="text-lg leading-none">{selectedCountry.flag}</span>
+                <ChevronDown size={14} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute top-full right-0 mt-2 w-48 bg-white/95 backdrop-blur-xl border border-blue-50 rounded-2xl shadow-xl shadow-blue-500/10 p-2 z-[60] max-h-[170px] overflow-y-auto custom-scrollbar"
+                    >
+                        {countries.map((country) => (
+                            <button
+                                key={country.code}
+                                onClick={() => {
+                                   setSelectedCountry(country);
+                                   setIsOpen(false);
+                                }}
+                                className={`
+                                    w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all text-left mb-1 last:mb-0
+                                    ${selectedCountry.code === country.code ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50 hover:text-blue-600'}
+                                `}
+                            >
+                                <span className="text-xs font-semibold">{country.name}</span>
+                                <span className="text-lg">{country.flag}</span>
+                            </button>
+                        ))}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
 const Navbar = () => {
     const { user, logout, isAuthenticated } = useAuth();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -149,6 +226,7 @@ const Navbar = () => {
 
                 {/* Right side: Auth + Hamburger */}
                 <div className="flex items-center gap-3 lg:gap-4 shrink-0">
+                    <CountryDropdown />
                     {!isAuthenticated ? (
                         <div className="flex items-center gap-2 lg:gap-4">
                             <Link href="/login" className="hidden sm:block text-slate-700 font-semibold px-4 py-2 text-sm lg:text-base hover:text-blue-600 transition-colors cursor-pointer outline-none">Log In</Link>
