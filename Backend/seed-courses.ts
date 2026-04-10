@@ -183,19 +183,79 @@ async function bootstrap() {
     generate("Market Research Fundamentals", "Know your competitors.", ["Research", "Market", "Competitors"], "Entrepreneurship", "beginner"),
   ];
 
-  console.log(`Seeding ${allCourses.length} courses across 8 categories...`);
+  const allTuitions: any[] = [];
+  for (let c = 5; c <= 12; c++) {
+    let subjects: string[] = [];
+    if (c <= 10) {
+      subjects = ["Mathematics", "Science", "English", "Social Science"];
+    } else {
+      subjects = ["Physics", "Chemistry", "Mathematics", "Biology", "English Core"];
+    }
+    
+    const generatedSubjects = subjects.map(sub => ({
+      name: sub,
+      slug: `class-${c}-${sub.toLowerCase().replace(/ /g, '-')}`,
+      short_description: `Comprehensive ${sub} curriculum for Class ${c}`,
+      status: 'published',
+      pricing: {
+        monthly_enabled: true,
+        monthly_price: Math.floor(1000 + ((c - 5) * 100)),
+        bundle_enabled: false,
+        bundle_price: 0,
+        currency: 'INR'
+      },
+      syllabus: [
+        {
+          title: "Term 1 Framework",
+          order: 1,
+          lessons: [
+            { title: "Introduction", type: "video", order: 1, is_preview: true },
+            { title: "Core Concepts", type: "video", order: 2, is_preview: false }
+          ]
+        }
+      ],
+      total_lessons: 2,
+      total_duration_hours: 5
+    }));
+
+    allTuitions.push({
+      title: `Class ${c} Complete Tuition`,
+      slug: `class-${c}-tuition`,
+      product_type: 'tuition',
+      status: 'published',
+      description: `Comprehensive tuition package for Class ${c}. Master your academics with our expert tutors.`,
+      short_description: `Master Class ${c} academics.`,
+      tuition_meta: {
+        class_level: c,
+        boards_supported: ['CBSE', 'ICSE', 'State Board'],
+        pricing: {
+          monthly_enabled: true,
+          monthly_price: Math.floor(4000 + (c - 5) * 500),
+          bundle_enabled: true,
+          bundle_price: Math.floor(40000 + (c - 5) * 5000),
+          currency: 'INR'
+        },
+        subjects: generatedSubjects
+      }
+    });
+  }
+
+  const allDataToSeed: any[] = [...allCourses, ...allTuitions];
+
+  console.log(`Seeding ${allCourses.length} courses and ${allTuitions.length} tuitions...`);
   
-  for (const course of allCourses) {
+  for (const item of allDataToSeed) {
     try {
-      await courseModel.create(course);
-      console.log(`+ Created: ${course.title} [${course.category.main}]`);
+      await courseModel.create(item);
+      const typeLabel = item.product_type === 'tuition' ? `Tuition Class ${item.tuition_meta?.class_level}` : item.category?.main;
+      console.log(`+ Created: ${item.title} [${typeLabel}]`);
     } catch (e: any) {
       if (e.code === 11000) {
         // Update existing if duplicate slug found to refresh data
-        await courseModel.findOneAndUpdate({ slug: course.slug }, course);
-        console.log(`~ Updated: ${course.title}`);
+        await courseModel.findOneAndUpdate({ slug: item.slug }, item);
+        console.log(`~ Updated: ${item.title}`);
       } else {
-        console.log(`- Error creating ${course.title}: ${e.message}`);
+        console.log(`- Error creating ${item.title}: ${e.message}`);
       }
     }
   }

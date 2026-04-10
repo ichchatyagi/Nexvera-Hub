@@ -35,11 +35,11 @@ interface TuitionClass {
 export default function TuitionCatalog() {
   const [classes, setClasses] = useState<TuitionClass[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeCategory, setActiveCategory] = useState('Class 10');
+  const [activeCategory, setActiveCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
 
   const categories = [
-    'Class 5', 'Class 6', 'Class 7', 'Class 8',
+    'All', 'Class 5', 'Class 6', 'Class 7', 'Class 8',
     'Class 9', 'Class 10', 'Class 11', 'Class 12'
   ];
 
@@ -50,8 +50,10 @@ export default function TuitionCatalog() {
   const fetchClasses = async () => {
     try {
       setIsLoading(true);
-      const classLevel = activeCategory.replace('Class ', '');
-      const params: any = { class_level: classLevel };
+      const params: any = {};
+      if (activeCategory !== 'All') {
+        params.class_level = activeCategory.replace('Class ', '');
+      }
       if (searchTerm) params.search = searchTerm;
 
       const response = await api.get('/tuition/classes', { params });
@@ -112,7 +114,7 @@ export default function TuitionCatalog() {
               </button>
             </form>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               {categories.map((cat) => (
                 <button
                   key={cat}
@@ -122,10 +124,10 @@ export default function TuitionCatalog() {
                     : 'bg-white text-slate-500 border-slate-100 hover:border-blue-200 hover:text-blue-600 hover:bg-blue-50/30'
                     }`}
                 >
-                  <div className={`mb-3 transition-transform duration-500 ${activeCategory === cat ? 'scale-110' : 'opacity-70'}`}>
-                    <IconRenderer icon={cat} className="w-6 h-6" />
+                  <div className={`mb-2 transition-transform duration-500 ${activeCategory === cat ? 'scale-110' : 'opacity-70'}`}>
+                    <IconRenderer icon={cat} className="w-5 h-5" />
                   </div>
-                  <span className="text-[9px] font-black uppercase tracking-widest text-center leading-tight">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-center leading-tight whitespace-nowrap">
                     {cat}
                   </span>
                 </button>
@@ -234,7 +236,7 @@ export default function TuitionCatalog() {
             <h3 className="text-xl font-black text-slate-900 mb-2 uppercase tracking-tight">No classes found</h3>
             <p className="text-slate-500 font-medium">Try adjusting your filters or search keywords.</p>
             <button
-              onClick={() => { setSearchTerm(''); setActiveCategory('Class 10'); }}
+              onClick={() => { setSearchTerm(''); setActiveCategory('All'); }}
               className="mt-8 text-blue-600 font-black text-xs uppercase tracking-widest hover:underline"
             >
               Clear all filters
