@@ -36,30 +36,37 @@ const CourseCatalog = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('Artificial Intelligence');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const categories = [
-    'Artificial Intelligence', 
-    'Information Technology', 
-    'Sales and Marketing', 
-    'Data Science', 
-    'Design', 
-    'Languages', 
-    'Business', 
+    'Artificial Intelligence',
+    'Information Technology',
+    'Sales and Marketing',
+    'Data Science',
+    'Design',
+    'Languages',
+    'Business',
     'Entrepreneurship'
   ];
 
   useEffect(() => {
-    fetchCourses();
-  }, [activeCategory]);
+    fetchCourses(currentPage);
+  }, [activeCategory, currentPage]);
 
-  const fetchCourses = async () => {
+  const fetchCourses = async (page = 1) => {
     try {
       setIsLoading(true);
-      const params: any = { category: activeCategory };
+      const params: any = {
+        category: activeCategory,
+        page,
+        limit: 8
+      };
       if (searchTerm) params.search = searchTerm;
 
       const response = await api.get('/courses', { params });
-      setCourses(response.data || []); // api interceptor already returns response.data.data
+      setCourses(response.data || []);
+      setTotalPages((response as any).meta?.pagination?.total_pages || 1);
     } catch (error) {
       toast.error('Failed to load courses');
       console.error(error);
@@ -70,7 +77,16 @@ const CourseCatalog = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchCourses();
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    } else {
+      fetchCourses(1);
+    }
+  };
+
+  const handleCategoryChange = (cat: string) => {
+    setActiveCategory(cat);
+    setCurrentPage(1);
   };
 
   return (
@@ -120,10 +136,10 @@ const CourseCatalog = () => {
               {categories.map((cat) => (
                 <button
                   key={cat}
-                  onClick={() => setActiveCategory(cat)}
+                  onClick={() => handleCategoryChange(cat)}
                   className={`flex flex-col items-center justify-center p-6 rounded-[2rem] transition-all duration-500 border ${activeCategory === cat
-                      ? 'bg-slate-950 text-white border-slate-950 shadow-2xl shadow-blue-500/20 scale-[1.02]'
-                      : 'bg-white text-slate-500 border-slate-100 hover:border-blue-200 hover:text-blue-600 hover:bg-blue-50/30'
+                    ? 'bg-slate-950 text-white border-slate-950 shadow-2xl shadow-blue-500/20 scale-[1.02]'
+                    : 'bg-white text-slate-500 border-slate-100 hover:border-blue-200 hover:text-blue-600 hover:bg-blue-50/30'
                     }`}
                 >
                   <div className={`mb-3 transition-transform duration-500 ${activeCategory === cat ? 'scale-110' : 'opacity-70'}`}>
@@ -145,77 +161,121 @@ const CourseCatalog = () => {
             <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Calibrating course data...</p>
           </div>
         ) : courses.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            <AnimatePresence>
-              {courses.map((course, idx) => (
-                <motion.div
-                  key={course.id || course._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                  whileHover={{ y: -10 }}
-                  className="bg-white rounded-[2.5rem] overflow-hidden shadow-sm border border-slate-100 flex flex-col hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 group"
-                >
-                  <Link href={`/courses/${course.slug}`}>
-                    <div className="relative h-48 bg-slate-200 overflow-hidden">
-                      {course.thumbnail_url ? (
-                        <Image
-                          src={course.thumbnail_url}
-                          alt={course.title}
-                          fill
-                          className="object-cover group-hover:scale-110 transition-transform duration-700"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white/20">
-                          <BookOpen size={64} />
-                        </div>
-                      )}
-                      <div className="absolute top-4 left-4 z-10">
-                        <span className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-slate-900 text-[9px] font-black uppercase tracking-widest border border-white">
-                          {course.category?.main || 'General'}
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-
-                  <div className="p-6 flex-1 flex flex-col">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="flex items-center text-orange-400 gap-0.5">
-                        <Star size={12} fill="currentColor" />
-                        <span className="text-xs font-black text-slate-900 ml-1">{course.stats?.average_rating || 'New'}</span>
-                      </div>
-                      <span className="text-slate-300 mx-1">•</span>
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{course.stats?.total_reviews || 0} Reviews</span>
-                    </div>
-
+          <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              <AnimatePresence>
+                {courses.map((course, idx) => (
+                  <motion.div
+                    key={course.id || course._id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                    whileHover={{ y: -10 }}
+                    className="bg-white rounded-[2.5rem] overflow-hidden shadow-sm border border-slate-100 flex flex-col hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 group"
+                  >
                     <Link href={`/courses/${course.slug}`}>
-                      <h3 className="text-lg font-black text-slate-900 mb-3 group-hover:text-blue-600 transition-colors line-clamp-2 uppercase tracking-tight">
-                        {course.title}
-                      </h3>
+                      <div className="relative h-48 bg-slate-200 overflow-hidden">
+                        {course.thumbnail_url ? (
+                          <Image
+                            src={course.thumbnail_url}
+                            alt={course.title}
+                            fill
+                            className="object-cover group-hover:scale-110 transition-transform duration-700"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white/20">
+                            <BookOpen size={64} />
+                          </div>
+                        )}
+                        <div className="absolute top-4 left-4 z-10">
+                          <span className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-slate-900 text-[9px] font-black uppercase tracking-widest border border-white">
+                            {course.category?.main || 'General'}
+                          </span>
+                        </div>
+                      </div>
                     </Link>
 
-                    <p className="text-xs text-slate-500 mb-6 line-clamp-2 font-medium leading-relaxed">
-                      {course.description}
-                    </p>
-
-                    <div className="mt-auto pt-6 border-t border-slate-50 flex items-center justify-between">
-                      <div>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Course Fee</p>
-                        <p className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 tracking-tighter">
-                          ₹{(course.pricing?.price || 0).toLocaleString()}
-                        </p>
+                    <div className="p-6 flex-1 flex flex-col">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="flex items-center text-orange-400 gap-0.5">
+                          <Star size={12} fill="currentColor" />
+                          <span className="text-xs font-black text-slate-900 ml-1">{course.stats?.average_rating || 'New'}</span>
+                        </div>
+                        <span className="text-slate-300 mx-1">•</span>
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{course.stats?.total_reviews || 0} Reviews</span>
                       </div>
-                      <Link
-                        href={`/courses/${course.slug}`}
-                        className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition-all group-hover:translate-x-1"
-                      >
-                        <ChevronRight size={18} />
+
+                      <Link href={`/courses/${course.slug}`}>
+                        <h3 className="text-lg font-black text-slate-900 mb-3 group-hover:text-blue-600 transition-colors line-clamp-2 uppercase tracking-tight">
+                          {course.title}
+                        </h3>
                       </Link>
+
+                      <p className="text-xs text-slate-500 mb-6 line-clamp-2 font-medium leading-relaxed">
+                        {course.description}
+                      </p>
+
+                      <div className="mt-auto pt-6 border-t border-slate-50 flex items-center justify-between">
+                        <div>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Course Fee</p>
+                          <p className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 tracking-tighter">
+                            ₹{(course.pricing?.price || 0).toLocaleString()}
+                          </p>
+                        </div>
+                        <Link
+                          href={`/courses/${course.slug}`}
+                          className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition-all group-hover:translate-x-1"
+                        >
+                          <ChevronRight size={18} />
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center mt-16 gap-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className={`px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${currentPage === 1
+                      ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                      : 'bg-white text-blue-600 shadow-xl shadow-blue-500/10 hover:bg-blue-50 hover:scale-105 active:scale-95'
+                    }`}
+                >
+                  Previous
+                </button>
+
+                <div className="flex gap-2">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-12 h-12 rounded-2xl font-black text-xs transition-all ${currentPage === page
+                          ? 'bg-gradient-to-br from-blue-600 to-cyan-500 text-white shadow-xl shadow-blue-500/30 scale-110'
+                          : 'bg-white text-slate-600 shadow-sm border border-slate-100 hover:border-blue-200 hover:text-blue-600 hover:bg-blue-50/30'
+                        }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className={`px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${currentPage === totalPages
+                      ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                      : 'bg-white text-blue-600 shadow-xl shadow-blue-500/10 hover:bg-blue-50 hover:scale-105 active:scale-95'
+                    }`}
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-20 bg-white/50 rounded-[3rem] border border-slate-100">
@@ -225,7 +285,7 @@ const CourseCatalog = () => {
             <h3 className="text-xl font-black text-slate-900 mb-2 uppercase tracking-tight">No courses found</h3>
             <p className="text-slate-500 font-medium">Try adjusting your filters or search keywords.</p>
             <button
-              onClick={() => { setSearchTerm(''); setActiveCategory('All'); }}
+              onClick={() => { setSearchTerm(''); handleCategoryChange('Artificial Intelligence'); }}
               className="mt-8 text-blue-600 font-black text-xs uppercase tracking-widest hover:underline"
             >
               Clear all filters
