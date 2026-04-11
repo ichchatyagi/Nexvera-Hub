@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Menu, X, User, LogOut, LayoutDashboard } from 'lucide-react';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
+import ReactCountryFlag from "react-country-flag"
 
 const NavDropdown = ({ title, items }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -101,33 +102,33 @@ const MobileNavDropdown = ({ title, items, closeMenu }) => {
 };
 
 const countries = [
-    { code: 'IN', name: 'India', flag: '🇮🇳' },
-    { code: 'US', name: 'United States', flag: '🇺🇸' },
-    { code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
-    { code: 'CA', name: 'Canada', flag: '🇨🇦' },
-    { code: 'AU', name: 'Australia', flag: '🇦🇺' },
-    { code: 'EU', name: 'Europe', flag: '🇪🇺' },
-    { code: 'DE', name: 'Germany', flag: '🇩🇪' },
-    { code: 'FR', name: 'France', flag: '🇫🇷' },
-    { code: 'IT', name: 'Italy', flag: '🇮🇹' },
-    { code: 'ES', name: 'Spain', flag: '🇪🇸' },
-    { code: 'JP', name: 'Japan', flag: '🇯🇵' },
-    { code: 'CN', name: 'China', flag: '🇨🇳' },
-    { code: 'SG', name: 'Singapore', flag: '🇸🇬' },
-    { code: 'AE', name: 'UAE', flag: '🇦🇪' },
-    { code: 'ZA', name: 'South Africa', flag: '🇿🇦' },
-    { code: 'BR', name: 'Brazil', flag: '🇧🇷' },
-    { code: 'MX', name: 'Mexico', flag: '🇲🇽' },
-    { code: 'KR', name: 'South Korea', flag: '🇰🇷' },
-    { code: 'NZ', name: 'New Zealand', flag: '🇳🇿' },
-    { code: 'CH', name: 'Switzerland', flag: '🇨🇭' },
-    { code: 'SE', name: 'Sweden', flag: '🇸🇪' },
-    { code: 'NL', name: 'Netherlands', flag: '🇳🇱' },
-    { code: 'NO', name: 'Norway', flag: '🇳🇴' },
-    { code: 'DK', name: 'Denmark', flag: '🇩🇰' },
-    { code: 'FI', name: 'Finland', flag: '🇫🇮' },
-    { code: 'IE', name: 'Ireland', flag: '🇮🇪' },
-    { code: 'IL', name: 'Israel', flag: '🇮🇱' },
+    { code: 'IN', name: 'India' },
+    { code: 'US', name: 'United States' },
+    { code: 'GB', name: 'United Kingdom' },
+    { code: 'CA', name: 'Canada' },
+    { code: 'AU', name: 'Australia' },
+    { code: 'EU', name: 'Europe' },
+    { code: 'DE', name: 'Germany' },
+    { code: 'FR', name: 'France' },
+    { code: 'IT', name: 'Italy' },
+    { code: 'ES', name: 'Spain' },
+    { code: 'JP', name: 'Japan' },
+    { code: 'CN', name: 'China' },
+    { code: 'SG', name: 'Singapore' },
+    { code: 'AE', name: 'UAE' },
+    { code: 'ZA', name: 'South Africa' },
+    { code: 'BR', name: 'Brazil' },
+    { code: 'MX', name: 'Mexico' },
+    { code: 'KR', name: 'South Korea' },
+    { code: 'NZ', name: 'New Zealand' },
+    { code: 'CH', name: 'Switzerland' },
+    { code: 'SE', name: 'Sweden' },
+    { code: 'NL', name: 'Netherlands' },
+    { code: 'NO', name: 'Norway' },
+    { code: 'DK', name: 'Denmark' },
+    { code: 'FI', name: 'Finland' },
+    { code: 'IE', name: 'Ireland' },
+    { code: 'IL', name: 'Israel' },
 ];
 
 const CountryDropdown = () => {
@@ -135,14 +136,14 @@ const CountryDropdown = () => {
     const [selectedCountry, setSelectedCountry] = useState(countries[0]);
 
     return (
-        <div 
+        <div
             className="relative group lg:mr-2"
             onMouseEnter={() => setIsOpen(true)}
             onMouseLeave={() => setIsOpen(false)}
         >
             <button className="flex items-center gap-1.5 px-2 py-2 text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors focus:outline-none rounded-xl hover:bg-slate-50">
                 <span className="hidden sm:inline-block text-xs font-semibold">{selectedCountry.name}</span>
-                <span className="text-lg leading-none">{selectedCountry.flag}</span>
+                <span className="text-lg leading-none"><ReactCountryFlag countryCode={selectedCountry.code} /></span>
                 <ChevronDown size={14} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
             <AnimatePresence>
@@ -158,8 +159,8 @@ const CountryDropdown = () => {
                             <button
                                 key={country.code}
                                 onClick={() => {
-                                   setSelectedCountry(country);
-                                   setIsOpen(false);
+                                    setSelectedCountry(country);
+                                    setIsOpen(false);
                                 }}
                                 className={`
                                     w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all text-left mb-1 last:mb-0
@@ -167,7 +168,7 @@ const CountryDropdown = () => {
                                 `}
                             >
                                 <span className="text-xs font-semibold">{country.name}</span>
-                                <span className="text-lg">{country.flag}</span>
+                                <span className="text-lg"><ReactCountryFlag countryCode={country.code} /></span>
                             </button>
                         ))}
                     </motion.div>
@@ -236,7 +237,7 @@ const Navbar = () => {
                         </div>
                     ) : (
                         <div className="relative">
-                            <button 
+                            <button
                                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                                 className="flex items-center gap-2 p-1 pl-3 rounded-full border border-slate-200 hover:border-blue-200 transition-all hover:bg-blue-50/50"
                             >
@@ -245,7 +246,7 @@ const Navbar = () => {
                                     {user?.name?.[0].toUpperCase()}
                                 </div>
                             </button>
-                            
+
                             <AnimatePresence>
                                 {isUserMenuOpen && (
                                     <>
@@ -260,26 +261,26 @@ const Navbar = () => {
                                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Signed in as</p>
                                                 <p className="text-sm font-bold text-slate-900 truncate">{user?.email}</p>
                                             </div>
-                                            
-                                            <Link 
-                                                href={user?.role === 'admin' ? '/admin/courses' : user?.role === 'teacher' ? '/teacher/dashboard' : '/dashboard'} 
+
+                                            <Link
+                                                href={user?.role === 'admin' ? '/admin/courses' : user?.role === 'teacher' ? '/teacher/dashboard' : '/dashboard'}
                                                 className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-all"
                                                 onClick={() => setIsUserMenuOpen(false)}
                                             >
                                                 <LayoutDashboard size={18} />
                                                 {user?.role === 'admin' ? 'Admin Catalog' : 'Dashboard'}
                                             </Link>
-                                            
-                                            <Link 
-                                                href="/profile" 
+
+                                            <Link
+                                                href="/profile"
                                                 className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-all"
                                                 onClick={() => setIsUserMenuOpen(false)}
                                             >
                                                 <User size={18} />
                                                 Profile
                                             </Link>
-                                            
-                                            <button 
+
+                                            <button
                                                 onClick={() => { logout(); setIsUserMenuOpen(false); }}
                                                 className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-all text-left"
                                             >
@@ -373,7 +374,7 @@ const Navbar = () => {
                                 </div>
                             ) : (
                                 <div className="flex flex-col gap-4 mt-8 pb-10">
-                                    <button 
+                                    <button
                                         onClick={() => { logout(); closeMobileMenu(); }}
                                         className="w-full text-center text-red-600 font-bold py-4 bg-red-50 border border-red-100 rounded-2xl active:scale-95 transition-transform cursor-pointer outline-none"
                                     >
