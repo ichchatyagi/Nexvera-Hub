@@ -80,11 +80,35 @@ export class Enrollment {
   @Prop({ type: String, enum: ['active', 'expired', 'refunded'], default: 'active' })
   status: string;
 
+  @Prop({ type: String, enum: ['course', 'tuition'], default: 'course' })
+  product_type: string;
+
+  @Prop({ type: Types.ObjectId })
+  tuition_class_id?: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId })
+  tuition_subject_id?: Types.ObjectId;
+
+  @Prop({ type: String, enum: ['subject', 'class'] })
+  access_scope?: string;
+
+  @Prop({ type: String, enum: ['monthly', 'bundle'] })
+  billing_mode?: string;
+
+  @Prop({ type: String, enum: ['active', 'expired', 'cancelled'] })
+  subscription_status?: string;
+
+  @Prop()
+  billing_period_start?: Date;
+
+  @Prop()
+  billing_period_end?: Date;
+
   enrolled_at?: Date;
   updated_at?: Date;
 }
 
 export const EnrollmentSchema = SchemaFactory.createForClass(Enrollment);
 
-// Ensure a student can only enroll in a course once
-EnrollmentSchema.index({ student_id: 1, course_id: 1 }, { unique: true });
+// Allow multiple granular tuition records natively avoiding global course conflicts organically
+EnrollmentSchema.index({ student_id: 1, course_id: 1, access_scope: 1, tuition_subject_id: 1 }, { unique: true });

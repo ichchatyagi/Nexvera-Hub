@@ -108,8 +108,79 @@ export class CourseStats {
   total_reviews: number;
 }
 
+@Schema({ _id: false })
+export class TuitionPricing {
+  @Prop({ default: false })
+  monthly_enabled: boolean;
+
+  @Prop({ default: 0 })
+  monthly_price: number;
+
+  @Prop({ default: false })
+  bundle_enabled: boolean;
+
+  @Prop({ default: 0 })
+  bundle_price: number;
+
+  @Prop({ default: 'INR' })
+  currency: string;
+}
+
+@Schema()
+export class TuitionSubject {
+  @Prop({ type: Types.ObjectId, default: () => new Types.ObjectId() })
+  subject_id: Types.ObjectId;
+
+  @Prop({ required: true })
+  name: string;
+
+  @Prop({ required: true })
+  slug: string;
+
+  @Prop()
+  short_description: string;
+
+  @Prop({ type: String, enum: ['draft', 'published', 'archived'], default: 'draft' })
+  status: string;
+
+  @Prop()
+  lead_instructor_id?: string;
+
+  @Prop({ type: [String], default: [] })
+  assigned_instructor_ids: string[];
+
+  @Prop({ type: TuitionPricing, default: () => ({}) })
+  pricing: TuitionPricing;
+
+  @Prop({ type: [SchemaFactory.createForClass(CurriculumSection)], default: [] })
+  syllabus: CurriculumSection[];
+
+  @Prop({ default: 0 })
+  total_lessons: number;
+
+  @Prop({ default: 0 })
+  total_duration_hours: number;
+}
+
+@Schema({ _id: false })
+export class TuitionMeta {
+  @Prop({ required: true, min: 5, max: 12 })
+  class_level: number;
+
+  @Prop({ type: [String], default: [] })
+  boards_supported: string[];
+
+  @Prop({ type: TuitionPricing })
+  pricing?: TuitionPricing;
+
+  @Prop({ type: [SchemaFactory.createForClass(TuitionSubject)], default: [] })
+  subjects: TuitionSubject[];
+}
+
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
 export class Course {
+  @Prop({ type: String, enum: ['course', 'tuition'], default: 'course' })
+  product_type: string;
   @Prop({ required: true })
   title: string;
 
@@ -145,6 +216,9 @@ export class Course {
 
   @Prop({ type: [SchemaFactory.createForClass(CurriculumSection)] })
   curriculum: CurriculumSection[];
+
+  @Prop({ type: TuitionMeta })
+  tuition_meta?: TuitionMeta;
 
   @Prop()
   thumbnail_url: string;

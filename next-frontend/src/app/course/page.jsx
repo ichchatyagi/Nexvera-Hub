@@ -411,11 +411,22 @@ const TuitionSection = () => {
     );
 };
 
-const CourseCard = ({ category, title, instructor, lessons, rating, reviews, color, icon, image }) => {
+const CourseCard = ({ 
+    category, 
+    title, 
+    instructor = "Expert Instructor", 
+    lessons = 22, 
+    rating = 4.8, 
+    reviews = "1.2k", 
+    color = "from-blue-600 to-cyan-500", 
+    icon = "✨", 
+    image 
+}) => {
     const [selectedLevel, setSelectedLevel] = useState("Beginner");
     
     // Fetch dynamic pricing
-    const pricingInfo = coursesPricing.find(p => p.title === title);
+    const baseTitle = title.split(' - ')[0];
+    const pricingInfo = Array.isArray(coursesPricing) ? coursesPricing.find(p => p.title === title || p.title === baseTitle) : null;
     const dynamicPrices = pricingInfo ? pricingInfo.pricing : { "Beginner": 699, "Intermediate": 1299, "Advanced": 1799 };
     
     const slug = title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]/g, '');

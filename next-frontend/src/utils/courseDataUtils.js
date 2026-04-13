@@ -20,7 +20,8 @@ export const getCourseBySlug = (slug) => {
 };
 
 const determineLevelAndPrice = (title, category) => {
-    const pricingInfo = coursesPricing.find(p => p.title === title);
+    const baseTitle = title.split(' - ')[0];
+    const pricingInfo = Array.isArray(coursesPricing) ? coursesPricing.find(p => p.title === title || p.title === baseTitle) : null;
     const lowTitle = (title || "").toLowerCase();
 
     // Determine level based on title keywords

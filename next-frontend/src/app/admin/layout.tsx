@@ -14,6 +14,7 @@ import {
   Shield,
   Loader2,
   Menu,
+  GraduationCap,
   X
 } from 'lucide-react';
 import Link from 'next/link';
@@ -22,6 +23,7 @@ import toast from 'react-hot-toast';
 const navItems = [
   { label: 'Overview', href: '/admin', icon: LayoutDashboard },
   { label: 'Courses', href: '/admin/courses', icon: BookOpen },
+  { label: 'Tuition', href: '/admin/tuition', icon: GraduationCap },
   { label: 'Instructors & Earnings', href: '/admin/instructors/earnings', icon: IndianRupee },
   { label: 'Users', href: '/admin/users', icon: Users },
   { label: 'Live Classes', href: '/admin/live-classes', icon: Video },

@@ -1,13 +1,13 @@
 import React from 'react';
-import { 
-    Brain, Monitor, Film, Heart, Languages, Briefcase, BarChart3, TrendingUp, 
-    Construction, GraduationCap, User, Rocket, PlayCircle, Users, Award, 
-    Sparkles, Shield, Zap, Target, BookOpen, Smartphone, Settings, 
-    Globe, Cloud, AlertTriangle, FileCode, CheckCircle, Video, 
-    Clapperboard, Database, Search, Flame, Link, Radio, Palette, 
-    Gamepad2, Plug, Mic, Music, Speaker, Megaphone, DollarSign, 
-    Users2, Newspaper, Mail, Microscope, Activity, Leaf, 
-    Scale, Calculator, Atom, FlaskConical, Cpu, BookText, 
+import {
+    Brain, Monitor, Film, Heart, Languages, Briefcase, BarChart3, TrendingUp,
+    Construction, GraduationCap, User, Rocket, PlayCircle, Users, Award,
+    Sparkles, Shield, Zap, Target, BookOpen, Smartphone, Settings,
+    Globe, Cloud, AlertTriangle, FileCode, CheckCircle, Video,
+    Clapperboard, Database, Search, Flame, Link, Radio, Palette,
+    Gamepad2, Plug, Mic, Music, Speaker, Megaphone, DollarSign,
+    Users2, Newspaper, Mail, Microscope, Activity, Leaf,
+    Scale, Calculator, Atom, FlaskConical, Cpu, BookText,
     Map, Compass, Trophy, HardHat, Hammer, PenTool, Trees,
     ArrowRight, ArrowUp
 } from 'lucide-react';
@@ -25,6 +25,19 @@ const iconMap = {
     'Engineering & Construction': Construction,
     'Teaching & Academics': GraduationCap,
     'Personal Development': User,
+    'Data Science': Database,
+    'Design': Palette,
+    'Languages': Languages,
+    'Business': Briefcase,
+    'Entrepreneurship': Rocket,
+    'Class 5': BookOpen,
+    'Class 6': Calculator,
+    'Class 7': Atom,
+    'Class 8': FlaskConical,
+    'Class 9': Microscope,
+    'Class 10': GraduationCap,
+    'Class 11': Compass,
+    'Class 12': Trophy,
 
     // Common Emojis found in course data
     '🤖': BotIcon, // Custom fallback
@@ -133,6 +146,7 @@ const iconMap = {
     '🚀': Rocket,
     '👉': ArrowRight,
     '👆': ArrowUp,
+    'Default': BookOpen
 };
 
 // Internal fallbacks for missing icons in imports or specific needs
@@ -179,20 +193,20 @@ function PlusSquare(props) { return <TrendingUp {...props} />; }
 const categoryStyles = {
     'Artificial Intelligence': { colors: ['#60A5FA', '#3B82F6', '#2563EB'], glow: 'rgba(59, 130, 246, 0.3)' },
     'Information Technology': { colors: ['#38BDF8', '#0EA5E9', '#0284C7'], glow: 'rgba(14, 165, 233, 0.3)' },
-    'Media & Entertainment': { colors: ['#F472B6', '#EC4899', '#DB2777'], glow: 'rgba(236, 72, 153, 0.3)' },
-    'Health & Wellness': { colors: ['#34D399', '#10B981', '#059669'], glow: 'rgba(16, 185, 129, 0.3)' },
-    'Language Learning': { colors: ['#FBBF24', '#F59E0B', '#D97706'], glow: 'rgba(245, 158, 11, 0.3)' },
-    'Business & Entrepreneurship': { colors: ['#FB923C', '#F97316', '#EA580C'], glow: 'rgba(249, 115, 22, 0.3)' },
-    'Management': { colors: ['#818CF8', '#6366F1', '#4F46E5'], glow: 'rgba(99, 102, 241, 0.3)' },
-    'Sales & Marketing': { colors: ['#F87171', '#EF4444', '#DC2626'], glow: 'rgba(239, 68, 68, 0.3)' },
-    'Engineering & Construction': { colors: ['#94A3B8', '#64748B', '#475569'], glow: 'rgba(100, 116, 139, 0.3)' },
-    'Teaching & Academics': { colors: ['#A78BFA', '#8B5CF6', '#7C3AED'], glow: 'rgba(139, 92, 246, 0.3)' },
-    'Personal Development': { colors: ['#22D3EE', '#06B6D4', '#0891B2'], glow: 'rgba(6, 182, 212, 0.3)' },
-    '▶️': { colors: ['#60A5FA', '#3B82F6', '#2563EB'], glow: 'rgba(59, 130, 246, 0.3)' },
-    '👥': { colors: ['#F97316', '#EA580C', '#C2410C'], glow: 'rgba(249, 115, 22, 0.3)' },
-    '🎓': { colors: ['#8B5CF6', '#7C3AED', '#6D28D9'], glow: 'rgba(139, 92, 246, 0.3)' },
-    '📈': { colors: ['#EC4899', '#DB2777', '#BE185D'], glow: 'rgba(236, 72, 153, 0.3)' },
-    '✨': { colors: ['#FBBF24', '#F59E0B', '#D97706'], glow: 'rgba(245, 158, 11, 0.3)' },
+    'Sales and Marketing': { colors: ['#F87171', '#EF4444', '#DC2626'], glow: 'rgba(239, 68, 68, 0.3)' },
+    'Data Science': { colors: ['#A78BFA', '#8B5CF6', '#7C3AED'], glow: 'rgba(139, 92, 246, 0.3)' },
+    'Design': { colors: ['#F472B6', '#EC4899', '#DB2777'], glow: 'rgba(236, 72, 153, 0.3)' },
+    'Languages': { colors: ['#FBBF24', '#F59E0B', '#D97706'], glow: 'rgba(245, 158, 11, 0.3)' },
+    'Business': { colors: ['#FB923C', '#F97316', '#EA580C'], glow: 'rgba(249, 115, 22, 0.3)' },
+    'Entrepreneurship': { colors: ['#22D3EE', '#06B6D4', '#0891B2'], glow: 'rgba(6, 182, 212, 0.3)' },
+    'Class 5': { colors: ['#60A5FA', '#3B82F6', '#2563EB'], glow: 'rgba(59, 130, 246, 0.3)' },
+    'Class 6': { colors: ['#38BDF8', '#0EA5E9', '#0284C7'], glow: 'rgba(14, 165, 233, 0.3)' },
+    'Class 7': { colors: ['#A78BFA', '#8B5CF6', '#7C3AED'], glow: 'rgba(139, 92, 246, 0.3)' },
+    'Class 8': { colors: ['#F472B6', '#EC4899', '#DB2777'], glow: 'rgba(236, 72, 153, 0.3)' },
+    'Class 9': { colors: ['#FBBF24', '#F59E0B', '#D97706'], glow: 'rgba(245, 158, 11, 0.3)' },
+    'Class 10': { colors: ['#FB923C', '#F97316', '#EA580C'], glow: 'rgba(249, 115, 22, 0.3)' },
+    'Class 11': { colors: ['#22D3EE', '#06B6D4', '#0891B2'], glow: 'rgba(6, 182, 212, 0.3)' },
+    'Class 12': { colors: ['#F87171', '#EF4444', '#DC2626'], glow: 'rgba(239, 68, 68, 0.3)' },
     'Default': { colors: ['#94A3B8', '#64748B', '#475569'], glow: 'rgba(148, 163, 184, 0.2)' }
 };
 
@@ -213,7 +227,7 @@ const IconRenderer = ({ icon, className = "w-6 h-6", category = "", showGlow = f
     return (
         <div className="relative flex items-center justify-center">
             {showGlow && (
-                <div 
+                <div
                     className="absolute inset-0 blur-2xl opacity-50 rounded-full"
                     style={{ backgroundColor: style.glow }}
                 />
@@ -227,8 +241,8 @@ const IconRenderer = ({ icon, className = "w-6 h-6", category = "", showGlow = f
                     </linearGradient>
                 </defs>
             </svg>
-            <IconComp 
-                className={`${className} relative z-10 transition-all duration-500`} 
+            <IconComp
+                className={`${className} relative z-10 transition-all duration-500`}
                 style={{ stroke: `url(#${gradientId})`, filter: `drop-shadow(0 2px 4px ${style.glow})` }}
             />
         </div>

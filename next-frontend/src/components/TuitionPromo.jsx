@@ -68,7 +68,7 @@ const TuitionPromo = () => {
 
                                 <h4 className="text-xl font-black text-slate-950 uppercase tracking-tighter leading-[1.1] mb-2">
                                     Home & Online <br />
-                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">Tuitions</span> Available
+                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">Tuition</span> Available
                                 </h4>
                                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-relaxed mb-6 opacity-80 decoration-blue-100">
                                     Expert Mentorship for Classes 5–12 • All Major Boards

@@ -310,9 +310,9 @@ const StudentStories = () => {
                                 transition={{ delay: 0.3 }}
                                 className="flex justify-center lg:justify-start"
                             >
-                                <Link href="/course">
+                                <Link href="/courses">
                                     <button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black px-10 py-5 rounded-2xl shadow-2xl shadow-blue-500/20 transition-all active:scale-95 flex items-center gap-3 uppercase tracking-widest text-sm">
-                                        Start Your Journey
+                                        Explore Courses
                                         <Rocket className="w-5 h-5" />
                                     </button>
                                 </Link>
@@ -535,9 +535,9 @@ const StudentStories = () => {
                             </div>
 
                             <div className="flex flex-col sm:flex-row gap-4">
-                                <Link href="/course">
+                                <Link href="/courses">
                                     <button className="px-8 py-4 bg-white text-indigo-600 font-black rounded-xl shadow-xl hover:bg-slate-50 transition-all active:scale-95 text-[10px] uppercase tracking-widest whitespace-nowrap">
-                                        Browse Courses
+                                        Explore Courses
                                     </button>
                                 </Link>
                                 <Link href="/contact">

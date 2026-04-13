@@ -36,7 +36,7 @@ export class PaymentsController {
     @CurrentUser() user: any,
     @Body() dto: CreateOrderDto,
   ) {
-    return this.paymentsService.createCourseOrder(user.id, dto.courseId);
+    return this.paymentsService.createCourseOrder(user.id, dto);
   }
 
   @Post('verify')

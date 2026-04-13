@@ -10,33 +10,68 @@ export class EnrollmentsService {
     @InjectModel(Enrollment.name) private enrollmentModel: Model<EnrollmentDocument>,
   ) {}
 
-  async enroll(courseId: string, studentId: string) {
+  async enroll(courseId: string, studentId: string, metadata?: any) {
     if (!Types.ObjectId.isValid(courseId)) throw new NotFoundException('Invalid Course ID');
     
-    // In a full implementation, we would check if the course exists and handle payment
-    // For now, assume successful free enrollment
+    const isTuition = metadata?.product_type === 'tuition';
     
-    // Check if already enrolled
-    const existing = await this.enrollmentModel.findOne({
+    const filter: any = {
       course_id: new Types.ObjectId(courseId),
       student_id: studentId,
-    });
+      product_type: isTuition ? 'tuition' : 'course'
+    };
 
-    if (existing) {
-      throw new ConflictException('Already enrolled in this course');
+    if (isTuition) {
+      filter.access_scope = metadata.access_scope;
+      if (metadata.access_scope === 'subject' && metadata.subjectId) {
+        filter.tuition_subject_id = new Types.ObjectId(metadata.subjectId);
+      }
     }
 
-    const enrollment = await this.enrollmentModel.create({
+    const existing = await this.enrollmentModel.findOne(filter);
+
+    if (existing && existing.subscription_status !== 'expired') {
+      throw new ConflictException('Already actively enrolled in this target');
+    }
+
+    const enrollmentData: any = {
       course_id: new Types.ObjectId(courseId),
       student_id: studentId,
       status: 'active',
+      product_type: isTuition ? 'tuition' : 'course',
       progress: {
         percentage: 0,
         completed_lessons: [],
       },
       watch_history: [],
-    });
+    };
 
+    if (isTuition) {
+      enrollmentData.tuition_class_id = new Types.ObjectId(courseId);
+      enrollmentData.access_scope = metadata.access_scope;
+      enrollmentData.billing_mode = metadata.billing_mode;
+      enrollmentData.subscription_status = 'active';
+
+      if (metadata.access_scope === 'subject' && metadata.subjectId) {
+        enrollmentData.tuition_subject_id = new Types.ObjectId(metadata.subjectId);
+      }
+
+      if (metadata.billing_mode === 'monthly') {
+        const start = new Date();
+        const end = new Date();
+        end.setDate(end.getDate() + 30);
+        enrollmentData.billing_period_start = start;
+        enrollmentData.billing_period_end = end;
+      }
+    }
+
+    if (existing) {
+      Object.assign(existing, enrollmentData);
+      await existing.save();
+      return { success: true, data: existing };
+    }
+
+    const enrollment = await this.enrollmentModel.create(enrollmentData);
     return { success: true, data: enrollment };
   }
 
@@ -103,5 +138,38 @@ export class EnrollmentsService {
 
   async findByStudent(studentId: string) {
     return this.enrollmentModel.find({ student_id: studentId }).exec();
+  }
+
+  async hasTuitionAccess(studentId: string, classId: string, subjectId: string) {
+    if (!Types.ObjectId.isValid(classId) || !Types.ObjectId.isValid(subjectId)) {
+      return false;
+    }
+
+    const enrollments = await this.enrollmentModel.find({
+      student_id: studentId,
+      tuition_class_id: new Types.ObjectId(classId),
+      product_type: 'tuition',
+      subscription_status: 'active',
+    }).exec();
+
+    const now = new Date();
+
+    for (const en of enrollments) {
+      if (en.billing_mode === 'monthly') {
+        if (en.billing_period_end && en.billing_period_end < now) {
+           continue; 
+        }
+      }
+
+      if (en.access_scope === 'class') {
+         return true;
+      }
+
+      if (en.access_scope === 'subject' && en.tuition_subject_id?.toString() === subjectId) {
+         return true;
+      }
+    }
+
+    return false;
   }
 }
