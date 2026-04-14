@@ -90,3 +90,44 @@ export class AddCaptionDto {
   @IsOptional()
   auto_generated?: boolean;
 }
+
+// ─── Processing completion callback ──────────────────────────────────────────
+
+/**
+ * Body for POST /videos/:id/processing-complete
+ *
+ * This DTO is intentionally minimal: the worker only needs to tell us the
+ * base S3 key prefix and the final duration. The API then builds the full
+ * HLS URL set using the standard quality ladder.
+ */
+export class CompleteProcessingDto {
+  /**
+   * Base S3 key prefix for the processed outputs, e.g.:
+   *  "videos/<videoId>"
+   * The service will derive:
+   *  - master.m3u8 at <base>/master.m3u8
+   *  - renditions at <base>/<resolution>/index.m3u8
+   */
+  @IsString()
+  @IsNotEmpty()
+  base_key: string;
+
+  /**
+   * Final video duration in seconds, as reported by MediaConvert.
+   * Optional – if omitted, existing duration_seconds is preserved.
+   */
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  duration_seconds?: number;
+
+  /**
+   * Optional processing status override:
+   *  - "completed" (default) → happy path
+   *  - "failed"              → mark job as failed
+   */
+  @IsString()
+  @IsIn(['completed', 'failed'])
+  @IsOptional()
+  status?: 'completed' | 'failed';
+}

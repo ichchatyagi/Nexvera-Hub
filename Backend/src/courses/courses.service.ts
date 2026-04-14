@@ -5,6 +5,7 @@ import { Course, CourseDocument } from './schemas/course.schema';
 import { Review, ReviewDocument } from './schemas/review.schema';
 import { CreateCourseDto, UpdateCourseDto, CreateReviewDto, AssignInstructorDto } from './dto/course.dto';
 import { CreateSectionDto, UpdateSectionDto, CreateLessonDto, UpdateLessonDto } from './dto/curriculum.dto';
+import { UserRole } from '../users/entities/user.entity';
 
 @Injectable()
 export class CoursesService {
@@ -198,7 +199,13 @@ export class CoursesService {
     return { success: true, data: course };
   }
 
-  async findAssignedToTeacher(teacherId: string) {
+  async findAssignedToTeacher(teacherId: string, role?: string) {
+    // If admin, show all published and draft courses
+    if (role === UserRole.ADMIN) {
+      const courses = await this.courseModel.find().exec();
+      return { success: true, data: courses };
+    }
+
     // Returns courses where the teacher is either lead or in assigned list.
     const courses = await this.courseModel.find({
       $or: [
@@ -210,20 +217,23 @@ export class CoursesService {
     return { success: true, data: courses };
   }
 
-  async getTeacherCourseView(id: string, teacherId: string) {
+  async getTeacherCourseView(id: string, teacherId: string, role?: string) {
     if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Invalid ID');
 
-    const course = await this.courseModel.findOne({
-      _id: new Types.ObjectId(id),
-      $or: [
+    const query: any = { _id: new Types.ObjectId(id) };
+
+    // If not admin, restrict to assigned courses
+    if (role !== UserRole.ADMIN) {
+      query.$or = [
         { lead_instructor_id: teacherId },
         { assigned_instructor_ids: teacherId }
-      ]
-    }).exec();
+      ];
+    }
+
+    const course = await this.courseModel.findOne(query).exec();
 
     if (!course) throw new ForbiddenException('Not assigned to this course');
 
-    // In a mature app, this would include roster, schedule, etc.
     return { success: true, data: course };
   }
 
@@ -263,8 +273,8 @@ export class CoursesService {
 
   // ── Teacher Curriculum Management ──────────────────────────────────────
 
-  async addSectionForTeacher(id: string, teacherId: string, dto: CreateSectionDto) {
-    const { data: course } = await this.getTeacherCourseView(id, teacherId);
+  async addSectionForTeacher(id: string, teacherId: string, dto: CreateSectionDto, role?: string) {
+    const { data: course } = await this.getTeacherCourseView(id, teacherId, role);
 
     const newSection = {
       section_id: new Types.ObjectId(),
@@ -278,8 +288,8 @@ export class CoursesService {
     return { success: true, data: newSection };
   }
 
-  async updateSectionForTeacher(id: string, teacherId: string, sectionId: string, dto: UpdateSectionDto) {
-    const { data: course } = await this.getTeacherCourseView(id, teacherId);
+  async updateSectionForTeacher(id: string, teacherId: string, sectionId: string, dto: UpdateSectionDto, role?: string) {
+    const { data: course } = await this.getTeacherCourseView(id, teacherId, role);
 
     const sectionIndex = course.curriculum.findIndex(s => s.section_id.toString() === sectionId);
     if (sectionIndex === -1) throw new NotFoundException('Section not found');
@@ -291,8 +301,8 @@ export class CoursesService {
     return { success: true, data: course.curriculum[sectionIndex] };
   }
 
-  async addLessonForTeacher(id: string, teacherId: string, sectionId: string, dto: CreateLessonDto) {
-    const { data: course } = await this.getTeacherCourseView(id, teacherId);
+  async addLessonForTeacher(id: string, teacherId: string, sectionId: string, dto: CreateLessonDto, role?: string) {
+    const { data: course } = await this.getTeacherCourseView(id, teacherId, role);
 
     const sectionIndex = course.curriculum.findIndex(s => s.section_id.toString() === sectionId);
     if (sectionIndex === -1) throw new NotFoundException('Section not found');
@@ -326,8 +336,8 @@ export class CoursesService {
     return { success: true, data: newLesson };
   }
 
-  async updateLessonForTeacher(id: string, teacherId: string, sectionId: string, lessonId: string, dto: UpdateLessonDto) {
-    const { data: course } = await this.getTeacherCourseView(id, teacherId);
+  async updateLessonForTeacher(id: string, teacherId: string, sectionId: string, lessonId: string, dto: UpdateLessonDto, role?: string) {
+    const { data: course } = await this.getTeacherCourseView(id, teacherId, role);
 
     const sectionIndex = course.curriculum.findIndex(s => s.section_id.toString() === sectionId);
     if (sectionIndex === -1) throw new NotFoundException('Section not found');

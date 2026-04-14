@@ -18,7 +18,7 @@ import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 
 interface LiveClass {
-  id: string;
+  _id: string;
   title: string;
   description: string;
   start_time: string;
@@ -103,7 +103,7 @@ const LiveClassesList = () => {
               
               return (
                 <motion.div
-                  key={item.id}
+                  key={item._id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.1 }}
@@ -152,7 +152,7 @@ const LiveClassesList = () => {
 
                   <div className="mt-auto flex flex-col gap-3">
                     <Link 
-                      href={`/live-classes/${item.id}/join`}
+                      href={`/live-classes/${item._id || item._id}/join`}
                       className={`w-full py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all active:scale-95 text-center flex items-center justify-center gap-2 ${
                         isLive 
                         ? 'bg-red-600 text-white hover:bg-red-700 shadow-xl shadow-red-200' 

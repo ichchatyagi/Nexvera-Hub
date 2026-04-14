@@ -11,7 +11,7 @@ import {
   Min,
   Max,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 // ─── Nested: Feature flags ────────────────────────────────────────────────────
 
@@ -59,7 +59,17 @@ export class CreateLiveClassDto {
    */
   @IsMongoId()
   @IsOptional()
+  @Transform(({ value }) => value === '' ? null : value)
   lesson_id?: string;
+
+  /**
+   * MongoDB ObjectId of the tuition subject this session maps to.
+   * Required for tuition products.
+   */
+  @IsMongoId()
+  @IsOptional()
+  @Transform(({ value }) => value === '' ? null : value)
+  subject_id?: string;
 
   @IsString()
   @IsNotEmpty()

@@ -56,6 +56,18 @@ export class LiveClassRecording {
     default: 'pending',
   })
   status: string;
+
+  /** Agora resource ID for the recording session. */
+  @Prop({ type: String, default: null })
+  resource_id: string | null;
+
+  /** Agora SID (Session ID) for the recording session. */
+  @Prop({ type: String, default: null })
+  sid: string | null;
+
+  /** Final S3 object key for the recording file. */
+  @Prop({ type: String, default: null })
+  file_key: string | null;
 }
 
 /**
@@ -114,6 +126,13 @@ export class LiveClass {
    */
   @Prop({ type: Types.ObjectId, default: null })
   lesson_id: Types.ObjectId | null;
+
+  /**
+   * MongoDB ObjectId of the tuition subject this live class belongs to.
+   * Only applicable when product_type is 'tuition'.
+   */
+  @Prop({ type: Types.ObjectId, default: null })
+  subject_id: Types.ObjectId | null;
 
   /**
    * UUID of the owning teacher (PostgreSQL users.id).

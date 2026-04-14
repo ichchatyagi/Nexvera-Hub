@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { Course, CourseDocument } from './schemas/course.schema';
 import { ProductType } from './dto/course.dto';
 import { CreateSectionDto, UpdateSectionDto, CreateLessonDto, UpdateLessonDto } from './dto/curriculum.dto';
+import { UserRole } from '../users/entities/user.entity';
 
 @Injectable()
 export class TeacherTuitionService {
@@ -12,23 +13,28 @@ export class TeacherTuitionService {
   ) {}
 
   // Find all tuition active subjects that the teacher is assigned to across all classes
-  async findAssignedSubjects(teacherId: string) {
-    const rawCourses = await this.courseModel.find({
-      product_type: ProductType.TUITION,
-      $or: [
+  async findAssignedSubjects(teacherId: string, role?: string) {
+    const query: any = { product_type: ProductType.TUITION };
+    
+    if (role !== UserRole.ADMIN) {
+      query.$or = [
         { 'tuition_meta.subjects.lead_instructor_id': teacherId },
         { 'tuition_meta.subjects.assigned_instructor_ids': teacherId }
-      ]
-    }).exec();
+      ];
+    }
+
+    const rawCourses = await this.courseModel.find(query).exec();
 
     // Flatten the result to just return the subjects they are assigned to, along with parent class context
     const assignedSubjects: any[] = [];
     for (const course of rawCourses) {
       if (!course.tuition_meta || !course.tuition_meta.subjects) continue;
       
-      const teacherSubjects = course.tuition_meta.subjects.filter(
-        s => s.lead_instructor_id === teacherId || s.assigned_instructor_ids?.includes(teacherId)
-      );
+      const teacherSubjects = role === UserRole.ADMIN 
+        ? course.tuition_meta.subjects 
+        : course.tuition_meta.subjects.filter(
+            s => s.lead_instructor_id === teacherId || s.assigned_instructor_ids?.includes(teacherId)
+          );
 
       for (const subject of teacherSubjects) {
         assignedSubjects.push({
@@ -49,7 +55,7 @@ export class TeacherTuitionService {
   }
 
   // Get a single teaching view for a specific subject
-  async getSubjectTeachingView(subjectId: string, teacherId: string) {
+  async getSubjectTeachingView(subjectId: string, teacherId: string, role?: string) {
     if (!Types.ObjectId.isValid(subjectId)) throw new BadRequestException('Invalid subject ID');
 
     const course = await this.courseModel.findOne({
@@ -64,7 +70,7 @@ export class TeacherTuitionService {
     const subject = course.tuition_meta.subjects.find(s => s.subject_id.toString() === subjectId);
     if (!subject) throw new NotFoundException('Subject not found');
 
-    const isAssigned = subject.lead_instructor_id === teacherId || subject.assigned_instructor_ids?.includes(teacherId);
+    const isAssigned = role === UserRole.ADMIN || subject.lead_instructor_id === teacherId || subject.assigned_instructor_ids?.includes(teacherId);
     if (!isAssigned) throw new ForbiddenException('Not assigned to this subject');
 
     return { 

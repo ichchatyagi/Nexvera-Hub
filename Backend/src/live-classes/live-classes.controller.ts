@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { LiveClassesService } from './live-classes.service';
 import { CreateLiveClassDto, UpdateLiveClassDto } from './dto/live-class.dto';
+import { LiveClassesGateway } from './live-classes.gateway';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -19,7 +20,22 @@ import { UserRole, User } from '../users/entities/user.entity';
 
 @Controller('live-classes')
 export class LiveClassesController {
-  constructor(private readonly liveClassesService: LiveClassesService) {}
+  constructor(
+    private readonly liveClassesService: LiveClassesService,
+    private readonly liveClassesGateway: LiveClassesGateway,
+  ) {}
+
+  /**
+   * GET /live-classes
+   *
+   * Lists all upcoming and active live classes.
+   * Accessible to all authenticated users (Students/Teachers/Admins).
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  async findAll(@CurrentUser() user: User) {
+    return this.liveClassesService.findAllForUser(user.id, user.role);
+  }
 
   // =========================================================================
   // Teacher / Admin – Schedule & manage
@@ -55,7 +71,7 @@ export class LiveClassesController {
   @Roles(UserRole.TEACHER, UserRole.ADMIN)
   @Get('mine')
   getMyClasses(@CurrentUser() user: User) {
-    return this.liveClassesService.findByTeacher(user.id);
+    return this.liveClassesService.findByTeacher(user.id, user.role);
   }
 
   /**
@@ -149,6 +165,10 @@ export class LiveClassesController {
   async start(@CurrentUser() user: User, @Param('id') id: string) {
     const isAdmin = user.role === UserRole.ADMIN;
     const data = await this.liveClassesService.start(id, user.id, isAdmin);
+    
+    // Broadcast start
+    this.liveClassesGateway.server.to(id).emit('class:started');
+    
     return { success: true, data };
   }
 
@@ -170,6 +190,10 @@ export class LiveClassesController {
   async end(@CurrentUser() user: User, @Param('id') id: string) {
     const isAdmin = user.role === UserRole.ADMIN;
     const data = await this.liveClassesService.end(id, user.id, isAdmin);
+    
+    // Broadcast end
+    this.liveClassesGateway.server.to(id).emit('class:ended');
+
     return { success: true, data };
   }
 

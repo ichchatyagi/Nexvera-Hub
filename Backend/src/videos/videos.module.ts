@@ -4,14 +4,13 @@ import { Video, VideoSchema } from './schemas/video.schema';
 import { VideosService } from './videos.service';
 import { VideosController } from './videos.controller';
 import { AppConfigModule } from '../app-config/app-config.module';
+import { VideoProcessingQueueModule } from '../video-processing-queue/video-processing-queue.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: Video.name, schema: VideoSchema },
-    ]),
-    // AppConfigService is used inside VideosService for S3 bucket + CDN domain config
+    MongooseModule.forFeature([{ name: Video.name, schema: VideoSchema }]),
     AppConfigModule,
+    VideoProcessingQueueModule,
   ],
   providers: [VideosService],
   controllers: [VideosController],

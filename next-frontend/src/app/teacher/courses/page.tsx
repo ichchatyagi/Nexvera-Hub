@@ -109,8 +109,12 @@ const TeacherDashboard = () => {
                animate={{ opacity: 1, y: 0 }}
                className="bg-white rounded-[3rem] border border-slate-100 overflow-hidden shadow-sm group hover:border-blue-200 transition-all flex flex-col md:flex-row"
              >
-                <div className="w-full md:w-64 h-64 md:h-auto overflow-hidden relative">
-                   <img src={course.thumbnail_url} className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-700" alt="" />
+                <div className="w-full md:w-64 h-64 md:h-auto overflow-hidden relative bg-slate-100 flex items-center justify-center">
+                   {course.thumbnail_url ? (
+                     <img src={course.thumbnail_url} className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-700" alt="" />
+                   ) : (
+                     <BookOpen className="text-slate-300" size={48} />
+                   )}
                    <div className="absolute top-6 left-6">
                       <span className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-2xl backdrop-blur-md border ${
                         course.status === 'published' ? 'bg-green-500/10 text-green-600 border-green-500/20' : 'bg-orange-500/10 text-orange-600 border-orange-500/20'

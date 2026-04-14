@@ -3,13 +3,22 @@ import {
   NotFoundException,
   ForbiddenException,
   Logger,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { randomUUID } from 'crypto';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Video, VideoDocument } from './schemas/video.schema';
-import { InitiateUploadDto, AddCaptionDto } from './dto/video.dto';
+import {
+  InitiateUploadDto,
+  AddCaptionDto,
+  CompleteProcessingDto,
+} from './dto/video.dto';
+import { UserRole } from '../users/entities/user.entity';
 import { AppConfigService } from '../app-config/app-config.service';
+import { VideoProcessingQueueService } from '../video-processing-queue/video-processing-queue.service';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -37,11 +46,17 @@ export interface InitiateUploadResult {
 @Injectable()
 export class VideosService {
   private readonly logger = new Logger(VideosService.name);
+  private readonly s3: S3Client;
 
   constructor(
     @InjectModel(Video.name) private readonly videoModel: Model<VideoDocument>,
     private readonly appConfig: AppConfigService,
-  ) {}
+    private readonly queueService: VideoProcessingQueueService,
+  ) {
+    this.s3 = new S3Client({
+      region: this.appConfig.awsRegion,
+    });
+  }
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
@@ -91,8 +106,8 @@ export class VideosService {
       processed: { status: 'pending' },
     });
 
-    // ── Generate (stubbed) presigned URL ──────────────────────────────────────
-    const presigned = this.buildStubPresignedUrl(s3Key, dto.mime_type);
+    // ── Generate real presigned URL ──────────────────────────────────────────
+    const presigned = await this.buildPresignedUrl(s3Key, dto.mime_type);
 
     this.logger.log(
       `Video ${videoId} created for teacher ${teacherId}. S3 key: ${s3Key}`,
@@ -101,33 +116,38 @@ export class VideosService {
     return { presigned, video };
   }
 
-  /**
-   * Builds a *stub* presigned upload response.
-   *
-   * TODO (IMPLEMENTATION_PLAN_PART3.md §7 – Step 1):
-   *   Replace this with a real AWS SDK v3 call:
-   *   ```ts
-   *   import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-   *   import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-   *
-   *   const cmd = new PutObjectCommand({
-   *     Bucket: this.appConfig.awsS3VideoBucket,
-   *     Key: s3Key,
-   *     ContentType: mimeType,
-   *   });
-   *   const url = await getSignedUrl(s3Client, cmd, { expiresIn: 900 });
-   *   ```
-   */
-  private buildStubPresignedUrl(
+  private async buildPresignedUrl(
     s3Key: string,
     mimeType: string,
-  ): PresignedUploadResponse {
-    const bucket = this.appConfig.awsS3VideoBucket || 'nexvera-videos-raw';
-    const region = 'us-east-1'; // TODO: read from config
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  ): Promise<PresignedUploadResponse> {
+    const bucket = this.appConfig.awsS3VideoBucket;
+    const region = this.appConfig.awsRegion;
+
+    if (!bucket || !region) {
+      this.logger.error(
+        'Video upload S3 configuration is missing. Ensure AWS_S3_VIDEO_BUCKET and AWS_REGION are set.',
+      );
+      throw new InternalServerErrorException(
+        'Video upload configuration is invalid – contact support.',
+      );
+    }
+
+    const expiresInSeconds = 15 * 60; // 15 minutes
+
+    const cmd = new PutObjectCommand({
+      Bucket: bucket,
+      Key: s3Key,
+      ContentType: mimeType,
+    });
+
+    const uploadUrl = await getSignedUrl(this.s3, cmd, {
+      expiresIn: expiresInSeconds,
+    });
+
+    const expiresAt = new Date(Date.now() + expiresInSeconds * 1000).toISOString();
 
     return {
-      upload_url: `https://${bucket}.s3.${region}.amazonaws.com/${s3Key}?X-Amz-Signature=STUB_${randomUUID().replace(/-/g, '')}`,
+      upload_url: uploadUrl,
       s3_key: s3Key,
       method: 'PUT',
       headers: { 'Content-Type': mimeType },
@@ -144,10 +164,12 @@ export class VideosService {
     return video;
   }
 
-  /** List all videos belonging to a specific teacher. */
-  async findByTeacher(teacherId: string) {
+  /** List all videos belonging to a specific teacher. Admin sees everything. */
+  async findByTeacher(teacherId: string, role?: string) {
+    const query = role === UserRole.ADMIN ? {} : { teacher_id: teacherId };
+    
     const data = await this.videoModel
-      .find({ teacher_id: teacherId })
+      .find(query)
       .sort({ created_at: -1 })
       .exec();
     return { success: true, data };
@@ -182,10 +204,77 @@ export class VideosService {
     video.processed.status = 'processing';
     await video.save();
 
-    // TODO: Replace with real queue publish (see IMPLEMENTATION_PLAN_PART3.md §7 – Step 2)
+    // ── Publish to SQS ──────────────────────────────────────────────────────
+    await this.queueService.publishJob({
+      videoId: video._id.toString(),
+      s3Key: video.original.key,
+      source: 'upload',
+    });
+
+    return { success: true, data: video };
+  }
+
+  /**
+   * Finalizes video processing by updating the Video document with:
+   *  - HLS manifest URL
+   *  - Quality renditions
+   *  - Thumbnails
+   *  - Duration + processed_at timestamp
+   *
+   * Intended to be called by an internal worker/Lambda once MediaConvert
+   * has produced the outputs in S3.
+   */
+  async completeProcessing(
+    id: string,
+    payload: CompleteProcessingDto,
+  ): Promise<{ success: boolean; data: VideoDocument }> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new NotFoundException('Invalid video ID');
+    }
+
+    const video = await this.videoModel.findById(id).exec();
+    if (!video) throw new NotFoundException('Video not found');
+
+    // If worker reports a failure, mark the job as failed and bail out.
+    if (payload.status === 'failed') {
+      video.processed.status = 'failed';
+      await video.save();
+      this.logger.error(
+        `Video ${id} processing marked as FAILED by worker callback.`,
+      );
+      return { success: true, data: video };
+    }
+
+    const base = payload.base_key || `videos/${id}`;
+    const hlsManifestKey = `${base}/master.m3u8`;
+
+    // Standard quality ladder & bitrates, aligned with simulateProcessing
+    const qualities = [
+      { resolution: '360p', bitrate: 800_000, key: `${base}/360p/index.m3u8` },
+      { resolution: '480p', bitrate: 1_500_000, key: `${base}/480p/index.m3u8` },
+      { resolution: '720p', bitrate: 2_500_000, key: `${base}/720p/index.m3u8` },
+      { resolution: '1080p', bitrate: 5_000_000, key: `${base}/1080p/index.m3u8` },
+    ];
+
+    video.processed.status = 'completed';
+    video.processed.manifest_url = this.cdnUrl(hlsManifestKey);
+    video.processed.qualities = qualities.map((q) => ({
+      resolution: q.resolution,
+      bitrate: q.bitrate,
+      url: this.cdnUrl(q.key),
+    })) as any;
+    video.processed.thumbnail_url = this.cdnUrl(`${base}/thumbnail.jpg`);
+    video.processed.thumbnails_vtt = this.cdnUrl(`${base}/thumbnails.vtt`);
+
+    if (typeof payload.duration_seconds === 'number') {
+      video.original.duration_seconds = payload.duration_seconds;
+    }
+
+    video.processed_at = new Date();
+    await video.save();
+
     this.logger.log(
-      `[STUB] Enqueuing MediaConvert job for video ${id}. ` +
-      `In production, publish to RabbitMQ/SQS with: { videoId: '${id}', s3Key: '${video.original.key}' }`,
+      `Video ${id} processing completed. HLS manifest: ${video.processed.manifest_url}`,
     );
 
     return { success: true, data: video };
@@ -206,6 +295,9 @@ export class VideosService {
    *     4. Updates the Video document with real manifest_url / qualities.
    */
   async simulateProcessing(id: string): Promise<{ success: boolean; data: VideoDocument }> {
+    if (this.appConfig.environment === 'production') {
+      throw new ForbiddenException('simulateProcessing is not available in production');
+    }
     if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Invalid video ID');
 
     const video = await this.videoModel.findById(id).exec();
@@ -323,5 +415,48 @@ export class VideosService {
     this.logger.log(`Video ${id} deleted. TODO: remove S3 objects for key prefix videos/${id}/`);
 
     return { success: true };
+  }
+  /**
+   * Creates a Video document for a finished live-class recording
+   * and triggers the processing pipeline.
+   */
+  async createVideoFromRecording(
+    courseId: string,
+    liveClassId: string,
+    teacherId: string,
+    s3Key: string,
+    title: string,
+  ): Promise<VideoDocument> {
+    const video = await this.videoModel.create({
+      course_id: new Types.ObjectId(courseId),
+      teacher_id: teacherId,
+      original: {
+        key: s3Key,
+        format: 'video/mp4', // Agora default
+        size_bytes: 0,
+        duration_seconds: 0,
+      },
+      processed: {
+        status: 'processing',
+        manifest_url: null,
+        qualities: [],
+        thumbnail_url: null,
+        thumbnails_vtt: null,
+      },
+      title: `Recording: ${title}`,
+    });
+
+    // ── Publish to SQS ──────────────────────────────────────────────────────
+    await this.queueService.publishJob({
+      videoId: (video._id as any).toString(),
+      s3Key: s3Key,
+      source: 'live_recording',
+    });
+
+    this.logger.log(
+      `Created video ${video._id} from recording ${liveClassId} and queued for processing.`,
+    );
+
+    return video;
   }
 }

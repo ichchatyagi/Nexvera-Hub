@@ -5,6 +5,11 @@ import { Types } from 'mongoose';
 import { VideosService } from './videos.service';
 import { Video } from './schemas/video.schema';
 import { AppConfigService } from '../app-config/app-config.service';
+import { VideoProcessingQueueService } from '../video-processing-queue/video-processing-queue.service';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+
+jest.mock('@aws-sdk/s3-request-presigner');
+const mockedGetSignedUrl = getSignedUrl as jest.Mock;
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -55,6 +60,11 @@ const mockVideoModel = {
 const mockConfigService = {
   awsS3VideoBucket: 'test-videos-bucket',
   cloudfrontVideoDomain: 'test.cloudfront.net',
+  awsRegion: 'us-east-1',
+};
+
+const mockQueueService = {
+  publishJob: jest.fn().mockResolvedValue(true),
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -63,6 +73,7 @@ describe('VideosService', () => {
   let service: VideosService;
 
   beforeEach(async () => {
+    mockedGetSignedUrl.mockResolvedValue('https://test-bucket.s3.amazonaws.com/test-key?signature=stub');
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         VideosService,
@@ -73,6 +84,10 @@ describe('VideosService', () => {
         {
           provide: AppConfigService,
           useValue: mockConfigService,
+        },
+        {
+          provide: VideoProcessingQueueService,
+          useValue: mockQueueService,
         },
       ],
     }).compile();
@@ -116,7 +131,8 @@ describe('VideosService', () => {
 
       // Presigned URL shape
       expect(result.presigned.method).toBe('PUT');
-      expect(result.presigned.upload_url).toMatch(/amazonaws\.com/);
+      expect(result.presigned.upload_url).toContain('https://');
+      expect(result.presigned.upload_url).toContain('amazonaws.com');
       expect(result.presigned.s3_key).toMatch(/originals\/.+\/original\.mp4/);
       expect(result.presigned.headers['Content-Type']).toBe('video/mp4');
       expect(result.presigned.expires_at).toBeTruthy();
@@ -138,6 +154,36 @@ describe('VideosService', () => {
 
       const result = await service.initiateUpload(TEACHER_ID, dto);
       expect(result.presigned.s3_key).toMatch(/^originals\/.+\/original\.mov$/);
+    });
+
+    it('throws InternalServerErrorException when AWS video bucket config is missing', async () => {
+      const badModule = await Test.createTestingModule({
+        providers: [
+          VideosService,
+          { provide: getModelToken(Video.name), useValue: mockVideoModel },
+          {
+            provide: AppConfigService,
+            useValue: { ...mockConfigService, awsS3VideoBucket: '' },
+          },
+          {
+            provide: VideoProcessingQueueService,
+            useValue: mockQueueService,
+          },
+        ],
+      }).compile();
+
+      const badService = badModule.get<VideosService>(VideosService);
+
+      const dto = {
+        course_id: new Types.ObjectId().toString(),
+        filename: 'lecture-01.mp4',
+        mime_type: 'video/mp4',
+        size_bytes: 50_000_000,
+      };
+
+      await expect(
+        badService.initiateUpload(TEACHER_ID, dto as any),
+      ).rejects.toThrow();
     });
   });
 
@@ -180,6 +226,11 @@ describe('VideosService', () => {
 
       expect(mockVideo.processed.status).toBe('processing');
       expect(mockVideo.save).toHaveBeenCalled();
+      expect(mockQueueService.publishJob).toHaveBeenCalledWith({
+        videoId: mockVideo._id.toString(),
+        s3Key: mockVideo.original.key,
+        source: 'upload',
+      });
       expect(result.success).toBe(true);
     });
 
@@ -302,6 +353,103 @@ describe('VideosService', () => {
       await expect(
         service.remove(mockVideo._id.toString(), OTHER_TEACHER_ID),
       ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  // ─── completeProcessing ─────────────────────────────────────────────────────
+
+  describe('completeProcessing', () => {
+    it('marks video as completed and fills HLS URLs', async () => {
+      const mockVideo = makeMockVideo({
+        processed: {
+          status: 'processing',
+          manifest_url: null,
+          qualities: [],
+          thumbnail_url: null,
+          thumbnails_vtt: null,
+        },
+      });
+
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+
+      const baseKey = `videos/${mockVideo._id.toString()}`;
+
+      const result = await service.completeProcessing(mockVideo._id.toString(), {
+        base_key: baseKey,
+        duration_seconds: 123,
+        status: 'completed',
+      } as any);
+
+      expect(result.success).toBe(true);
+      expect(mockVideo.processed.status).toBe('completed');
+      expect(mockVideo.processed.manifest_url).toContain('master.m3u8');
+      expect(mockVideo.processed.qualities).toHaveLength(4);
+      expect(mockVideo.processed.thumbnail_url).toBeTruthy();
+      expect(mockVideo.processed.thumbnails_vtt).toBeTruthy();
+      expect(mockVideo.original.duration_seconds).toBe(123);
+      expect(mockVideo.processed_at).toBeInstanceOf(Date);
+      expect(mockVideo.save).toHaveBeenCalled();
+    });
+
+    it('marks video as failed when status=failed is reported', async () => {
+      const mockVideo = makeMockVideo({
+        processed: {
+          status: 'processing',
+          manifest_url: null,
+          qualities: [],
+          thumbnail_url: null,
+          thumbnails_vtt: null,
+        },
+      });
+
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+
+      const result = await service.completeProcessing(mockVideo._id.toString(), {
+        base_key: `videos/${mockVideo._id.toString()}`,
+        status: 'failed',
+      } as any);
+
+      expect(result.success).toBe(true);
+      expect(mockVideo.processed.status).toBe('failed');
+      // Should not set manifest_url when failed
+      expect(mockVideo.processed.manifest_url).toBeNull();
+      expect(mockVideo.save).toHaveBeenCalled();
+    });
+  });
+
+  // ─── createVideoFromRecording ───────────────────────────────────────────────
+
+  describe('createVideoFromRecording', () => {
+    it('creates a video and publishes an SQS job', async () => {
+      const courseId = new Types.ObjectId().toString();
+      const liveClassId = new Types.ObjectId().toString();
+      const s3Key = 'recordings/live.mp4';
+      const mockVideo = makeMockVideo({
+        course_id: new Types.ObjectId(courseId),
+        title: 'Recording: Class Intro',
+      });
+
+      mockVideoModel.create.mockResolvedValue(mockVideo);
+
+      const result = await service.createVideoFromRecording(
+        courseId,
+        liveClassId,
+        TEACHER_ID,
+        s3Key,
+        'Class Intro',
+      );
+
+      expect(mockVideoModel.create).toHaveBeenCalled();
+      expect(mockQueueService.publishJob).toHaveBeenCalledWith({
+        videoId: mockVideo._id.toString(),
+        s3Key: s3Key,
+        source: 'live_recording',
+      });
+      expect(result).toBe(mockVideo);
     });
   });
 });

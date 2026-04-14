@@ -112,6 +112,9 @@ export class Video {
   @Prop({ type: Types.ObjectId, required: true, index: true })
   course_id: Types.ObjectId;
 
+  @Prop({ required: true })
+  title: string;
+
   /**
    * MongoDB ObjectId of the specific lesson that embeds this video.
    * Corresponds to `curriculum.sections[].lessons[].content.video_id`.

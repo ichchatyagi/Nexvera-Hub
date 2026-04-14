@@ -8,10 +8,18 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Headers,
+  ForbiddenException,
 } from '@nestjs/common';
 import { VideosService } from './videos.service';
-import { InitiateUploadDto, TriggerProcessingDto, AddCaptionDto } from './dto/video.dto';
+import {
+  InitiateUploadDto,
+  TriggerProcessingDto,
+  AddCaptionDto,
+  CompleteProcessingDto,
+} from './dto/video.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { AppConfigService } from '../app-config/app-config.service';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -19,7 +27,10 @@ import { UserRole, User } from '../users/entities/user.entity';
 
 @Controller('videos')
 export class VideosController {
-  constructor(private readonly videosService: VideosService) {}
+  constructor(
+    private readonly videosService: VideosService,
+    private readonly appConfig: AppConfigService,
+  ) {}
 
   // ─── Teacher / Admin endpoints ────────────────────────────────────────────
 
@@ -67,7 +78,7 @@ export class VideosController {
   @Roles(UserRole.TEACHER, UserRole.ADMIN)
   @Get('my')
   getMyVideos(@CurrentUser() user: User) {
-    return this.videosService.findByTeacher(user.id);
+    return this.videosService.findByTeacher(user.id, user.role);
   }
 
   /**
@@ -107,9 +118,31 @@ export class VideosController {
   triggerProcessing(
     @CurrentUser() user: User,
     @Param('id') id: string,
-    @Body() _dto: TriggerProcessingDto, // reserved for future quality-ladder overrides
+    @Body() _dto: TriggerProcessingDto,
   ) {
     return this.videosService.triggerProcessing(id, user.id);
+  }
+
+  /**
+   * POST /videos/:id/processing-complete
+   *
+   * Internal webhook for the video-processing worker (e.g. Lambda) to call
+   * once MediaConvert has finished. Protected by a shared secret header.
+   *
+   * Auth: X-Internal-Video-Secret must match VIDEO_PROCESSING_WEBHOOK_SECRET.
+   */
+  @Post(':id/processing-complete')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async processingComplete(
+    @Param('id') id: string,
+    @Headers('x-internal-video-secret') secret: string,
+    @Body() dto: CompleteProcessingDto,
+  ) {
+    if (!secret || secret !== this.appConfig.videoProcessingWebhookSecret) {
+      throw new ForbiddenException('Invalid processing webhook secret');
+    }
+
+    await this.videosService.completeProcessing(id, dto);
   }
 
   /**

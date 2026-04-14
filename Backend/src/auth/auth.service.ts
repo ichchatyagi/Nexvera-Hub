@@ -32,6 +32,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
+      name: user.name,
     };
 
     // Cast expiresIn to `any` because @nestjs/jwt v11 uses the `ms` StringValue

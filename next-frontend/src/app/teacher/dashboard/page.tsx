@@ -15,7 +15,8 @@ import {
   Clock,
   Play,
   X,
-  GraduationCap
+  GraduationCap,
+  FileVideo
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -31,13 +32,15 @@ const TeacherDashboard = () => {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [schedulingForm, setSchedulingForm] = useState({
     course_id: '',
+    subject_id: '',
+    lesson_id: '',
     title: '',
     description: '',
     scheduled_start: '',
     scheduled_end: '',
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata',
     max_participants: 100,
-    features: { chat_enabled: true, qa_enabled: true }
+    features: { chat_enabled: true, qa_enabled: true, whiteboard_enabled: true }
   });
 
   useEffect(() => {
@@ -78,7 +81,14 @@ const TeacherDashboard = () => {
     e.preventDefault();
     try {
       toast.loading('Synchronizing faculty schedule...', { id: 'schedule' });
-      await api.post('/live-classes', schedulingForm);
+      
+      // Sanitize payload: convert empty strings to undefined to satisfy backend IsMongoId validation
+      const payload = { ...schedulingForm };
+      if (!payload.subject_id) delete (payload as any).subject_id;
+      if (!payload.lesson_id) delete (payload as any).lesson_id;
+      if (!payload.description) delete (payload as any).description;
+
+      await api.post('/live-classes', payload);
       toast.success('Live session broadcast scheduled', { id: 'schedule' });
       setIsScheduleModalOpen(false);
       fetchDashboardData();
@@ -126,12 +136,25 @@ const TeacherDashboard = () => {
             </motion.h1>
           </div>
           
-          {user?.role === 'admin' && (
-            <button className="flex items-center gap-3 px-8 py-4 bg-slate-950 text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-2xl shadow-slate-900/10 hover:bg-black transition-all active:scale-95 group">
-               <Plus size={18} className="group-hover:rotate-90 transition-transform" />
-               Create New Course
-            </button>
-          )}
+          <div className="flex items-center gap-4">
+            <Link 
+              href="/teacher/videos"
+              className="flex items-center gap-3 px-8 py-4 bg-white border border-slate-100 text-slate-900 font-black uppercase tracking-widest text-xs rounded-2xl hover:border-blue-200 transition-all active:scale-95 group"
+            >
+               <FileVideo size={18} className="text-blue-600" />
+               Manage Video Assets
+            </Link>
+
+            {user?.role === 'admin' && (
+              <Link 
+                href="/admin/courses"
+                className="flex items-center gap-3 px-8 py-4 bg-slate-950 text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-2xl shadow-slate-900/10 hover:bg-black transition-all active:scale-95 group"
+              >
+                 <Plus size={18} className="group-hover:rotate-90 transition-transform" />
+                 Launch New Course
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* Stats Grid */}
@@ -163,8 +186,12 @@ const TeacherDashboard = () => {
             <div className="space-y-6">
               {courses.length > 0 ? courses.map((course, i) => (
                 <div key={course._id || course.id || i} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-8 hover:shadow-2xl hover:shadow-blue-500/5 transition-all">
-                   <div className="w-40 h-28 rounded-3xl bg-slate-100 overflow-hidden shrink-0 border border-slate-50">
-                      <img src={course.thumbnail_url} className="w-full h-full object-cover" />
+                   <div className="w-40 h-28 rounded-3xl bg-slate-100 overflow-hidden shrink-0 border border-slate-50 flex items-center justify-center">
+                      {course.thumbnail_url ? (
+                        <img src={course.thumbnail_url} className="w-full h-full object-cover" />
+                      ) : (
+                        <BookOpen className="text-slate-300" size={32} />
+                      )}
                    </div>
                    <div className="flex-1 text-center md:text-left">
                       <h4 className="text-[15px] font-black text-slate-900 uppercase tracking-tight mb-2">{course.title}</h4>
@@ -219,7 +246,7 @@ const TeacherDashboard = () => {
                       </div>
                    </div>
                    <Link 
-                     href={`/teacher/tuition/${item.subject?.subject_id}`}
+                     href={`/teacher/tuition/${item.class?._id}/subjects/${item.subject?.subject_id}`}
                      className="p-4 rounded-2xl bg-orange-50 text-orange-600 hover:bg-orange-600 hover:text-white transition-all group"
                    >
                       <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
@@ -345,15 +372,32 @@ const TeacherDashboard = () => {
                       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Linked Curriculum Asset</label>
                       <select 
                         required
-                        value={schedulingForm.course_id}
-                        onChange={(e) => setSchedulingForm({ ...schedulingForm, course_id: e.target.value })}
+                        value={schedulingForm.subject_id ? `${schedulingForm.course_id}|${schedulingForm.subject_id}` : schedulingForm.course_id}
+                        onChange={(e) => {
+                          const [cid, sid] = e.target.value.split('|');
+                          setSchedulingForm({ 
+                            ...schedulingForm, 
+                            course_id: cid, 
+                            subject_id: sid || '' 
+                          });
+                        }}
                         className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-200 font-bold text-sm appearance-none"
                       >
-                         <option value="">Select Primary Asset...</option>
-                         {courses.map(c => (
-                           <option key={c._id} value={c._id}>{c.title}</option>
-                         ))}
-                      </select>
+                          <option value="">Select Primary Asset...</option>
+                          {Array.isArray(courses) && courses.map((c, i) => (
+                            <option key={c._id || c.id || `course-${i}`} value={c._id || c.id}>
+                              Course: {c.title}
+                            </option>
+                          ))}
+                          {Array.isArray(tuitionSubjects) && tuitionSubjects.map((ts, i) => (
+                            <option 
+                              key={ts.subject?.subject_id || `tuition-${i}`} 
+                              value={`${ts.class?._id || ts.class?.id}|${ts.subject?.subject_id}`}
+                            >
+                              Tuition: {ts.subject?.name} (Grade {ts.class?.class_level})
+                            </option>
+                          ))}
+                       </select>
                    </div>
                    <div>
                       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Transmission Title</label>
@@ -385,6 +429,32 @@ const TeacherDashboard = () => {
                            onChange={(e) => setSchedulingForm({ ...schedulingForm, scheduled_end: e.target.value })}
                            className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-200 font-bold text-sm"
                          />
+                      </div>
+                   </div>
+                   <div className="flex items-center gap-8">
+                      <div className="flex items-center gap-3">
+                         <input 
+                           id="qa_check"
+                           type="checkbox" 
+                           checked={schedulingForm.features.qa_enabled}
+                           onChange={(e) => setSchedulingForm({ 
+                             ...schedulingForm, 
+                             features: { ...schedulingForm.features, qa_enabled: e.target.checked } 
+                           })}
+                         />
+                         <label htmlFor="qa_check" className="text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer">Interactive Q&A</label>
+                      </div>
+                      <div className="flex items-center gap-3">
+                         <input 
+                           id="wb_check"
+                           type="checkbox" 
+                           checked={schedulingForm.features.whiteboard_enabled}
+                           onChange={(e) => setSchedulingForm({ 
+                             ...schedulingForm, 
+                             features: { ...schedulingForm.features, whiteboard_enabled: e.target.checked } 
+                           })}
+                         />
+                         <label htmlFor="wb_check" className="text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer">Whiteboard</label>
                       </div>
                    </div>
                    <div className="flex justify-end gap-6 pt-10 border-t border-slate-50">

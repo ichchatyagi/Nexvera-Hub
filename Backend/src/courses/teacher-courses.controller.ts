@@ -17,18 +17,18 @@ import { UserRole, User } from '../users/entities/user.entity';
 
 @Controller('teacher/courses')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.TEACHER)
+@Roles(UserRole.TEACHER, UserRole.ADMIN)
 export class TeacherCoursesController {
   constructor(private readonly coursesService: CoursesService) {}
 
   @Get()
   getAssignedCourses(@CurrentUser() user: User) {
-    return this.coursesService.findAssignedToTeacher(user.id);
+    return this.coursesService.findAssignedToTeacher(user.id, user.role);
   }
 
   @Get(':id')
   getTeachingView(@CurrentUser() user: User, @Param('id') id: string) {
-    return this.coursesService.getTeacherCourseView(id, user.id);
+    return this.coursesService.getTeacherCourseView(id, user.id, user.role);
   }
 
   @Post(':id/sections')
@@ -37,7 +37,7 @@ export class TeacherCoursesController {
     @Param('id') id: string,
     @Body() dto: CreateSectionDto,
   ) {
-    return this.coursesService.addSectionForTeacher(id, user.id, dto);
+    return this.coursesService.addSectionForTeacher(id, user.id, dto, user.role);
   }
 
   @Put(':id/sections/:sectionId')
@@ -47,7 +47,7 @@ export class TeacherCoursesController {
     @Param('sectionId') sectionId: string,
     @Body() dto: UpdateSectionDto,
   ) {
-    return this.coursesService.updateSectionForTeacher(id, user.id, sectionId, dto);
+    return this.coursesService.updateSectionForTeacher(id, user.id, sectionId, dto, user.role);
   }
 
   @Post(':id/sections/:sectionId/lessons')
@@ -57,7 +57,7 @@ export class TeacherCoursesController {
     @Param('sectionId') sectionId: string,
     @Body() dto: CreateLessonDto,
   ) {
-    return this.coursesService.addLessonForTeacher(id, user.id, sectionId, dto);
+    return this.coursesService.addLessonForTeacher(id, user.id, sectionId, dto, user.role);
   }
 
   @Put(':id/sections/:sectionId/lessons/:lessonId')
@@ -68,6 +68,6 @@ export class TeacherCoursesController {
     @Param('lessonId') lessonId: string,
     @Body() dto: UpdateLessonDto,
   ) {
-    return this.coursesService.updateLessonForTeacher(id, user.id, sectionId, lessonId, dto);
+    return this.coursesService.updateLessonForTeacher(id, user.id, sectionId, lessonId, dto, user.role);
   }
 }

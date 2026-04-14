@@ -324,7 +324,7 @@ const Dashboard = () => {
                              <div className="flex items-center gap-3">
                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(session.start_time).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
                              </div>
-                             <Link href={`/live-classes/${session.id}/join`} className="flex items-center gap-1 text-blue-600 font-black text-[10px] uppercase tracking-widest group-hover:translate-x-1 transition-transform">
+                             <Link href={`/live-classes/${session._id || session.id}/join`} className="flex items-center gap-1 text-blue-600 font-black text-[10px] uppercase tracking-widest group-hover:translate-x-1 transition-transform">
                                 Join Now <ChevronRight size={14} />
                              </Link>
                           </div>

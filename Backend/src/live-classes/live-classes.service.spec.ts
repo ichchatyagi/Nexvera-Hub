@@ -11,6 +11,11 @@ import { Types } from 'mongoose';
 import { LiveClassesService, AgoraRole } from './live-classes.service';
 import { LiveClass, LiveClassStatus } from './schemas/live-class.schema';
 import { AppConfigService } from '../app-config/app-config.service';
+import { VideosService } from '../videos/videos.service';
+import axios from 'axios';
+
+jest.mock('axios');
+const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -61,6 +66,11 @@ const mockLiveClassModel = {
 const mockConfigService = {
   agoraAppId: 'test-agora-app-id',
   agoraAppCertificate: 'test-agora-certificate',
+  agoraTokenTtlSeconds: 3600,
+};
+
+const mockVideosService = {
+  createVideoFromRecording: jest.fn().mockResolvedValue({ _id: new Types.ObjectId() }),
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -78,7 +88,19 @@ describe('LiveClassesService', () => {
         },
         {
           provide: AppConfigService,
-          useValue: mockConfigService,
+          useValue: {
+            ...mockConfigService,
+            agoraCustomerId: 'test-customer-id',
+            agoraCustomerCertificate: 'test-customer-cert',
+            awsS3VideoBucket: 'test-bucket',
+            awsAccessKey: 'test-key',
+            awsSecretKey: 'test-secret',
+            awsRegion: 'us-east-1',
+          },
+        },
+        {
+          provide: VideosService,
+          useValue: mockVideosService,
         },
       ],
     }).compile();
@@ -90,6 +112,43 @@ describe('LiveClassesService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  // ── Agora token generation ──────────────────────────────────────────────
+
+  describe('generateAgoraToken (private)', () => {
+    it('generates a real Agora token (non-empty string, not a stub)', () => {
+      const channelName = 'test-channel';
+      const userId = 'user-123';
+      const token = service['generateAgoraToken'](
+        channelName,
+        userId,
+        AgoraRole.SUBSCRIBER,
+      );
+
+      expect(token).toBeDefined();
+      expect(typeof token).toBe('string');
+      expect(token.length).toBeGreaterThan(0);
+      expect(token.startsWith('STUB_TOKEN_')).toBe(false);
+    });
+
+    it('throws InternalServerErrorException when credentials are missing', () => {
+      // Create a temporary instance with missing config
+      const badConfig = { agoraAppId: '', agoraAppCertificate: '' };
+      const tempService = new LiveClassesService(
+        mockLiveClassModel as any,
+        badConfig as any,
+        mockVideosService as any,
+      );
+
+      expect(() =>
+        tempService['generateAgoraToken'](
+          'test',
+          'user',
+          AgoraRole.SUBSCRIBER,
+        ),
+      ).toThrow(InternalServerErrorException);
+    });
   });
 
   // ── create ──────────────────────────────────────────────────────────────────
@@ -222,14 +281,24 @@ describe('LiveClassesService', () => {
 
       expect(result.channel_name).toBe(mockLc.agora.channel_name);
       expect(result.rtc_token).toBeDefined();
-      // Stub format check
-      expect(result.rtc_token).toContain(mockLc.agora.channel_name);
+      expect(result.rtc_token.startsWith('STUB_TOKEN_')).toBe(false);
       expect(result.agora_app_id).toBe('test-agora-app-id');
       expect(result.token_expiry_seconds).toBe(3600);
+      expect(result.role).toBe(AgoraRole.SUBSCRIBER);
       expect(result.title).toBe(mockLc.title);
       // Student should appear in attended_students
       expect(mockLc.attended_students).toContain(STUDENT_ID);
       expect(mockLc.save).toHaveBeenCalled();
+    });
+
+    it('assigns PUBLISHER role when teacher joins', async () => {
+      const mockLc = makeMockLiveClass();
+      mockLiveClassModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockLc),
+      });
+
+      const result = await service.join(mockLc._id.toString(), TEACHER_ID);
+      expect(result.role).toBe(AgoraRole.PUBLISHER);
     });
 
     it('also works for a live class', async () => {
@@ -269,6 +338,10 @@ describe('LiveClassesService', () => {
           {
             provide: AppConfigService,
             useValue: { agoraAppId: '', agoraAppCertificate: '' },
+          },
+          {
+            provide: VideosService,
+            useValue: mockVideosService,
           },
         ],
       }).compile();
@@ -328,6 +401,41 @@ describe('LiveClassesService', () => {
         service.start(mockLc._id.toString(), TEACHER_ID, false),
       ).rejects.toThrow(UnprocessableEntityException);
     });
+
+    it('tries to start Agora recording if recording is enabled', async () => {
+      const mockLc = makeMockLiveClass({
+        recording: { enabled: true, video_id: null, status: 'pending' },
+      });
+      mockLiveClassModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockLc),
+      });
+
+      mockedAxios.post.mockResolvedValueOnce({ data: { resourceId: 'res-123' } }); // acquire
+      mockedAxios.post.mockResolvedValueOnce({ data: { sid: 'sid-123' } }); // start
+
+      const result = await service.start(mockLc._id.toString(), TEACHER_ID, false);
+
+      expect(mockedAxios.post).toHaveBeenCalledTimes(2);
+      expect(result.recording.resource_id).toBe('res-123');
+      expect(result.recording.sid).toBe('sid-123');
+      expect(result.recording.status).toBe('processing');
+    });
+
+    it('sets recording.enabled=false if Agora acquire fails', async () => {
+      const mockLc = makeMockLiveClass({
+        recording: { enabled: true, video_id: null, status: 'pending' },
+      });
+      mockLiveClassModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockLc),
+      });
+
+      mockedAxios.post.mockRejectedValueOnce(new Error('Agora API Error'));
+
+      const result = await service.start(mockLc._id.toString(), TEACHER_ID, false);
+
+      expect(result.recording.enabled).toBe(false);
+      expect(result.status).toBe(LiveClassStatus.LIVE); // Class still starts
+    });
   });
 
   // ── end ───────────────────────────────────────────────────────────────────
@@ -358,6 +466,39 @@ describe('LiveClassesService', () => {
       await expect(
         service.end(mockLc._id.toString(), TEACHER_ID, false),
       ).rejects.toThrow(UnprocessableEntityException);
+    });
+
+    it('tries to stop Agora recording if it was running', async () => {
+      const mockLc = makeMockLiveClass({
+        status: LiveClassStatus.LIVE,
+        actual_start: new Date(),
+        recording: {
+          enabled: true,
+          resource_id: 'res-123',
+          sid: 'sid-123',
+          status: 'processing',
+        },
+      });
+      mockLiveClassModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockLc),
+      });
+
+      mockedAxios.post.mockResolvedValueOnce({
+        data: { serverResponse: { fileList: 'recordings/live.mp4' } },
+      });
+
+      const result = await service.end(mockLc._id.toString(), TEACHER_ID, false);
+
+      expect(mockedAxios.post).toHaveBeenCalledTimes(1);
+      expect(mockVideosService.createVideoFromRecording).toHaveBeenCalledWith(
+        mockLc.course_id.toString(),
+        mockLc._id.toString(),
+        TEACHER_ID,
+        'recordings/live.mp4',
+        mockLc.title,
+      );
+      expect(result.recording.file_key).toBe('recordings/live.mp4');
+      expect(result.recording.status).toBe('processing');
     });
   });
 

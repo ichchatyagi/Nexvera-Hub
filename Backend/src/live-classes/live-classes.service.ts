@@ -10,13 +10,17 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { randomUUID } from 'crypto';
+import axios from 'axios';
 import {
   LiveClass,
   LiveClassDocument,
   LiveClassStatus,
 } from './schemas/live-class.schema';
+import { UserRole } from '../users/entities/user.entity';
 import { CreateLiveClassDto, UpdateLiveClassDto } from './dto/live-class.dto';
 import { AppConfigService } from '../app-config/app-config.service';
+import { RtcTokenBuilder, RtcRole } from 'agora-access-token';
+import { VideosService } from '../videos/videos.service';
 
 // ─── Agora token shape ────────────────────────────────────────────────────────
 
@@ -37,9 +41,17 @@ export interface JoinClassResponse {
   token_expiry_seconds: number;
   /** Agora App ID – the client needs this to initialise the SDK. */
   agora_app_id: string;
+  /** Server-assigned live-class role for the current user. */
+  role: AgoraRole;
   title: string;
   scheduled_start: Date;
   status: LiveClassStatus;
+  features: {
+    chat_enabled: boolean;
+    qa_enabled: boolean;
+    screen_share_enabled: boolean;
+    whiteboard_enabled: boolean;
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -52,6 +64,7 @@ export class LiveClassesService {
     @InjectModel(LiveClass.name)
     private readonly liveClassModel: Model<LiveClassDocument>,
     private readonly appConfig: AppConfigService,
+    private readonly videosService: VideosService,
   ) {}
 
   // ─── Agora token generation ──────────────────────────────────────────────
@@ -95,15 +108,32 @@ export class LiveClassesService {
       );
     }
 
-    // ── STUB ──────────────────────────────────────────────────────────────────
-    // Remove this block and replace with the real RtcTokenBuilder call above
-    // once the `agora-access-token` package has been installed.
-    this.logger.warn(
-      `[STUB] Generating stub Agora token for channel "${channelName}", user "${userId}", role ${role}. ` +
-        `Replace with RtcTokenBuilder.buildTokenWithUid() in production.`,
-    );
-    return `STUB_TOKEN_${channelName}_${userId}_ROLE${role}`;
-    // ── END STUB ──────────────────────────────────────────────────────────────
+    const ttlSeconds = this.appConfig.agoraTokenTtlSeconds;
+    const now = Math.floor(Date.now() / 1000);
+    const privilegeExpiredTs = now + ttlSeconds;
+
+    // Agora token builder expects a numeric UID; derive a stable one from userId
+    // For simplicity, use uid = 0 to let Agora auto-assign, but encode userId in room logic.
+    const uid = 0;
+
+    const rtcRole =
+      role === AgoraRole.PUBLISHER ? RtcRole.PUBLISHER : RtcRole.SUBSCRIBER;
+
+    try {
+      return RtcTokenBuilder.buildTokenWithUid(
+        appId,
+        certificate,
+        channelName,
+        uid,
+        rtcRole,
+        privilegeExpiredTs,
+      );
+    } catch (err) {
+      this.logger.error(
+        `Failed to generate Agora token for channel "${channelName}", user "${userId}": ${err instanceof Error ? err.message : String(err)}`,
+      );
+      throw new InternalServerErrorException('Failed to generate Agora token');
+    }
   }
 
   // ─── Teacher / Admin ──────────────────────────────────────────────────────
@@ -131,6 +161,7 @@ export class LiveClassesService {
 
     const liveClass = await this.liveClassModel.create({
       course_id: new Types.ObjectId(dto.course_id),
+      subject_id: dto.subject_id && Types.ObjectId.isValid(dto.subject_id) ? new Types.ObjectId(dto.subject_id) : null,
       lesson_id: dto.lesson_id && Types.ObjectId.isValid(dto.lesson_id) ? new Types.ObjectId(dto.lesson_id) : null,
       teacher_id: teacherId,
       title: dto.title,
@@ -162,11 +193,13 @@ export class LiveClassesService {
   }
 
   /**
-   * Lists all live classes owned by the given teacher, sorted newest first.
+   * Lists all live classes owned by the given teacher, sorted newest first. Admin sees everything.
    */
-  async findByTeacher(teacherId: string) {
+  async findByTeacher(teacherId: string, role?: string) {
+    const query = role === UserRole.ADMIN ? {} : { teacher_id: teacherId };
+
     const data = await this.liveClassModel
-      .find({ teacher_id: teacherId })
+      .find(query)
       .sort({ scheduled_start: -1 })
       .exec();
     return { success: true, data };
@@ -299,6 +332,45 @@ export class LiveClassesService {
 
     lc.status = LiveClassStatus.LIVE;
     lc.actual_start = new Date();
+
+    // ── Agora Cloud Recording ───────────────────────────────────────────────
+    if (lc.recording?.enabled) {
+      try {
+        const recordingUid = '999'; // Reserved UID for recording bot
+        const resourceId = await this.acquireRecording(
+          lc.agora.channel_name,
+          recordingUid,
+        );
+
+        // Generate a token for the recording bot
+        const recordingToken = this.generateAgoraToken(
+          lc.agora.channel_name,
+          recordingUid,
+          AgoraRole.PUBLISHER, // Needs publisher to subscribe to all streams in mixed mode? 
+          // Actually Agora docs say it needs to join with a token if token is enabled.
+        );
+
+        const sid = await this.startRecording(
+          resourceId,
+          lc.agora.channel_name,
+          recordingToken,
+          recordingUid,
+        );
+
+        lc.recording.resource_id = resourceId;
+        lc.recording.sid = sid;
+        lc.recording.status = 'processing'; // It's recording, but status 'processing' implies lifecycle
+        // Wait, 'processing' enum was for the VOD pipeline later. 
+        // For now, let's keep it as is or maybe add 'recording' state if needed.
+        // The plan says: "available  → Video is ready for playback".
+        // Let's stick to the schema enum for now.
+      } catch (err) {
+        this.logger.error(`Failed to start Agora recording for class ${id}: ${err.message}`);
+        // Per plan: "If recording call fails, keep class live but set lc.recording.enabled = false"
+        lc.recording.enabled = false;
+      }
+    }
+
     await lc.save();
 
     this.logger.log(`Live class "${id}" started by "${requesterId}".`);
@@ -340,6 +412,46 @@ export class LiveClassesService {
     }
     lc.status = LiveClassStatus.ENDED;
     lc.actual_end = new Date();
+
+    // ── Agora Cloud Recording Stop ──────────────────────────────────────────
+    if (lc.recording?.enabled && lc.recording.resource_id && lc.recording.sid) {
+      try {
+        const stopResponse = await this.stopRecording(
+          lc.recording.resource_id,
+          lc.recording.sid,
+          lc.agora.channel_name,
+        );
+
+        // Extract S3 key if available from Agora response
+        // Agora response shape: { resourceId, sid, serverResponse: { fileList: "..." } }
+        // For simple mixed recording, we can construct or extract it.
+        const fileList = stopResponse.serverResponse?.fileList;
+        if (fileList) {
+          lc.recording.file_key = fileList;
+
+          // ── Create Video Document ──────────────────────────────────────────
+          try {
+            const video = await this.videosService.createVideoFromRecording(
+              lc.course_id.toString(),
+              lc._id.toString(),
+              lc.teacher_id,
+              fileList, // Agora returns the S3 path in fileList
+              lc.title,
+            );
+            lc.recording.video_id = video._id as any;
+            lc.recording.status = 'processing';
+          } catch (vErr) {
+            this.logger.error(
+              `Failed to create VOD for live class ${id}: ${vErr.message}`,
+            );
+          }
+        }
+      } catch (err) {
+        this.logger.warn(`Failed to stop Agora recording for class ${id}: ${err.message}`);
+        // Class still ends, but recording might have issues
+      }
+    }
+
     await lc.save();
 
     this.logger.log(`Live class "${id}" ended by "${requesterId}".`);
@@ -448,7 +560,7 @@ export class LiveClassesService {
       await lc.save();
     }
 
-    const TOKEN_TTL_SECONDS = 3600;
+    const ttlSeconds = this.appConfig.agoraTokenTtlSeconds;
 
     // Determine Agora role: teacher is publisher, everyone else is subscriber
     const role =
@@ -467,11 +579,18 @@ export class LiveClassesService {
     return {
       channel_name: lc.agora.channel_name,
       rtc_token: rtcToken,
-      token_expiry_seconds: TOKEN_TTL_SECONDS,
+      token_expiry_seconds: ttlSeconds,
       agora_app_id: this.appConfig.agoraAppId,
+      role,
       title: lc.title,
       scheduled_start: lc.scheduled_start,
       status: lc.status,
+      features: {
+        chat_enabled: lc.features?.chat_enabled ?? false,
+        qa_enabled: lc.features?.qa_enabled ?? false,
+        screen_share_enabled: lc.features?.screen_share_enabled ?? false,
+        whiteboard_enabled: lc.features?.whiteboard_enabled ?? false,
+      },
     };
   }
 
@@ -518,6 +637,25 @@ export class LiveClassesService {
   }
 
   /**
+   * Lists upcoming live classes for a general user (student or teacher).
+   * For students, this helps populate "All Upcoming Sessions" views.
+   */
+  async findAllForUser(userId: string, role: string) {
+    // Basic implementation: return upcoming non-cancelled classes
+    // Future: Filter by enrollments if role === STUDENT
+    const data = await this.liveClassModel
+      .find({
+        status: { $in: [LiveClassStatus.SCHEDULED, LiveClassStatus.LIVE] },
+        scheduled_end: { $gte: new Date() }
+      })
+      .sort({ scheduled_start: 1 })
+      .select('-agora.recording_uid -registered_students -attended_students')
+      .exec();
+    
+    return { success: true, data };
+  }
+
+  /**
    * Fetches a single live class by ID for admin view.
    */
   async adminFindOne(id: string) {
@@ -543,5 +681,116 @@ export class LiveClassesService {
     if (lc.teacher_id !== requesterId && !isAdmin) {
       throw new ForbiddenException('You do not own this live class.');
     }
+  }
+
+  // ─── Agora Cloud Recording API Helpers ────────────────────────────────────
+
+  private async acquireRecording(channelName: string, uid: string): Promise<string> {
+    const url = `https://api.agora.io/v1/apps/${this.appConfig.agoraAppId}/cloud_recording/acquire`;
+    const response = await axios.post(
+      url,
+      {
+        cname: channelName,
+        uid: uid,
+        clientRequest: {
+          resourceExpiredHour: 24,
+        },
+      },
+      { headers: this.getAgoraAuthHeader() },
+    );
+    return response.data.resourceId;
+  }
+
+  private async startRecording(
+    resourceId: string,
+    channelName: string,
+    token: string,
+    uid: string,
+  ): Promise<string> {
+    const url = `https://api.agora.io/v1/apps/${this.appConfig.agoraAppId}/cloud_recording/resourceid/${resourceId}/mode/mix/start`;
+    const response = await axios.post(
+      url,
+      {
+        cname: channelName,
+        uid: uid,
+        clientRequest: {
+          token: token,
+          recordingConfig: {
+            maxIdleTime: 30, // seconds
+            streamTypes: 2, // both audio and video
+            channelType: 0, // communication
+            subscribeVideoUids: ['#allstream#'],
+            subscribeAudioUids: ['#allstream#'],
+            subscribeUidGroup: 0,
+          },
+          storageConfig: {
+            vendor: 1, // AWS S3
+            region: this.getAgoraS3RegionNumber(this.appConfig.awsRegion),
+            bucket: this.appConfig.awsS3VideoBucket,
+            accessKey: this.appConfig.awsAccessKey,
+            secretKey: this.appConfig.awsSecretKey,
+            fileNamePrefix: ['recordings', 'live-classes'],
+          },
+        },
+      },
+      { headers: this.getAgoraAuthHeader() },
+    );
+    return response.data.sid;
+  }
+
+  private async stopRecording(
+    resourceId: string,
+    sid: string,
+    channelName: string,
+  ): Promise<any> {
+    const url = `https://api.agora.io/v1/apps/${this.appConfig.agoraAppId}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/stop`;
+    const response = await axios.post(
+      url,
+      {
+        cname: channelName,
+        uid: '999',
+        clientRequest: {},
+      },
+      { headers: this.getAgoraAuthHeader() },
+    );
+    return response.data;
+  }
+
+  private getAgoraAuthHeader() {
+    const auth = Buffer.from(
+      `${this.appConfig.agoraCustomerId}:${this.appConfig.agoraCustomerCertificate}`,
+    ).toString('base64');
+    return {
+      Authorization: `Basic ${auth}`,
+      'Content-Type': 'application/json',
+    };
+  }
+
+  /**
+   * Agora Cloud Recording region mapping for S3.
+   * Maps AWS regions to Agora's numeric region codes.
+   */
+  private getAgoraS3RegionNumber(region: string): number {
+    const mapping: Record<string, number> = {
+      'us-east-1': 0,
+      'us-east-2': 1,
+      'us-west-1': 2,
+      'us-west-2': 3,
+      'eu-west-1': 4,
+      'eu-west-2': 5,
+      'eu-west-3': 6,
+      'eu-central-1': 7,
+      'ap-southeast-1': 8,
+      'ap-southeast-2': 9,
+      'ap-northeast-1': 10,
+      'ap-northeast-2': 11,
+      'sa-east-1': 12,
+      'ca-central-1': 13,
+      'ap-south-1': 14,
+      'cn-north-1': 15,
+      'cn-northwest-1': 16,
+      'us-gov-west-1': 17,
+    };
+    return mapping[region] ?? 0; // default to us-east-1
   }
 }

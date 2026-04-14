@@ -23,12 +23,12 @@ export class TeacherTuitionController {
 
   @Get()
   getAssignedSubjects(@CurrentUser() user: User) {
-    return this.teacherTuitionService.findAssignedSubjects(user.id);
+    return this.teacherTuitionService.findAssignedSubjects(user.id, user.role);
   }
 
   @Get(':subjectId')
   getTeachingView(@CurrentUser() user: User, @Param('subjectId') subjectId: string) {
-    return this.teacherTuitionService.getSubjectTeachingView(subjectId, user.id);
+    return this.teacherTuitionService.getSubjectTeachingView(subjectId, user.id, user.role);
   }
 
   @Post(':subjectId/sections')

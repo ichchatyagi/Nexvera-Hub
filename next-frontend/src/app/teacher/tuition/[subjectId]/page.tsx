@@ -26,6 +26,7 @@ import api from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
+import VideoSelector from '@/components/video/VideoSelector';
 
 interface Lesson {
   id: string;
@@ -575,13 +576,14 @@ const TuitionSyllabusEditor = () => {
                       <div className="space-y-8">
                          {lessonForm.type === 'video' ? (
                             <div>
-                               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Transmission ID (Video ID/URL)</label>
-                               <input 
+                               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Linked Curriculum Asset (Primary Asset)</label>
+                               <VideoSelector 
                                  value={lessonForm.video_id}
-                                 onChange={(e) => setLessonForm({ ...lessonForm, video_id: e.target.value })}
-                                 className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-orange-200 font-bold text-sm"
-                                 placeholder="Vimeo / YouTube ID or direct URL..."
+                                 onChange={(val) => setLessonForm({ ...lessonForm, video_id: val })}
                                />
+                               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-3 px-1">
+                                 Select an uploaded asset or past recording to bind to this syllabus entry.
+                               </p>
                             </div>
                          ) : null}
                          <div>

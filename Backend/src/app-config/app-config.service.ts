@@ -71,6 +71,14 @@ export class AppConfigService {
     return this.configService.get<string>('AGORA_APP_CERTIFICATE') || '';
   }
 
+  get agoraCustomerId(): string {
+    return this.configService.get<string>('AGORA_CUSTOMER_ID') || '';
+  }
+
+  get agoraCustomerCertificate(): string {
+    return this.configService.get<string>('AGORA_CUSTOMER_CERTIFICATE') || '';
+  }
+
   // AWS S3 Config
   get awsS3Bucket(): string {
     return this.configService.get<string>('AWS_S3_BUCKET') || '';
@@ -136,5 +144,52 @@ export class AppConfigService {
 
   get recipientEmail(): string {
     return this.configService.get<string>('RECIPIENT_EMAIL') || '';
+  }
+
+  get agoraTokenTtlSeconds(): number {
+    const raw = this.configService.get<number | string>(
+      'AGORA_TOKEN_TTL_SECONDS',
+    );
+    const parsed = typeof raw === 'string' ? parseInt(raw, 10) : raw;
+    return Number.isFinite(parsed) && (parsed as number) > 0
+      ? (parsed as number)
+      : 3600; // default 1 hour
+  }
+
+  // AWS Region (used for S3, MediaConvert, etc.)
+  get awsRegion(): string {
+    // Default to us-east-1 if not set; override via AWS_REGION or AWS_DEFAULT_REGION
+    return (
+      this.configService.get<string>('AWS_REGION') ||
+      this.configService.get<string>('AWS_DEFAULT_REGION') ||
+      'us-east-1'
+    );
+  }
+
+  get awsAccessKey(): string {
+    return (
+      this.configService.get<string>('AWS_ACCESS_KEY_ID') ||
+      this.configService.get<string>('AWS_ACCESS_KEY') ||
+      ''
+    );
+  }
+
+  get awsSecretKey(): string {
+    return (
+      this.configService.get<string>('AWS_SECRET_ACCESS_KEY') ||
+      this.configService.get<string>('AWS_SECRET_KEY') ||
+      ''
+    );
+  }
+
+  get awsSqsQueueUrl(): string {
+    return this.configService.get<string>('AWS_SQS_VIDEO_QUEUE_URL') || '';
+  }
+
+  // Internal webhook secret for video processing completion
+  get videoProcessingWebhookSecret(): string {
+    return (
+      this.configService.get<string>('VIDEO_PROCESSING_WEBHOOK_SECRET') || ''
+    );
   }
 }
