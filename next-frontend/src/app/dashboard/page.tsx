@@ -107,10 +107,10 @@ const Dashboard = () => {
   const learningHours = (totalSeconds / 3600).toFixed(1);
 
   const studentStats = [
-    { label: 'Active Courses', value: totalCourses.toString(), icon: <BookOpen size={20} />, color: 'bg-blue-600' },
-    { label: 'Learning Time', value: `${learningHours}h`, icon: <Clock size={20} />, color: 'bg-cyan-500' },
-    { label: 'Certifications', value: completedCourses.toString(), icon: <Trophy size={20} />, color: 'bg-orange-500' },
-    { label: 'Avg. Progress', value: `${avgProgress}%`, icon: <TrendingUp size={20} />, color: 'bg-indigo-600' },
+    { id: 'active-courses', label: 'Active Courses', value: totalCourses.toString(), icon: <BookOpen size={20} />, color: 'bg-blue-600' },
+    { id: 'learning-time', label: 'Learning Time', value: `${learningHours}h`, icon: <Clock size={20} />, color: 'bg-cyan-500' },
+    { id: 'certifications', label: 'Certifications', value: completedCourses.toString(), icon: <Trophy size={20} />, color: 'bg-orange-500' },
+    { id: 'avg-progress', label: 'Avg. Progress', value: `${avgProgress}%`, icon: <TrendingUp size={20} />, color: 'bg-indigo-600' },
   ];
 
   return (
@@ -245,7 +245,7 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
             {studentStats.map((stat, i) => (
               <motion.div 
-                key={i}
+                key={stat.id}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: i * 0.1 }}
@@ -294,7 +294,13 @@ const Dashboard = () => {
                 return (
                   <div key={enr.id} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-10 hover:shadow-2xl hover:shadow-blue-500/5 transition-all group">
                      <div className="w-56 h-36 rounded-[2.5rem] bg-slate-100 overflow-hidden shrink-0 border-2 border-slate-50">
-                        <img src={course.thumbnail_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={course.title} />
+                        {course.thumbnail_url ? (
+                          <img src={course.thumbnail_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={course.title} />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-slate-300">
+                            <BookOpen size={32} />
+                          </div>
+                        )}
                      </div>
                      <div className="flex-1 text-center md:text-left">
                         <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mb-4">
