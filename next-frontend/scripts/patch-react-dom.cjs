@@ -131,16 +131,18 @@ ${RD_SENTINEL}
 }
 
 // ─── Clear Turbopack cache ─────────────────────────────────────────────────
+// Turbopack stores compiled chunks in .next/turbopack and .next/dev.
+// When node_modules source files are patched, these caches MUST be cleared
+// so Turbopack re-reads and recompiles from the patched source.
 
 function clearNextCache() {
   const nextDir = path.join(__dirname, '..', '.next');
-  if (!fs.existsSync(nextDir)) return;
-  // Only delete the turbopack chunk cache, not the whole .next dir
-  const turboCache = path.join(nextDir, 'cache', 'turbopack');
-  if (fs.existsSync(turboCache)) {
-    fs.rmSync(turboCache, { recursive: true, force: true });
-    console.log('[patch] ✓ Cleared Turbopack chunk cache (.next/cache/turbopack).');
+  if (!fs.existsSync(nextDir)) {
+    console.log('[patch] No .next directory found — nothing to clear.');
+    return;
   }
+  fs.rmSync(nextDir, { recursive: true, force: true });
+  console.log('[patch] ✓ Cleared .next directory (Turbopack will recompile from patched sources).');
 }
 
 // ─── Run ──────────────────────────────────────────────────────────────────
