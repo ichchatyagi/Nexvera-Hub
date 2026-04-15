@@ -68,7 +68,7 @@ const Dashboard = () => {
       // Student/Learning data
       try {
         const enrollmentsData = await enrollmentsService.getMyLearning();
-        setEnrollments(enrollmentsData || []);
+        setEnrollments((enrollmentsData || []).filter((e: any) => e.course != null));
       } catch (e) {
         // Teachers might not have enrollments, that's fine
         setEnrollments([]);
@@ -271,11 +271,12 @@ const Dashboard = () => {
             <div className="space-y-8">
               {enrollments.length > 0 ? enrollments.map((enr, i) => {
                 const course = enr.course;
+                // Skip enrollments where the course has been deleted or not populated
+                if (!course) return null;
+
                 const progress = enr.progress?.percentage || 0;
                 
                 const getContinueLearningUrl = () => {
-                  if (!course) return '#';
-                  
                   // 1. Use current_lesson if it exists in enrollment progress
                   const currentLessonId = enr.progress?.current_lesson;
                   if (currentLessonId) {

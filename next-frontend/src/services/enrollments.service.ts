@@ -17,7 +17,8 @@ export interface Enrollment {
 export const enrollmentsService = {
   getMyLearning: async (): Promise<Enrollment[]> => {
     const response = await api.get('/enrollments/my-learning');
-    return response.data;
+    // Backend returns { success: true, data: [...] }
+    return response.data?.data ?? response.data ?? [];
   },
 
   enroll: async (courseId: string) => {
