@@ -7,6 +7,7 @@ import { LiveClassesService } from './live-classes.service';
 import { AppConfigService } from '../app-config/app-config.service';
 import { LiveClass } from './schemas/live-class.schema';
 import { LiveClassMessage } from './schemas/live-class-message.schema';
+import { EnrollmentsService } from '../enrollments/enrollments.service';
 
 describe('LiveClassesGateway', () => {
   let gateway: LiveClassesGateway;
@@ -30,6 +31,9 @@ describe('LiveClassesGateway', () => {
   };
   const mockAppConfig = {
     jwtSecret: 'test-secret',
+  };
+  const mockEnrollmentsService = {
+    isActiveCourseEnrollment: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -56,12 +60,17 @@ describe('LiveClassesGateway', () => {
           provide: AppConfigService,
           useValue: mockAppConfig,
         },
+        {
+          provide: EnrollmentsService,
+          useValue: mockEnrollmentsService,
+        },
       ],
     }).compile();
 
     gateway = module.get<LiveClassesGateway>(LiveClassesGateway);
     jwtService = module.get<JwtService>(JwtService);
     liveClassesService = module.get<LiveClassesService>(LiveClassesService);
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {
@@ -94,30 +103,70 @@ describe('LiveClassesGateway', () => {
     });
 
     it('should disconnect if chat is disabled', async () => {
-      mockSocket.handshake.query = { token: 'valid-token', liveClassId: 'valid-id' };
-      mockJwtService.verify.mockReturnValue({ sub: 'user-1', role: 'student' });
+      const liveClassId = new Types.ObjectId().toString();
+      mockSocket.handshake.query = { token: 'valid-token', liveClassId };
+      mockJwtService.verify.mockReturnValue({
+        sub: 'user-1',
+        role: 'student',
+        email: 'test@test.com',
+      });
       mockLiveClassesService.findById.mockResolvedValue({
-        features: { chat_enabled: false },
+        course_id: new Types.ObjectId(),
+        features: { chat_enabled: false, whiteboard_enabled: false },
         status: 'live',
       });
 
       await gateway.handleConnection(mockSocket);
+      expect(mockSocket.emit).toHaveBeenCalledWith(
+        'error',
+        'INTERACTIVE_FEATURES_DISABLED',
+      );
       expect(mockSocket.disconnect).toHaveBeenCalledWith(true);
     });
 
     it('should join room and emit history on success', async () => {
       const liveClassId = new Types.ObjectId().toString();
       mockSocket.handshake.query = { token: 'valid-token', liveClassId };
-      mockJwtService.verify.mockReturnValue({ sub: 'user-1', role: 'student' });
+      mockJwtService.verify.mockReturnValue({
+        sub: 'user-1',
+        role: 'student',
+        email: 'test@test.com',
+      });
       mockLiveClassesService.findById.mockResolvedValue({
+        course_id: new Types.ObjectId(),
         features: { chat_enabled: true },
         status: 'live',
       });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
 
       await gateway.handleConnection(mockSocket);
 
       expect(mockSocket.join).toHaveBeenCalledWith(liveClassId);
-      expect(mockSocket.emit).toHaveBeenCalledWith('chat:history', expect.any(Array));
+      expect(mockSocket.emit).toHaveBeenCalledWith(
+        'chat:history',
+        expect.any(Array),
+      );
+    });
+
+    it('should refuse connection if student is not enrolled', async () => {
+      const liveClassId = new Types.ObjectId().toString();
+      mockSocket.handshake.query = { token: 'valid-token', liveClassId };
+      mockJwtService.verify.mockReturnValue({
+        sub: 'user-1',
+        role: 'student',
+        email: 'test@test.com',
+      });
+      mockLiveClassesService.findById.mockResolvedValue({
+        course_id: new Types.ObjectId(),
+        features: { chat_enabled: true },
+        status: 'live',
+      });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(false);
+
+      await gateway.handleConnection(mockSocket);
+
+      expect(mockSocket.emit).toHaveBeenCalledWith('error', 'NOT_ENROLLED');
+      expect(mockSocket.disconnect).toHaveBeenCalledWith(true);
     });
   });
 
@@ -127,7 +176,13 @@ describe('LiveClassesGateway', () => {
 
     beforeEach(() => {
       mockSocket = {
-        data: { userId: 'user-1', userRole: 'student', liveClassId: 'lc-1' },
+        data: {
+          userId: 'user-1',
+          userRole: 'student',
+          liveClassId: new Types.ObjectId().toString(),
+        },
+        emit: jest.fn(),
+        disconnect: jest.fn(),
       };
       mockServer = {
         to: jest.fn().mockReturnThis(),
@@ -139,14 +194,17 @@ describe('LiveClassesGateway', () => {
     it('should persist and broadcast message', async () => {
       const dto = { message: 'Hello world' };
       mockLiveClassesService.findById.mockResolvedValue({
+        course_id: new Types.ObjectId(),
         features: { chat_enabled: true },
         status: 'live',
       });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
+
       mockMessageModel.create.mockResolvedValue({
         _id: new Types.ObjectId(),
         user_id: 'user-1',
         user_role: 'student',
-        user_name: null,
+        user_name: 'testuser',
         text: 'Hello world',
         created_at: new Date(),
       });
@@ -154,10 +212,29 @@ describe('LiveClassesGateway', () => {
       await gateway.handleChatMessage(mockSocket, dto);
 
       expect(mockMessageModel.create).toHaveBeenCalled();
-      expect(mockServer.to).toHaveBeenCalledWith('lc-1');
-      expect(mockServer.emit).toHaveBeenCalledWith('chat:message', expect.objectContaining({
-        text: 'Hello world',
-      }));
+      expect(mockServer.to).toHaveBeenCalledWith(mockSocket.data.liveClassId);
+      expect(mockServer.emit).toHaveBeenCalledWith(
+        'chat:message',
+        expect.objectContaining({
+          text: 'Hello world',
+        }),
+      );
+    });
+
+    it('should disconnect student if they try to chat but are not enrolled', async () => {
+      const dto = { message: 'Attempted chat' };
+      mockLiveClassesService.findById.mockResolvedValue({
+        course_id: new Types.ObjectId(),
+        features: { chat_enabled: true },
+        status: 'live',
+      });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(false);
+
+      await gateway.handleChatMessage(mockSocket, dto);
+
+      expect(mockSocket.emit).toHaveBeenCalledWith('error', 'NOT_ENROLLED');
+      expect(mockSocket.disconnect).toHaveBeenCalledWith(true);
+      expect(mockMessageModel.create).not.toHaveBeenCalled();
     });
   });
 });

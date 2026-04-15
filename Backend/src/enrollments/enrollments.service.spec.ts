@@ -55,8 +55,10 @@ describe('EnrollmentsService', () => {
     it('should throw ConflictException if already enrolled', async () => {
       const courseId = new Types.ObjectId().toString();
       mockEnrollmentModel.findOne.mockResolvedValue({ _id: 'e1' });
-      
-      await expect(service.enroll(courseId, 's1')).rejects.toThrow(ConflictException);
+
+      await expect(service.enroll(courseId, 's1')).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 
@@ -76,7 +78,9 @@ describe('EnrollmentsService', () => {
       const mockExec = jest.fn().mockResolvedValue(mockEnrollment);
       mockEnrollmentModel.findOne.mockReturnValue({ exec: mockExec });
 
-      const result = await service.updateProgress(courseId, 's1', { percentage: 50 });
+      const result = await service.updateProgress(courseId, 's1', {
+        percentage: 50,
+      });
 
       expect(result.success).toBe(true);
       expect(mockEnrollment.progress.percentage).toBe(50);
@@ -86,38 +90,42 @@ describe('EnrollmentsService', () => {
 
   describe('Tuition Extensions', () => {
     it('should assign explicit metadata tuples correctly injecting natively avoiding collisions', async () => {
-       const courseId = new Types.ObjectId().toString();
-       const subjectId = new Types.ObjectId().toString();
-       mockEnrollmentModel.findOne.mockResolvedValue(null);
-       mockEnrollmentModel.create.mockImplementation((obj) => obj);
+      const courseId = new Types.ObjectId().toString();
+      const subjectId = new Types.ObjectId().toString();
+      mockEnrollmentModel.findOne.mockResolvedValue(null);
+      mockEnrollmentModel.create.mockImplementation((obj) => obj);
 
-       const result = await service.enroll(courseId, 's1', {
-         product_type: 'tuition',
-         access_scope: 'subject',
-         billing_mode: 'monthly',
-         subjectId
-       });
+      const result = await service.enroll(courseId, 's1', {
+        product_type: 'tuition',
+        access_scope: 'subject',
+        billing_mode: 'monthly',
+        subjectId,
+      });
 
-       expect(result.success).toBe(true);
-       expect(mockEnrollmentModel.create).toHaveBeenCalledWith(expect.objectContaining({
-         product_type: 'tuition',
-         tuition_class_id: new Types.ObjectId(courseId),
-         tuition_subject_id: new Types.ObjectId(subjectId),
-         billing_mode: 'monthly'
-       }));
+      expect(result.success).toBe(true);
+      expect(mockEnrollmentModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          product_type: 'tuition',
+          tuition_class_id: new Types.ObjectId(courseId),
+          tuition_subject_id: new Types.ObjectId(subjectId),
+          billing_mode: 'monthly',
+        }),
+      );
     });
 
     it('should accurately resolve hasTuitionAccess true for explicit subject queries actively natively', async () => {
       const classId = new Types.ObjectId().toString();
       const subjectId = new Types.ObjectId().toString();
-      
+
       mockEnrollmentModel.find = jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue([{
-           product_type: 'tuition',
-           billing_mode: 'bundle',
-           access_scope: 'subject',
-           tuition_subject_id: new Types.ObjectId(subjectId)
-        }])
+        exec: jest.fn().mockResolvedValue([
+          {
+            product_type: 'tuition',
+            billing_mode: 'bundle',
+            access_scope: 'subject',
+            tuition_subject_id: new Types.ObjectId(subjectId),
+          },
+        ]),
       });
 
       const access = await service.hasTuitionAccess('s1', classId, subjectId);
@@ -127,13 +135,15 @@ describe('EnrollmentsService', () => {
     it('should resolve hasTuitionAccess true executing class delegations accurately covering underlying layers automatically', async () => {
       const classId = new Types.ObjectId().toString();
       const subjectId = new Types.ObjectId().toString();
-      
+
       mockEnrollmentModel.find = jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue([{
-           product_type: 'tuition',
-           billing_mode: 'bundle',
-           access_scope: 'class',
-        }])
+        exec: jest.fn().mockResolvedValue([
+          {
+            product_type: 'tuition',
+            billing_mode: 'bundle',
+            access_scope: 'class',
+          },
+        ]),
       });
 
       const access = await service.hasTuitionAccess('s1', classId, subjectId);
@@ -143,14 +153,16 @@ describe('EnrollmentsService', () => {
     it('should resolve hasTuitionAccess false for expired monthly boundaries cleanly separating dead states gracefully natively', async () => {
       const classId = new Types.ObjectId().toString();
       const subjectId = new Types.ObjectId().toString();
-      
+
       mockEnrollmentModel.find = jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue([{
-           product_type: 'tuition',
-           billing_mode: 'monthly',
-           access_scope: 'class',
-           billing_period_end: new Date(Date.now() - 100000) // EXPIRED!
-        }])
+        exec: jest.fn().mockResolvedValue([
+          {
+            product_type: 'tuition',
+            billing_mode: 'monthly',
+            access_scope: 'class',
+            billing_period_end: new Date(Date.now() - 100000), // EXPIRED!
+          },
+        ]),
       });
 
       const access = await service.hasTuitionAccess('s1', classId, subjectId);
@@ -165,9 +177,11 @@ describe('EnrollmentsService', () => {
       const result = await service.enroll(courseId, 's1');
 
       expect(result.success).toBe(true);
-      expect(mockEnrollmentModel.create).toHaveBeenCalledWith(expect.objectContaining({
-        product_type: 'course'
-      }));
+      expect(mockEnrollmentModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          product_type: 'course',
+        }),
+      );
     });
   });
 });

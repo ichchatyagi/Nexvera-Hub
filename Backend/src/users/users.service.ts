@@ -24,7 +24,9 @@ export class UsersService {
     name?: string,
   ): Promise<User> {
     const normalizedEmail = email.toLowerCase();
-    const existing = await this.userRepository.findOne({ where: { email: normalizedEmail } });
+    const existing = await this.userRepository.findOne({
+      where: { email: normalizedEmail },
+    });
     if (existing) {
       throw new ConflictException('Email already registered');
     }
@@ -43,17 +45,16 @@ export class UsersService {
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.userRepository.findOne({ where: { email: email.toLowerCase() } });
+    return this.userRepository.findOne({
+      where: { email: email.toLowerCase() },
+    });
   }
 
   async findById(id: string): Promise<User | null> {
     return this.userRepository.findOne({ where: { id } });
   }
 
-  async updateProfile(
-    userId: string,
-    dto: UpdateProfileDto,
-  ): Promise<User> {
+  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<User> {
     const user = await this.findById(userId);
     if (!user) throw new NotFoundException('User not found');
 
@@ -70,10 +71,13 @@ export class UsersService {
     // Update role-specific fields
     if (dto.headline !== undefined) user.headline = dto.headline;
     if (dto.expertise !== undefined) user.expertise = dto.expertise;
-    if (dto.qualifications !== undefined) user.qualifications = dto.qualifications;
-    if (dto.yearsExperience !== undefined) user.yearsExperience = dto.yearsExperience;
+    if (dto.qualifications !== undefined)
+      user.qualifications = dto.qualifications;
+    if (dto.yearsExperience !== undefined)
+      user.yearsExperience = dto.yearsExperience;
     if (dto.hourlyRate !== undefined) user.hourlyRate = dto.hourlyRate;
-    if (dto.educationLevel !== undefined) user.educationLevel = dto.educationLevel;
+    if (dto.educationLevel !== undefined)
+      user.educationLevel = dto.educationLevel;
     if (dto.interests !== undefined) user.interests = dto.interests;
     if (dto.learningGoals !== undefined) user.learningGoals = dto.learningGoals;
 
@@ -86,7 +90,9 @@ export class UsersService {
   }
 
   async listTeachers(): Promise<User[]> {
-    return this.userRepository.find({ where: { role: UserRole.TEACHER, status: 'active' } });
+    return this.userRepository.find({
+      where: { role: UserRole.TEACHER, status: 'active' },
+    });
   }
 
   async findOrCreateGoogleUser(
@@ -100,7 +106,9 @@ export class UsersService {
 
     // Try find by email (link existing account)
     const normalizedEmail = email.toLowerCase();
-    user = await this.userRepository.findOne({ where: { email: normalizedEmail } });
+    user = await this.userRepository.findOne({
+      where: { email: normalizedEmail },
+    });
     if (user) {
       user.googleId = googleId;
       if (emailVerified) user.emailVerified = true;
@@ -156,7 +164,11 @@ export class UsersService {
     return this.userRepository.save(user);
   }
 
-  async setResetOtp(email: string, otp: string, expiresAt: Date): Promise<User> {
+  async setResetOtp(
+    email: string,
+    otp: string,
+    expiresAt: Date,
+  ): Promise<User> {
     const user = await this.findByEmail(email);
     if (!user) throw new NotFoundException('User not found');
 
@@ -175,7 +187,11 @@ export class UsersService {
     return this.userRepository.save(user);
   }
 
-  async setVerificationOtp(email: string, otp: string, expiresAt: Date): Promise<User> {
+  async setVerificationOtp(
+    email: string,
+    otp: string,
+    expiresAt: Date,
+  ): Promise<User> {
     const user = await this.findByEmail(email);
     if (!user) throw new NotFoundException('User not found');
 

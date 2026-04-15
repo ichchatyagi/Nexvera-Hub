@@ -32,7 +32,11 @@ export class Review {
   @Prop({ type: TeacherResponse })
   response?: TeacherResponse;
 
-  @Prop({ type: String, enum: ['published', 'hidden', 'flagged'], default: 'published' })
+  @Prop({
+    type: String,
+    enum: ['published', 'hidden', 'flagged'],
+    default: 'published',
+  })
   status: string;
 
   created_at?: Date;

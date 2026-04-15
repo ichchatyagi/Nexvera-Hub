@@ -10,6 +10,7 @@ import { AdminTuitionService } from './admin-tuition.service';
 import { AdminTuitionController } from './admin-tuition.controller';
 import { TeacherTuitionService } from './teacher-tuition.service';
 import { TeacherTuitionController } from './teacher-tuition.controller';
+import { LessonsController } from './lessons.controller';
 
 @Module({
   imports: [
@@ -20,12 +21,14 @@ import { TeacherTuitionController } from './teacher-tuition.controller';
   ],
   providers: [CoursesService, AdminTuitionService, TeacherTuitionService],
   controllers: [
-    CoursesController, 
-    TeacherCoursesController, 
-    TuitionController, 
+    CoursesController,
+    TeacherCoursesController,
+    TuitionController,
     AdminTuitionController,
     TeacherTuitionController,
+    LessonsController,
   ],
+
   exports: [CoursesService],
 })
 export class CoursesModule {}

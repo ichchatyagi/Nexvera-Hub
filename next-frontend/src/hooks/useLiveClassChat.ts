@@ -13,6 +13,7 @@ export interface ChatMessage {
 export const useLiveClassChat = (liveClassId: string) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isConnected, setIsConnected] = useState(false);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
@@ -32,6 +33,7 @@ export const useLiveClassChat = (liveClassId: string) => {
     socket.on('connect', () => {
       console.log('Classroom chat connected');
       setIsConnected(true);
+      setErrorCode(null);
     });
 
     socket.on('disconnect', () => {
@@ -64,6 +66,11 @@ export const useLiveClassChat = (liveClassId: string) => {
 
     socket.on('error', (err) => {
       console.error('Chat Socket error:', err);
+      if (typeof err === 'string') {
+        setErrorCode(err);
+      } else if (err && typeof err.message === 'string') {
+        setErrorCode(err.message);
+      }
     });
 
     return () => {
@@ -81,6 +88,7 @@ export const useLiveClassChat = (liveClassId: string) => {
   return {
     messages,
     isConnected,
+    errorCode,
     sendMessage,
   };
 };

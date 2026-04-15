@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, UseGuards, Req, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  Req,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -17,7 +25,9 @@ export class InstructorEarningsController {
   async getEarnings(@Req() req: any) {
     const user = req.user;
     if (user.role !== UserRole.TEACHER && user.role !== UserRole.ADMIN) {
-      throw new UnauthorizedException('Only instructors can view current earnings metadata');
+      throw new UnauthorizedException(
+        'Only instructors can view current earnings metadata',
+      );
     }
 
     const result = await this.payoutsService.calculateEarnings(user.id);
@@ -32,10 +42,7 @@ export class PaymentsController {
 
   @Post('order')
   @Roles(UserRole.STUDENT, UserRole.TEACHER, UserRole.ADMIN)
-  async createOrder(
-    @CurrentUser() user: any,
-    @Body() dto: CreateOrderDto,
-  ) {
+  async createOrder(@CurrentUser() user: any, @Body() dto: CreateOrderDto) {
     return this.paymentsService.createCourseOrder(user.id, dto);
   }
 

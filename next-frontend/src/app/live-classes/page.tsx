@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { 
@@ -21,36 +21,66 @@ interface LiveClass {
   _id: string;
   title: string;
   description: string;
-  start_time: string;
-  end_time: string;
+  scheduled_start: string;
+  scheduled_end: string;
   course_id: string;
-  course_title: string;
-  teacher_name: string;
-  status: 'scheduled' | 'live' | 'completed' | 'cancelled';
+  status: 'scheduled' | 'live' | 'ended' | 'cancelled';
 }
 
 const LiveClassesList = () => {
   const { user, isAuthenticated } = useAuth();
   const [liveClasses, setLiveClasses] = useState<LiveClass[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [courseById, setCourseById] = useState<Record<string, { title?: string; slug?: string }>>({});
+  const courseByIdRef = useRef(courseById);
 
   useEffect(() => {
-    if (isAuthenticated) fetchLiveClasses();
-  }, [isAuthenticated]);
+    courseByIdRef.current = courseById;
+  }, [courseById]);
 
-  const fetchLiveClasses = async () => {
+  const fetchLiveClasses = useCallback(async () => {
     try {
       setIsLoading(true);
       // Assuming a dedicated endpoint or filtered GET
       const response = await api.get('/live-classes');
-      setLiveClasses(response.data || []);
+      const classes: LiveClass[] = response.data || [];
+      setLiveClasses(classes);
+
+      // Best-effort: hydrate course titles/slugs for display (avoids backend schema changes).
+      const missingCourseIds = Array.from(
+        new Set(classes.map((c) => c.course_id).filter(Boolean)),
+      ).filter((courseId) => !courseByIdRef.current[courseId]);
+
+      if (missingCourseIds.length > 0) {
+        const results = await Promise.all(
+          missingCourseIds.map(async (courseId) => {
+            try {
+              const courseRes = await api.get(`/courses/${courseId}`);
+              const course = courseRes.data;
+              return [courseId, { title: course?.title, slug: course?.slug }] as const;
+            } catch {
+              return [courseId, {}] as const;
+            }
+          }),
+        );
+
+        setCourseById((prev) => {
+          const next = { ...prev };
+          for (const [courseId, info] of results) next[courseId] = info;
+          return next;
+        });
+      }
     } catch (error) {
       toast.error('Failed to load live sessions');
       console.error(error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) fetchLiveClasses();
+  }, [isAuthenticated, fetchLiveClasses]);
 
   if (!isAuthenticated) {
     return (
@@ -98,8 +128,9 @@ const LiveClassesList = () => {
         ) : liveClasses.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {liveClasses.map((item, idx) => {
-              const startDate = new Date(item.start_time);
+              const startDate = new Date(item.scheduled_start);
               const isLive = item.status === 'live';
+              const courseInfo = courseById[item.course_id] || {};
               
               return (
                 <motion.div
@@ -125,7 +156,9 @@ const LiveClassesList = () => {
                      </div>
                      <div className="flex flex-col">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Live Class</span>
-                        <span className="text-sm font-bold text-slate-900 tracking-tight truncate max-w-[150px] uppercase font-black">{item.course_title}</span>
+                        <span className="text-sm font-bold text-slate-900 tracking-tight truncate max-w-[150px] uppercase font-black">
+                          {courseInfo.title || 'Course Session'}
+                        </span>
                      </div>
                   </div>
 

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Enrollment, EnrollmentDocument } from './schemas/enrollment.schema';
@@ -7,18 +11,20 @@ import { UpdateProgressDto } from './dto/enrollment.dto';
 @Injectable()
 export class EnrollmentsService {
   constructor(
-    @InjectModel(Enrollment.name) private enrollmentModel: Model<EnrollmentDocument>,
+    @InjectModel(Enrollment.name)
+    private enrollmentModel: Model<EnrollmentDocument>,
   ) {}
 
   async enroll(courseId: string, studentId: string, metadata?: any) {
-    if (!Types.ObjectId.isValid(courseId)) throw new NotFoundException('Invalid Course ID');
-    
+    if (!Types.ObjectId.isValid(courseId))
+      throw new NotFoundException('Invalid Course ID');
+
     const isTuition = metadata?.product_type === 'tuition';
-    
+
     const filter: any = {
       course_id: new Types.ObjectId(courseId),
       student_id: studentId,
-      product_type: isTuition ? 'tuition' : 'course'
+      product_type: isTuition ? 'tuition' : 'course',
     };
 
     if (isTuition) {
@@ -53,7 +59,9 @@ export class EnrollmentsService {
       enrollmentData.subscription_status = 'active';
 
       if (metadata.access_scope === 'subject' && metadata.subjectId) {
-        enrollmentData.tuition_subject_id = new Types.ObjectId(metadata.subjectId);
+        enrollmentData.tuition_subject_id = new Types.ObjectId(
+          metadata.subjectId,
+        );
       }
 
       if (metadata.billing_mode === 'monthly') {
@@ -76,12 +84,15 @@ export class EnrollmentsService {
   }
 
   async getProgress(courseId: string, studentId: string) {
-    if (!Types.ObjectId.isValid(courseId)) throw new NotFoundException('Invalid Course ID');
+    if (!Types.ObjectId.isValid(courseId))
+      throw new NotFoundException('Invalid Course ID');
 
-    const enrollment = await this.enrollmentModel.findOne({
-      course_id: new Types.ObjectId(courseId),
-      student_id: studentId,
-    }).exec();
+    const enrollment = await this.enrollmentModel
+      .findOne({
+        course_id: new Types.ObjectId(courseId),
+        student_id: studentId,
+      })
+      .exec();
 
     if (!enrollment) {
       throw new NotFoundException('Enrollment not found');
@@ -90,13 +101,20 @@ export class EnrollmentsService {
     return { success: true, data: enrollment };
   }
 
-  async updateProgress(courseId: string, studentId: string, dto: UpdateProgressDto) {
-    if (!Types.ObjectId.isValid(courseId)) throw new NotFoundException('Invalid Course ID');
+  async updateProgress(
+    courseId: string,
+    studentId: string,
+    dto: UpdateProgressDto,
+  ) {
+    if (!Types.ObjectId.isValid(courseId))
+      throw new NotFoundException('Invalid Course ID');
 
-    const enrollment = await this.enrollmentModel.findOne({
-      course_id: new Types.ObjectId(courseId),
-      student_id: studentId,
-    }).exec();
+    const enrollment = await this.enrollmentModel
+      .findOne({
+        course_id: new Types.ObjectId(courseId),
+        student_id: studentId,
+      })
+      .exec();
 
     if (!enrollment) {
       throw new NotFoundException('Enrollment not found');
@@ -105,19 +123,25 @@ export class EnrollmentsService {
     if (typeof dto.percentage === 'number') {
       enrollment.progress.percentage = dto.percentage;
     }
-    
+
     if (dto.current_lesson) {
-        if (!Types.ObjectId.isValid(dto.current_lesson)) throw new NotFoundException('Invalid lesson ID');
-        enrollment.progress.current_lesson = new Types.ObjectId(dto.current_lesson);
+      if (!Types.ObjectId.isValid(dto.current_lesson))
+        throw new NotFoundException('Invalid lesson ID');
+      enrollment.progress.current_lesson = new Types.ObjectId(
+        dto.current_lesson,
+      );
     }
 
     if (dto.completed_lessons) {
-      const ObjectIds = dto.completed_lessons.map(id => {
-        if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Invalid lesson ID: ' + id);
+      const ObjectIds = dto.completed_lessons.map((id) => {
+        if (!Types.ObjectId.isValid(id))
+          throw new NotFoundException('Invalid lesson ID: ' + id);
         return new Types.ObjectId(id);
       });
       // Merge unique lessons
-      const currentIds = enrollment.progress.completed_lessons.map(id => id.toString());
+      const currentIds = enrollment.progress.completed_lessons.map((id) =>
+        id.toString(),
+      );
       for (const id of ObjectIds) {
         if (!currentIds.includes(id.toString())) {
           enrollment.progress.completed_lessons.push(id);
@@ -132,44 +156,109 @@ export class EnrollmentsService {
   }
 
   async findByCourse(courseId: string) {
-    if (!Types.ObjectId.isValid(courseId)) throw new NotFoundException('Invalid Course ID');
-    return this.enrollmentModel.find({ course_id: new Types.ObjectId(courseId) }).exec();
+    if (!Types.ObjectId.isValid(courseId))
+      throw new NotFoundException('Invalid Course ID');
+    const list = await this.enrollmentModel
+      .find({ course_id: new Types.ObjectId(courseId) })
+      .exec();
+    return { success: true, data: list };
   }
 
   async findByStudent(studentId: string) {
-    return this.enrollmentModel.find({ student_id: studentId }).exec();
+    const enrollments = await this.enrollmentModel
+      .find({ student_id: studentId })
+      .populate('course_id')
+      .exec();
+
+    const formatted = enrollments.map((enr) => {
+      const obj = enr.toObject();
+      const course = obj.course_id as any;
+
+      return {
+        ...obj,
+        // Adapt course shape for dashboard UI expectations
+        course: course
+          ? {
+              title: course.title,
+              slug: course.slug,
+              thumbnail_url: course.thumbnail_url,
+              category: course.category?.main || 'General',
+              level: course.level,
+              teacher_name: course.lead_instructor_id || 'Nexvera Faculty',
+              first_lesson_id:
+                course.curriculum?.[0]?.lessons?.[0]?.lesson_id || null,
+            }
+          : null,
+      };
+    });
+
+    return { success: true, data: formatted };
   }
 
-  async hasTuitionAccess(studentId: string, classId: string, subjectId: string) {
-    if (!Types.ObjectId.isValid(classId) || !Types.ObjectId.isValid(subjectId)) {
+  async hasTuitionAccess(
+    studentId: string,
+    classId: string,
+    subjectId: string,
+  ) {
+    if (
+      !Types.ObjectId.isValid(classId) ||
+      !Types.ObjectId.isValid(subjectId)
+    ) {
       return false;
     }
 
-    const enrollments = await this.enrollmentModel.find({
-      student_id: studentId,
-      tuition_class_id: new Types.ObjectId(classId),
-      product_type: 'tuition',
-      subscription_status: 'active',
-    }).exec();
+    const enrollments = await this.enrollmentModel
+      .find({
+        student_id: studentId,
+        tuition_class_id: new Types.ObjectId(classId),
+        product_type: 'tuition',
+        subscription_status: 'active',
+      })
+      .exec();
 
     const now = new Date();
 
     for (const en of enrollments) {
       if (en.billing_mode === 'monthly') {
         if (en.billing_period_end && en.billing_period_end < now) {
-           continue; 
+          continue;
         }
       }
 
       if (en.access_scope === 'class') {
-         return true;
+        return true;
       }
 
-      if (en.access_scope === 'subject' && en.tuition_subject_id?.toString() === subjectId) {
-         return true;
+      if (
+        en.access_scope === 'subject' &&
+        en.tuition_subject_id?.toString() === subjectId
+      ) {
+        return true;
       }
     }
 
     return false;
+  }
+
+  async isActiveCourseEnrollment(
+    courseId: string,
+    studentId: string,
+  ): Promise<boolean> {
+    if (!Types.ObjectId.isValid(courseId)) return false;
+
+    const enrollment = await this.enrollmentModel
+      .findOne({
+        course_id: new Types.ObjectId(courseId),
+        student_id: studentId,
+        product_type: 'course',
+        status: 'active',
+      })
+      .select('_id status access_expires')
+      .exec();
+
+    if (!enrollment) return false;
+    if (enrollment.access_expires && enrollment.access_expires < new Date())
+      return false;
+    return true;
   }
 }

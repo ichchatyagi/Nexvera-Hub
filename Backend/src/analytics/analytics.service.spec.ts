@@ -5,8 +5,14 @@ import { AnalyticsService } from './analytics.service';
 import { User, UserRole } from '../users/entities/user.entity';
 import { Course } from '../courses/schemas/course.schema';
 import { Enrollment } from '../enrollments/schemas/enrollment.schema';
-import { Transaction, TransactionStatus } from '../payments/entities/transaction.entity';
-import { LiveClass, LiveClassStatus } from '../live-classes/schemas/live-class.schema';
+import {
+  Transaction,
+  TransactionStatus,
+} from '../payments/entities/transaction.entity';
+import {
+  LiveClass,
+  LiveClassStatus,
+} from '../live-classes/schemas/live-class.schema';
 
 describe('AnalyticsService', () => {
   let service: AnalyticsService;
@@ -79,13 +85,13 @@ describe('AnalyticsService', () => {
   describe('getOverview', () => {
     it('should return overview data in correct shape', async () => {
       const result = await service.getOverview();
-      
+
       expect(result).toHaveProperty('users');
       expect(result).toHaveProperty('catalog');
       expect(result).toHaveProperty('learning');
       expect(result).toHaveProperty('revenue');
       expect(result).toHaveProperty('live_classes');
-      
+
       expect(result.users.total_users).toBe(100);
       expect(result.catalog.total_courses).toBe(10);
       expect(result.revenue.revenue_all_time).toBe(100); // 10000 / 100

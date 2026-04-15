@@ -10,7 +10,7 @@ interface ChatPanelProps {
 
 export const ChatPanel: React.FC<ChatPanelProps> = ({ liveClassId }) => {
   const { user } = useAuth();
-  const { messages, isConnected, sendMessage } = useLiveClassChat(liveClassId);
+  const { messages, isConnected, errorCode, sendMessage } = useLiveClassChat(liveClassId);
   const [inputValue, setInputValue] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -23,7 +23,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ liveClassId }) => {
 
   const handleSend = (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!inputValue.trim() || !isConnected) return;
+    if (!inputValue.trim() || !isConnected || errorCode) return;
     sendMessage(inputValue.trim());
     setInputValue('');
   };
@@ -37,9 +37,15 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ liveClassId }) => {
           <h3 className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Classroom Discourse</h3>
         </div>
         <div className="flex items-center gap-2">
-          <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+          <div className={`w-1.5 h-1.5 rounded-full ${errorCode ? 'bg-red-500' : isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
           <span className="text-[9px] font-bold text-white/30 uppercase tracking-tighter">
-            {isConnected ? 'Real-time' : 'Reconnecting...'}
+            {errorCode === 'INTERACTIVE_FEATURES_DISABLED'
+              ? 'Chat disabled for this session'
+              : errorCode === 'CLASS_NOT_ACTIVE'
+              ? 'Class is not active'
+              : isConnected
+              ? 'Real-time'
+              : 'Reconnecting...'}
           </span>
         </div>
       </div>
@@ -99,13 +105,19 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ liveClassId }) => {
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            disabled={!isConnected}
-            placeholder={isConnected ? "Project a thought..." : "Synchronizing..."}
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 pr-16 text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-blue-500/50 focus:bg-white/10 transition-all group-hover:border-white/20"
+            disabled={!isConnected || !!errorCode}
+            placeholder={
+              errorCode 
+                ? "Chat unavailable" 
+                : isConnected 
+                ? "Project a thought..." 
+                : "Synchronizing..."
+            }
+            className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 pr-16 text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-blue-500/50 focus:bg-white/10 transition-all group-hover:border-white/20 disabled:cursor-not-allowed"
           />
           <button
             type="submit"
-            disabled={!inputValue.trim() || !isConnected}
+            disabled={!inputValue.trim() || !isConnected || !!errorCode}
             className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center hover:bg-blue-500 transition-all disabled:opacity-50 disabled:bg-slate-800 disabled:text-white/20"
           >
             <Send size={16} />

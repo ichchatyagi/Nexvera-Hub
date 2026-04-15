@@ -18,7 +18,10 @@ import {
   ExternalLink,
   ChevronLeft,
   Monitor,
-  Edit3
+  Edit3,
+  Maximize2,
+  Minimize2,
+  X as XIcon
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -26,9 +29,19 @@ import { useAgoraClassroom } from '@/hooks/useAgoraClassroom';
 import toast from 'react-hot-toast';
 import { ChatPanel } from '@/components/live-class/ChatPanel';
 import { WhiteboardPanel } from '@/components/live-class/WhiteboardPanel';
+import dynamic from 'next/dynamic';
+const AgoraWhiteboardPanel = dynamic(
+  () =>
+    import('@/components/live-class/AgoraWhiteboardPanel').then(
+      (mod) => mod.AgoraWhiteboardPanel,
+    ),
+  { ssr: false },
+);
 import { io } from 'socket.io-client';
 import { getCookie } from 'cookies-next';
 import { ConfirmationModal } from '@/components/ConfirmationModal';
+
+const USE_AGORA_WHITEBOARD = process.env.NEXT_PUBLIC_USE_AGORA_WHITEBOARD === 'true';
 
 const JoinLiveClass = () => {
   const { id } = useParams();
@@ -39,9 +52,11 @@ const JoinLiveClass = () => {
   const [isMicOn, setIsMicOn] = useState(true);
   const [classStatus, setClassStatus] = useState<string>('');
   const [isClassOwner, setIsClassOwner] = useState(false);
-  const [activeTab, setActiveTab] = useState<'video' | 'whiteboard'>('video');
   const [isEndModalOpen, setIsEndModalOpen] = useState(false);
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isVideoFullscreen, setIsVideoFullscreen] = useState(false);
+  const videoContainerRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
 
   // Map backend role to Agora role string
@@ -82,9 +97,9 @@ const JoinLiveClass = () => {
       });
 
       socket.on('class:ended', () => {
+        setClassStatus('ended');
         if (!isClassOwner) {
-          toast.success('The instructor has ended the session. Redirecting to Course Hub...');
-          setTimeout(() => router.push('/dashboard'), 3000);
+          toast.success('Session ended. You can watch the recording if available.');
         }
       });
 
@@ -100,6 +115,19 @@ const JoinLiveClass = () => {
       };
     }
   }, [id, isAuthenticated, isClassOwner]);
+
+  // Auto-join effect for students
+  useEffect(() => {
+    if (!joined && !isClassOwner && classStatus === 'live') {
+      (async () => {
+        try {
+          await join();
+        } catch (err) {
+          console.error('Auto-join failed', err);
+        }
+      })();
+    }
+  }, [joined, isClassOwner, classStatus, join]);
 
   const fetchToken = async () => {
     try {
@@ -202,22 +230,32 @@ const JoinLiveClass = () => {
            </div>
         </div>
         <div className="flex items-center gap-4">
-           {tokenData?.features?.whiteboard_enabled && (
-             <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 mr-4">
-               <button 
-                 onClick={() => setActiveTab('video')}
-                 className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'video' ? 'bg-blue-600 text-white shadow-lg' : 'text-white/40 hover:text-white'}`}
-               >
-                 <Monitor size={14} /> Video
-               </button>
-               <button 
-                 onClick={() => setActiveTab('whiteboard')}
-                 className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'whiteboard' ? 'bg-blue-600 text-white shadow-lg' : 'text-white/40 hover:text-white'}`}
-               >
-                 <Edit3 size={14} /> Whiteboard
-               </button>
-             </div>
-           )}
+           <button
+             onClick={() => setIsSidebarOpen((prev) => !prev)}
+             className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all mr-2"
+             aria-label={isSidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+           >
+             {isSidebarOpen ? <XIcon size={16} /> : <MessageSquare size={16} />}
+           </button>
+
+           <button
+             onClick={async () => {
+               try {
+                 if (!document.fullscreenElement && videoContainerRef.current) {
+                   await videoContainerRef.current.requestFullscreen();
+                   setIsVideoFullscreen(true);
+                 } else if (document.fullscreenElement) {
+                   await document.exitFullscreen();
+                   setIsVideoFullscreen(false);
+                 }
+               } catch (err) {
+                 console.error('Fullscreen toggle failed', err);
+               }
+             }}
+             className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all mr-4"
+           >
+             {isVideoFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+           </button>
            <div className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-white/50">
               <Lock size={12} className="text-blue-500" />
               Secure Gateway
@@ -236,16 +274,35 @@ const JoinLiveClass = () => {
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 relative flex flex-col p-10 bg-black">
           <div className="flex-1 flex items-center justify-center relative rounded-[4rem] overflow-hidden border border-white/5 bg-slate-900 group shadow-2xl shadow-blue-500/5">
-             {!joined ? (
+             {!joined || classStatus === 'ended' ? (
                <div className="text-center p-20 max-w-xl">
                   <div className="w-40 h-40 bg-white/5 rounded-[4rem] flex items-center justify-center mx-auto mb-10 border border-white/10 group-hover:bg-white/10 transition-all">
-                     <Camera size={64} className="text-white/40" />
+                     <Camera size={64} className={`text-white/40 ${classStatus === 'ended' ? 'text-blue-500' : ''}`} />
                   </div>
-                  <h2 className="text-3xl font-black text-white uppercase tracking-tighter mb-4">Awaiting Mentorship</h2>
+                  <h2 className="text-3xl font-black text-white uppercase tracking-tighter mb-4">
+                    {classStatus === 'ended' ? "Session Finalized" : (!isClassOwner && classStatus === 'scheduled' ? "Awaiting Instructor" : "Awaiting Mentorship")}
+                  </h2>
                   <p className="text-white/40 text-lg leading-relaxed mb-10 font-medium max-w-sm mx-auto">
-                    Your session is authorized. Activate your media devices to proceed.
+                    {classStatus === 'ended' 
+                      ? "This session has concluded. You can now access the recording if it has finished processing."
+                      : (!isClassOwner && classStatus === 'scheduled' 
+                          ? "Waiting for instructor to start the class. Once live, you'll be connected automatically."
+                          : "Your session is authorized. Activate your media devices to proceed.")}
                   </p>
-                  {isClassOwner && classStatus === 'scheduled' ? (
+                  
+                  {classStatus === 'ended' && !isClassOwner ? (
+                    <div className="flex flex-col items-center gap-4">
+                       <button 
+                         onClick={() => router.push(`/live-classes/${id}/recording`)}
+                         className="px-14 py-6 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black uppercase tracking-widest text-xs rounded-[2.5rem] shadow-2xl shadow-blue-500/20 hover:scale-105 transition-all active:scale-95"
+                       >
+                         Watch Recording
+                       </button>
+                       <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">
+                         If it's still processing, try again in a few minutes.
+                       </p>
+                    </div>
+                  ) : isClassOwner && classStatus === 'scheduled' ? (
                     <button 
                       onClick={handleStartClass}
                       className="px-14 py-6 bg-red-600 text-white font-black uppercase tracking-widest text-xs rounded-[2.5rem] shadow-2xl shadow-red-500/20 hover:scale-105 transition-all active:scale-95 animate-pulse"
@@ -262,18 +319,28 @@ const JoinLiveClass = () => {
                           : 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-blue-500/20 hover:scale-105'
                       }`}
                     >
-                      {classStatus === 'scheduled' ? 'Awaiting Instructor...' : 'Enter Live Hub'}
+                      {classStatus === 'scheduled' ? 'Waiting for Instructor...' : 'Enter Live Hub'}
                     </button>
                   )}
-
                </div>
              ) : (
-               <div className="w-full h-full relative p-10">
-                   <div className="grid grid-cols-1 gap-10 h-full">
-                     {activeTab === 'whiteboard' ? (
-                        <WhiteboardPanel liveClassId={id as string} isTeacher={isClassOwner} />
-                     ) : (
-                       <>
+                <div className="w-full h-full relative p-10">
+                    <div className="flex flex-col gap-6 h-full">
+                      {/* Unified Layout: Whiteboard + Video */}
+                      {tokenData?.features?.whiteboard_enabled && (
+                         <div className="flex-1 min-h-[40%]">
+                            {USE_AGORA_WHITEBOARD ? (
+                              <AgoraWhiteboardPanel liveClassId={id as string} isTeacher={isClassOwner} userId={user?.id} />
+                            ) : (
+                              <WhiteboardPanel liveClassId={id as string} isTeacher={isClassOwner} />
+                            )}
+                         </div>
+                      )}
+
+                      <div 
+                        ref={videoContainerRef}
+                        className="flex-1 min-h-[40%] relative"
+                      >
                          {remoteStreams.length === 0 && !localVideoTrack ? (
                            <div className="relative rounded-[3rem] bg-slate-800 border-2 border-white/5 overflow-hidden group shadow-2xl shadow-black/40 h-full">
                               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-white/10">
@@ -304,24 +371,34 @@ const JoinLiveClass = () => {
                              ))}
                            </div>
                          )}
-                       </>
-                     )}
-                   </div>
+                      </div>
 
-                  <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-6 p-4 bg-white/5 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 shadow-2xl">
-                     <button onClick={handleToggleMic} className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${isMicOn ? 'bg-white/10 text-white' : 'bg-red-600 text-white'}`}>
-                       {isMicOn ? <Mic size={24} /> : <MicOff size={24} />}
-                     </button>
-                     <button onClick={handleToggleCam} className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${isCamOn ? 'bg-white/10 text-white' : 'bg-red-600 text-white'}`}>
-                       {isCamOn ? <Camera size={24} /> : <CameraOff size={24} />}
-                     </button>
-                     <button 
-                       onClick={() => setIsLeaveModalOpen(true)} 
-                       className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center hover:bg-red-700 transition-all hover:scale-110 shadow-xl shadow-red-500/20"
-                     >
-                       <PhoneOff size={24} />
-                     </button>
-                  </div>
+                      {!isClassOwner && (
+                        <p className="mt-3 text-[10px] font-black text-white/30 uppercase tracking-[0.2em] text-center">
+                          Live stream &middot; Watch-only
+                        </p>
+                      )}
+                    </div>
+
+                   <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-6 p-4 bg-white/5 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 shadow-2xl">
+                      {isClassOwner && (
+                        <>
+                          <button onClick={handleToggleMic} className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${isMicOn ? 'bg-white/10 text-white' : 'bg-red-600 text-white'}`}>
+                            {isMicOn ? <Mic size={24} /> : <MicOff size={24} />}
+                          </button>
+                          <button onClick={handleToggleCam} className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${isCamOn ? 'bg-white/10 text-white' : 'bg-red-600 text-white'}`}>
+                            {isCamOn ? <Camera size={24} /> : <CameraOff size={24} />}
+                          </button>
+                        </>
+                      )}
+                      
+                      <button 
+                        onClick={() => setIsLeaveModalOpen(true)} 
+                        className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center hover:bg-red-700 transition-all hover:scale-110 shadow-xl shadow-red-500/20"
+                      >
+                        <PhoneOff size={24} />
+                      </button>
+                   </div>
                </div>
              )}
               
@@ -348,39 +425,41 @@ const JoinLiveClass = () => {
           </div>
         </div>
 
-        <div className="w-[400px] shrink-0 bg-slate-900 border-l border-white/5 flex flex-col overflow-hidden">
-           {joined && tokenData?.features?.chat_enabled ? (
-             <ChatPanel liveClassId={id as string} />
-           ) : (
-             <div className="p-8 flex flex-col h-full">
-               <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em] mb-6">Channel Configuration</h3>
-               <div className="space-y-4">
-                  <div className="p-5 bg-white/5 border border-white/5 rounded-2xl">
-                     <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Channel ID</p>
-                     <p className="text-xs font-bold text-white uppercase tracking-tight truncate">{tokenData?.channel_name || 'NEX-HUB-ALPHA'}</p>
-                  </div>
-                  <div className="p-5 bg-white/5 border border-white/5 rounded-2xl">
-                     <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Session Role</p>
-                     <p className="text-xs font-bold text-white uppercase tracking-tight">{isClassOwner ? 'Moderator / Instructor' : 'Attendee'}</p>
-                  </div>
-                  <div className="p-5 bg-white/5 border border-white/5 rounded-2xl">
-                     <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Status</p>
-                     <div className="flex items-center gap-2 mt-1">
-                        <div className={`w-2 h-2 rounded-full ${classStatus === 'live' ? 'bg-red-500 animate-pulse' : 'bg-slate-500'}`} />
-                        <p className="text-xs font-bold text-white uppercase tracking-tight">{classStatus || 'Ready'}</p>
+         {isSidebarOpen && (
+           <div className="w-[400px] shrink-0 bg-slate-900 border-l border-white/5 flex flex-col overflow-hidden">
+              {tokenData?.features?.chat_enabled && classStatus !== 'ended' ? (
+                <ChatPanel liveClassId={id as string} />
+              ) : (
+                <div className="p-8 flex flex-col h-full">
+                  <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em] mb-6">Channel Configuration</h3>
+                  <div className="space-y-4">
+                     <div className="p-5 bg-white/5 border border-white/5 rounded-2xl">
+                        <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Channel ID</p>
+                        <p className="text-xs font-bold text-white uppercase tracking-tight truncate">{tokenData?.channel_name || 'NEX-HUB-ALPHA'}</p>
                      </div>
+                     <div className="p-5 bg-white/5 border border-white/5 rounded-2xl">
+                        <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Session Role</p>
+                        <p className="text-xs font-bold text-white uppercase tracking-tight">{isClassOwner ? 'Moderator / Instructor' : 'Attendee'}</p>
+                     </div>
+                     <div className="p-5 bg-white/5 border border-white/5 rounded-2xl">
+                        <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Status</p>
+                        <div className="flex items-center gap-2 mt-1">
+                           <div className={`w-2 h-2 rounded-full ${classStatus === 'live' ? 'bg-red-500 animate-pulse' : 'bg-slate-500'}`} />
+                           <p className="text-xs font-bold text-white uppercase tracking-tight">{classStatus || 'Ready'}</p>
+                        </div>
+                     </div>
+                     
+                     {!tokenData?.features?.chat_enabled && classStatus !== 'ended' && (
+                       <div className="flex-1 flex flex-col items-center justify-center text-center opacity-20 mt-20">
+                         <MessageSquareOff size={48} className="mb-4" />
+                         <p className="text-[10px] font-black uppercase tracking-widest">Chat Disabled for this session</p>
+                       </div>
+                     )}
                   </div>
-                  
-                  {joined && !tokenData?.features?.chat_enabled && (
-                    <div className="flex-1 flex flex-col items-center justify-center text-center opacity-20 mt-20">
-                      <MessageSquareOff size={48} className="mb-4" />
-                      <p className="text-[10px] font-black uppercase tracking-widest">Chat Disabled for this session</p>
-                    </div>
-                  )}
-               </div>
-             </div>
-           )}
-        </div>
+                </div>
+              )}
+           </div>
+         )}
       </div>
     </div>
   );

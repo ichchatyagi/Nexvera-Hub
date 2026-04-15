@@ -2,8 +2,17 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { AppConfigService } from '../app-config/app-config.service';
-import { adminNotificationTemplate, userThankYouTemplateContact, userThankYouTemplateConsultancy } from './templates/contact.templates';
-import { loginTemplate, welcomeTemplate, otpTemplate, verificationTemplate } from '../../utils/emailTemplates';
+import {
+  adminNotificationTemplate,
+  userThankYouTemplateContact,
+  userThankYouTemplateConsultancy,
+} from './templates/contact.templates';
+import {
+  loginTemplate,
+  welcomeTemplate,
+  otpTemplate,
+  verificationTemplate,
+} from '../../utils/emailTemplates';
 
 @Injectable()
 export class ContactService {

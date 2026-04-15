@@ -4,9 +4,12 @@ import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { VideosService } from './videos.service';
 import { Video } from './schemas/video.schema';
+import { LiveClass } from '../live-classes/schemas/live-class.schema';
 import { AppConfigService } from '../app-config/app-config.service';
 import { VideoProcessingQueueService } from '../video-processing-queue/video-processing-queue.service';
+import { EnrollmentsService } from '../enrollments/enrollments.service';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { UserRole } from '../users/entities/user.entity';
 
 jest.mock('@aws-sdk/s3-request-presigner');
 const mockedGetSignedUrl = getSignedUrl as jest.Mock;
@@ -15,6 +18,7 @@ const mockedGetSignedUrl = getSignedUrl as jest.Mock;
 
 const TEACHER_ID = 'teacher-uuid-111';
 const OTHER_TEACHER_ID = 'teacher-uuid-999';
+const STUDENT_ID = 'student-uuid-444';
 
 /** Factory that returns a lean video-like object with a jest.fn() save method. */
 function makeMockVideo(overrides: Partial<any> = {}) {
@@ -23,6 +27,8 @@ function makeMockVideo(overrides: Partial<any> = {}) {
     _id: id,
     course_id: new Types.ObjectId(),
     teacher_id: TEACHER_ID,
+    live_class_id: null,
+    source: 'upload',
     original: {
       key: `originals/${id}/original.mp4`,
       size_bytes: 1_000_000,
@@ -32,7 +38,11 @@ function makeMockVideo(overrides: Partial<any> = {}) {
     processed: {
       status: 'pending',
       manifest_url: null,
-      qualities: [] as Array<{ resolution: string; bitrate: number; url: string }>,
+      qualities: [] as Array<{
+        resolution: string;
+        bitrate: number;
+        url: string;
+      }>,
       thumbnail_url: null,
       thumbnails_vtt: null,
     },
@@ -56,6 +66,11 @@ const mockVideoModel = {
   findByIdAndDelete: jest.fn(),
 };
 
+const mockLiveClassModel = {
+  findByIdAndUpdate: jest.fn(),
+  findOneAndUpdate: jest.fn(),
+};
+
 /** Minimal AppConfigService stub for unit tests. */
 const mockConfigService = {
   awsS3VideoBucket: 'test-videos-bucket',
@@ -67,13 +82,19 @@ const mockQueueService = {
   publishJob: jest.fn().mockResolvedValue(true),
 };
 
+const mockEnrollmentsService = {
+  isActiveCourseEnrollment: jest.fn(),
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('VideosService', () => {
   let service: VideosService;
 
   beforeEach(async () => {
-    mockedGetSignedUrl.mockResolvedValue('https://test-bucket.s3.amazonaws.com/test-key?signature=stub');
+    mockedGetSignedUrl.mockResolvedValue(
+      'https://test-bucket.s3.amazonaws.com/test-key?signature=stub',
+    );
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         VideosService,
@@ -82,12 +103,20 @@ describe('VideosService', () => {
           useValue: mockVideoModel,
         },
         {
+          provide: getModelToken(LiveClass.name),
+          useValue: mockLiveClassModel,
+        },
+        {
           provide: AppConfigService,
           useValue: mockConfigService,
         },
         {
           provide: VideoProcessingQueueService,
           useValue: mockQueueService,
+        },
+        {
+          provide: EnrollmentsService,
+          useValue: mockEnrollmentsService,
         },
       ],
     }).compile();
@@ -108,7 +137,9 @@ describe('VideosService', () => {
   describe('initiateUpload', () => {
     it('creates a video document with status pending and returns a presigned URL', async () => {
       const courseId = new Types.ObjectId().toString();
-      const mockVideo = makeMockVideo({ course_id: new Types.ObjectId(courseId) });
+      const mockVideo = makeMockVideo({
+        course_id: new Types.ObjectId(courseId),
+      });
 
       mockVideoModel.create.mockResolvedValue(mockVideo);
 
@@ -162,6 +193,11 @@ describe('VideosService', () => {
           VideosService,
           { provide: getModelToken(Video.name), useValue: mockVideoModel },
           {
+            provide: getModelToken(LiveClass.name),
+            useValue: mockLiveClassModel,
+          },
+          { provide: EnrollmentsService, useValue: mockEnrollmentsService },
+          {
             provide: AppConfigService,
             useValue: { ...mockConfigService, awsS3VideoBucket: '' },
           },
@@ -205,11 +241,15 @@ describe('VideosService', () => {
         exec: jest.fn().mockResolvedValue(null),
       });
       const validId = new Types.ObjectId().toString();
-      await expect(service.findById(validId)).rejects.toThrow(NotFoundException);
+      await expect(service.findById(validId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('throws NotFoundException for an invalid ObjectId string', async () => {
-      await expect(service.findById('not-a-valid-id')).rejects.toThrow(NotFoundException);
+      await expect(service.findById('not-a-valid-id')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -222,7 +262,10 @@ describe('VideosService', () => {
         exec: jest.fn().mockResolvedValue(mockVideo),
       });
 
-      const result = await service.triggerProcessing(mockVideo._id.toString(), TEACHER_ID);
+      const result = await service.triggerProcessing(
+        mockVideo._id.toString(),
+        TEACHER_ID,
+      );
 
       expect(mockVideo.processed.status).toBe('processing');
       expect(mockVideo.save).toHaveBeenCalled();
@@ -284,29 +327,172 @@ describe('VideosService', () => {
   // ── getPlaybackMetadata ─────────────────────────────────────────────────────
 
   describe('getPlaybackMetadata', () => {
+    it('allows access for admin', async () => {
+      const mockVideo = makeMockVideo({
+        processed: {
+          status: 'completed',
+          manifest_url: 'http://hls',
+          qualities: [],
+        },
+      });
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+
+      const result = await service.getPlaybackMetadata(
+        mockVideo._id.toString(),
+        {
+          id: 'admin-id',
+          role: UserRole.ADMIN,
+        },
+      );
+
+      expect(result.success).toBe(true);
+    });
+
+    it('allows access for owning teacher', async () => {
+      const mockVideo = makeMockVideo({
+        teacher_id: TEACHER_ID,
+        processed: {
+          status: 'completed',
+          manifest_url: 'http://hls',
+          qualities: [],
+        },
+      });
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+
+      const result = await service.getPlaybackMetadata(
+        mockVideo._id.toString(),
+        {
+          id: TEACHER_ID,
+          role: UserRole.TEACHER,
+        },
+      );
+
+      expect(result.success).toBe(true);
+    });
+
+    it('denies access for non-owning teacher', async () => {
+      const mockVideo = makeMockVideo({
+        teacher_id: TEACHER_ID,
+        processed: {
+          status: 'completed',
+          manifest_url: 'http://hls',
+          qualities: [],
+        },
+      });
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+
+      await expect(
+        service.getPlaybackMetadata(mockVideo._id.toString(), {
+          id: OTHER_TEACHER_ID,
+          role: UserRole.TEACHER,
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('allows access for enrolled student', async () => {
+      const mockVideo = makeMockVideo({
+        processed: {
+          status: 'completed',
+          manifest_url: 'http://hls',
+          qualities: [],
+        },
+      });
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
+
+      const result = await service.getPlaybackMetadata(
+        mockVideo._id.toString(),
+        {
+          id: STUDENT_ID,
+          role: UserRole.STUDENT,
+        },
+      );
+
+      expect(result.success).toBe(true);
+      expect(
+        mockEnrollmentsService.isActiveCourseEnrollment,
+      ).toHaveBeenCalledWith(mockVideo.course_id.toString(), STUDENT_ID);
+    });
+
+    it('denies access for non-enrolled student', async () => {
+      const mockVideo = makeMockVideo({
+        processed: {
+          status: 'completed',
+          manifest_url: 'http://hls',
+          qualities: [],
+        },
+      });
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(false);
+
+      await expect(
+        service.getPlaybackMetadata(mockVideo._id.toString(), {
+          id: 'unlucky-student',
+          role: UserRole.STUDENT,
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('denies access for unauthenticated requester', async () => {
+      const mockVideo = makeMockVideo({ processed: { status: 'completed' } });
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+
+      await expect(
+        service.getPlaybackMetadata(mockVideo._id.toString(), null),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
     it('returns player-safe data when processing is completed', async () => {
       const mockVideo = makeMockVideo({
         processed: {
           status: 'completed',
           manifest_url: 'https://test.cloudfront.net/videos/abc/master.m3u8',
           qualities: [
-            { resolution: '720p', bitrate: 2_500_000, url: 'https://test.cloudfront.net/videos/abc/720p/index.m3u8' },
+            {
+              resolution: '720p',
+              bitrate: 2_500_000,
+              url: 'https://test.cloudfront.net/videos/abc/720p/index.m3u8',
+            },
           ],
           thumbnail_url: 'https://test.cloudfront.net/videos/abc/thumbnail.jpg',
-          thumbnails_vtt: 'https://test.cloudfront.net/videos/abc/thumbnails.vtt',
+          thumbnails_vtt:
+            'https://test.cloudfront.net/videos/abc/thumbnails.vtt',
         },
-        captions: [{ language: 'en', url: 'https://cdn.example.com/en.vtt', auto_generated: true }],
+        captions: [
+          {
+            language: 'en',
+            url: 'https://cdn.example.com/en.vtt',
+            auto_generated: true,
+          },
+        ],
       });
 
       mockVideoModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockVideo),
       });
 
-      const result = await service.getPlaybackMetadata(mockVideo._id.toString());
+      const result = await service.getPlaybackMetadata(
+        mockVideo._id.toString(),
+        { id: TEACHER_ID, role: UserRole.TEACHER },
+      );
 
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
-      expect(result.data!.manifest_url).toBe('https://test.cloudfront.net/videos/abc/master.m3u8');
+      expect(result.data!.manifest_url).toBe(
+        'https://test.cloudfront.net/videos/abc/master.m3u8',
+      );
       expect(result.data!.qualities).toHaveLength(1);
       expect(result.data!.captions).toHaveLength(1);
 
@@ -315,12 +501,23 @@ describe('VideosService', () => {
     });
 
     it('returns an error payload when video is not yet ready', async () => {
-      const mockVideo = makeMockVideo({ processed: { status: 'processing', manifest_url: null, qualities: [], thumbnail_url: null, thumbnails_vtt: null } });
+      const mockVideo = makeMockVideo({
+        processed: {
+          status: 'processing',
+          manifest_url: null,
+          qualities: [],
+          thumbnail_url: null,
+          thumbnails_vtt: null,
+        },
+      });
       mockVideoModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockVideo),
       });
 
-      const result = await service.getPlaybackMetadata(mockVideo._id.toString());
+      const result = await service.getPlaybackMetadata(
+        mockVideo._id.toString(),
+        { id: 'admin', role: UserRole.ADMIN },
+      );
 
       expect(result.success).toBe(false);
       expect((result as any).error.code).toBe('VIDEO_NOT_READY');
@@ -341,7 +538,9 @@ describe('VideosService', () => {
 
       const result = await service.remove(mockVideo._id.toString(), TEACHER_ID);
       expect(result.success).toBe(true);
-      expect(mockVideoModel.findByIdAndDelete).toHaveBeenCalledWith(mockVideo._id.toString());
+      expect(mockVideoModel.findByIdAndDelete).toHaveBeenCalledWith(
+        mockVideo._id.toString(),
+      );
     });
 
     it('throws ForbiddenException when a non-owner tries to delete', async () => {
@@ -376,21 +575,110 @@ describe('VideosService', () => {
 
       const baseKey = `videos/${mockVideo._id.toString()}`;
 
-      const result = await service.completeProcessing(mockVideo._id.toString(), {
-        base_key: baseKey,
-        duration_seconds: 123,
-        status: 'completed',
-      } as any);
+      const result = await service.completeProcessing(
+        mockVideo._id.toString(),
+        {
+          base_key: baseKey,
+          duration_seconds: 123,
+          status: 'completed',
+        } as any,
+      );
 
       expect(result.success).toBe(true);
       expect(mockVideo.processed.status).toBe('completed');
       expect(mockVideo.processed.manifest_url).toContain('master.m3u8');
       expect(mockVideo.processed.qualities).toHaveLength(4);
       expect(mockVideo.processed.thumbnail_url).toBeTruthy();
-      expect(mockVideo.processed.thumbnails_vtt).toBeTruthy();
+      expect(mockVideo.processed.thumbnails_vtt).toBeNull();
       expect(mockVideo.original.duration_seconds).toBe(123);
       expect(mockVideo.processed_at).toBeInstanceOf(Date);
       expect(mockVideo.save).toHaveBeenCalled();
+      // Not a recording, so no live class update
+      expect(mockLiveClassModel.findByIdAndUpdate).not.toHaveBeenCalled();
+    });
+
+    it('is idempotent when receiving duplicate success events', async () => {
+      const mockVideo = makeMockVideo({ processed: { status: 'completed' } });
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+
+      await service.completeProcessing(mockVideo._id.toString(), {
+        status: 'completed',
+        base_key: 'any',
+      } as any);
+
+      expect(mockVideo.save).not.toHaveBeenCalled();
+    });
+
+    it('ignores failed events for already completed videos', async () => {
+      const mockVideo = makeMockVideo({ processed: { status: 'completed' } });
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+
+      await service.completeProcessing(mockVideo._id.toString(), {
+        status: 'failed',
+      } as any);
+
+      expect(mockVideo.processed.status).toBe('completed');
+      expect(mockVideo.save).not.toHaveBeenCalled();
+    });
+
+    it('upgrades video status from failed to completed on rerun', async () => {
+      const mockVideo = makeMockVideo({ processed: { status: 'failed' } });
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+
+      await service.completeProcessing(mockVideo._id.toString(), {
+        status: 'completed',
+        base_key: 'videos/retry',
+      } as any);
+
+      expect(mockVideo.processed.status).toBe('completed');
+      expect(mockVideo.save).toHaveBeenCalled();
+    });
+
+    it('throws BadRequestException if base_key is missing for completed status', async () => {
+      const mockVideo = makeMockVideo({ processed: { status: 'pending' } });
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+
+      await expect(
+        service.completeProcessing(mockVideo._id.toString(), {
+          status: 'completed',
+        } as any),
+      ).rejects.toThrow();
+    });
+
+    it('marks video as completed and updates LiveClass when source=live_recording', async () => {
+      const liveClassId = new Types.ObjectId();
+      const mockVideo = makeMockVideo({
+        source: 'live_recording',
+        live_class_id: liveClassId,
+        processed: { status: 'processing' },
+      });
+
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+
+      await service.completeProcessing(mockVideo._id.toString(), {
+        status: 'completed',
+        base_key: 'videos/abc',
+        duration_seconds: 100,
+      } as any);
+
+      expect(mockVideo.processed.status).toBe('completed');
+      expect(mockLiveClassModel.findByIdAndUpdate).toHaveBeenCalledWith(
+        liveClassId,
+        {
+          'recording.status': 'available',
+          'recording.video_id': mockVideo._id,
+        },
+      );
     });
 
     it('marks video as failed when status=failed is reported', async () => {
@@ -408,10 +696,13 @@ describe('VideosService', () => {
         exec: jest.fn().mockResolvedValue(mockVideo),
       });
 
-      const result = await service.completeProcessing(mockVideo._id.toString(), {
-        base_key: `videos/${mockVideo._id.toString()}`,
-        status: 'failed',
-      } as any);
+      const result = await service.completeProcessing(
+        mockVideo._id.toString(),
+        {
+          base_key: `videos/${mockVideo._id.toString()}`,
+          status: 'failed',
+        } as any,
+      );
 
       expect(result.success).toBe(true);
       expect(mockVideo.processed.status).toBe('failed');
@@ -419,17 +710,43 @@ describe('VideosService', () => {
       expect(mockVideo.processed.manifest_url).toBeNull();
       expect(mockVideo.save).toHaveBeenCalled();
     });
+
+    it('marks video as failed and updates LiveClass to failed', async () => {
+      const liveClassId = new Types.ObjectId();
+      const mockVideo = makeMockVideo({
+        source: 'live_recording',
+        live_class_id: liveClassId,
+        processed: { status: 'processing' },
+      });
+
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+      mockLiveClassModel.findOneAndUpdate = jest.fn().mockResolvedValue({});
+
+      await service.completeProcessing(mockVideo._id.toString(), {
+        status: 'failed',
+      } as any);
+
+      expect(mockVideo.processed.status).toBe('failed');
+      expect(mockLiveClassModel.findOneAndUpdate).toHaveBeenCalledWith(
+        { _id: liveClassId, 'recording.status': { $ne: 'available' } },
+        { 'recording.status': 'failed' },
+      );
+    });
   });
 
   // ─── createVideoFromRecording ───────────────────────────────────────────────
 
   describe('createVideoFromRecording', () => {
-    it('creates a video and publishes an SQS job', async () => {
+    it('creates a video and publishes an SQS job with correct linkage', async () => {
       const courseId = new Types.ObjectId().toString();
       const liveClassId = new Types.ObjectId().toString();
       const s3Key = 'recordings/live.mp4';
       const mockVideo = makeMockVideo({
         course_id: new Types.ObjectId(courseId),
+        live_class_id: new Types.ObjectId(liveClassId),
+        source: 'live_recording',
         title: 'Recording: Class Intro',
       });
 
@@ -444,6 +761,10 @@ describe('VideosService', () => {
       );
 
       expect(mockVideoModel.create).toHaveBeenCalled();
+      const createArg = mockVideoModel.create.mock.calls[0][0];
+      expect(createArg.live_class_id.toString()).toBe(liveClassId);
+      expect(createArg.source).toBe('live_recording');
+
       expect(mockQueueService.publishJob).toHaveBeenCalledWith({
         videoId: mockVideo._id.toString(),
         s3Key: s3Key,

@@ -8,7 +8,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { TeacherTuitionService } from './teacher-tuition.service';
-import { CreateSectionDto, UpdateSectionDto, CreateLessonDto, UpdateLessonDto } from './dto/curriculum.dto';
+import {
+  CreateSectionDto,
+  UpdateSectionDto,
+  CreateLessonDto,
+  UpdateLessonDto,
+} from './dto/curriculum.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -27,8 +32,15 @@ export class TeacherTuitionController {
   }
 
   @Get(':subjectId')
-  getTeachingView(@CurrentUser() user: User, @Param('subjectId') subjectId: string) {
-    return this.teacherTuitionService.getSubjectTeachingView(subjectId, user.id, user.role);
+  getTeachingView(
+    @CurrentUser() user: User,
+    @Param('subjectId') subjectId: string,
+  ) {
+    return this.teacherTuitionService.getSubjectTeachingView(
+      subjectId,
+      user.id,
+      user.role,
+    );
   }
 
   @Post(':subjectId/sections')
@@ -47,7 +59,12 @@ export class TeacherTuitionController {
     @Param('sectionId') sectionId: string,
     @Body() dto: UpdateSectionDto,
   ) {
-    return this.teacherTuitionService.updateSection(subjectId, user.id, sectionId, dto);
+    return this.teacherTuitionService.updateSection(
+      subjectId,
+      user.id,
+      sectionId,
+      dto,
+    );
   }
 
   @Post(':subjectId/sections/:sectionId/lessons')
@@ -57,7 +74,12 @@ export class TeacherTuitionController {
     @Param('sectionId') sectionId: string,
     @Body() dto: CreateLessonDto,
   ) {
-    return this.teacherTuitionService.addLesson(subjectId, user.id, sectionId, dto);
+    return this.teacherTuitionService.addLesson(
+      subjectId,
+      user.id,
+      sectionId,
+      dto,
+    );
   }
 
   @Put(':subjectId/sections/:sectionId/lessons/:lessonId')
@@ -68,11 +90,20 @@ export class TeacherTuitionController {
     @Param('lessonId') lessonId: string,
     @Body() dto: UpdateLessonDto,
   ) {
-    return this.teacherTuitionService.updateLesson(subjectId, user.id, sectionId, lessonId, dto);
+    return this.teacherTuitionService.updateLesson(
+      subjectId,
+      user.id,
+      sectionId,
+      lessonId,
+      dto,
+    );
   }
 
   @Put(':subjectId/publish')
-  publishSubject(@CurrentUser() user: User, @Param('subjectId') subjectId: string) {
+  publishSubject(
+    @CurrentUser() user: User,
+    @Param('subjectId') subjectId: string,
+  ) {
     return this.teacherTuitionService.publishSubject(subjectId, user.id);
   }
 }

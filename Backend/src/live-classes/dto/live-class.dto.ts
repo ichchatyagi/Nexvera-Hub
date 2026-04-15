@@ -59,7 +59,7 @@ export class CreateLiveClassDto {
    */
   @IsMongoId()
   @IsOptional()
-  @Transform(({ value }) => value === '' ? null : value)
+  @Transform(({ value }) => (value === '' ? null : value))
   lesson_id?: string;
 
   /**
@@ -68,7 +68,7 @@ export class CreateLiveClassDto {
    */
   @IsMongoId()
   @IsOptional()
-  @Transform(({ value }) => value === '' ? null : value)
+  @Transform(({ value }) => (value === '' ? null : value))
   subject_id?: string;
 
   @IsString()

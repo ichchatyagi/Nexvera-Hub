@@ -77,7 +77,11 @@ export class Enrollment {
   @Prop()
   access_expires?: Date;
 
-  @Prop({ type: String, enum: ['active', 'expired', 'refunded'], default: 'active' })
+  @Prop({
+    type: String,
+    enum: ['active', 'expired', 'refunded'],
+    default: 'active',
+  })
   status: string;
 
   @Prop({ type: String, enum: ['course', 'tuition'], default: 'course' })
@@ -111,4 +115,7 @@ export class Enrollment {
 export const EnrollmentSchema = SchemaFactory.createForClass(Enrollment);
 
 // Allow multiple granular tuition records natively avoiding global course conflicts organically
-EnrollmentSchema.index({ student_id: 1, course_id: 1, access_scope: 1, tuition_subject_id: 1 }, { unique: true });
+EnrollmentSchema.index(
+  { student_id: 1, course_id: 1, access_scope: 1, tuition_subject_id: 1 },
+  { unique: true },
+);

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Course, CourseDocument } from './schemas/course.schema';
@@ -8,7 +12,7 @@ import {
   AdminCreateTuitionSubjectDto,
   AdminUpdateTuitionSubjectDto,
   AdminTuitionPublishDto,
-  AdminAssignTuitionInstructorDto
+  AdminAssignTuitionInstructorDto,
 } from './dto/admin-tuition.dto';
 import { ProductType } from './dto/course.dto';
 
@@ -21,7 +25,8 @@ export class AdminTuitionService {
   // ── Class-Level CRUD ──────────────────────────────────────────────
 
   async createClass(dto: AdminCreateTuitionClassDto) {
-    const { class_level, boards_supported, tuition_pricing, ...courseData } = dto;
+    const { class_level, boards_supported, tuition_pricing, ...courseData } =
+      dto;
     const created = await this.courseModel.create({
       ...courseData,
       product_type: ProductType.TUITION,
@@ -38,25 +43,32 @@ export class AdminTuitionService {
   }
 
   async updateClass(id: string, dto: AdminUpdateTuitionClassDto) {
-    if (!Types.ObjectId.isValid(id)) throw new BadRequestException('Invalid ID');
+    if (!Types.ObjectId.isValid(id))
+      throw new BadRequestException('Invalid ID');
 
-    const course = await this.courseModel.findOne({ 
-      _id: new Types.ObjectId(id), 
-      product_type: ProductType.TUITION 
-    }).exec();
+    const course = await this.courseModel
+      .findOne({
+        _id: new Types.ObjectId(id),
+        product_type: ProductType.TUITION,
+      })
+      .exec();
 
     if (!course) throw new NotFoundException('Tuition class not found');
 
-    const { class_level, boards_supported, tuition_pricing, ...courseData } = dto;
+    const { class_level, boards_supported, tuition_pricing, ...courseData } =
+      dto;
 
     // Update base fields
     Object.assign(course, courseData);
 
     // Update tuition_meta fields safely without destroying subjects
     if (course.tuition_meta) {
-      if (class_level !== undefined) course.tuition_meta.class_level = class_level;
-      if (boards_supported !== undefined) course.tuition_meta.boards_supported = boards_supported;
-      if (tuition_pricing !== undefined) course.tuition_meta.pricing = tuition_pricing as any;
+      if (class_level !== undefined)
+        course.tuition_meta.class_level = class_level;
+      if (boards_supported !== undefined)
+        course.tuition_meta.boards_supported = boards_supported;
+      if (tuition_pricing !== undefined)
+        course.tuition_meta.pricing = tuition_pricing as any;
     }
 
     await course.save();
@@ -64,12 +76,15 @@ export class AdminTuitionService {
   }
 
   async publishClass(id: string, publishDto: AdminTuitionPublishDto) {
-    if (!Types.ObjectId.isValid(id)) throw new BadRequestException('Invalid ID');
+    if (!Types.ObjectId.isValid(id))
+      throw new BadRequestException('Invalid ID');
 
-    const course = await this.courseModel.findOne({ 
-      _id: new Types.ObjectId(id), 
-      product_type: ProductType.TUITION 
-    }).exec();
+    const course = await this.courseModel
+      .findOne({
+        _id: new Types.ObjectId(id),
+        product_type: ProductType.TUITION,
+      })
+      .exec();
 
     if (!course) throw new NotFoundException('Tuition class not found');
 
@@ -82,12 +97,15 @@ export class AdminTuitionService {
   }
 
   async deleteClass(id: string) {
-    if (!Types.ObjectId.isValid(id)) throw new BadRequestException('Invalid ID');
+    if (!Types.ObjectId.isValid(id))
+      throw new BadRequestException('Invalid ID');
 
-    const course = await this.courseModel.findOneAndDelete({ 
-      _id: new Types.ObjectId(id), 
-      product_type: ProductType.TUITION 
-    }).exec();
+    const course = await this.courseModel
+      .findOneAndDelete({
+        _id: new Types.ObjectId(id),
+        product_type: ProductType.TUITION,
+      })
+      .exec();
 
     if (!course) throw new NotFoundException('Tuition class not found');
 
@@ -97,15 +115,19 @@ export class AdminTuitionService {
   // ── Subject-Level CRUD ──────────────────────────────────────────────
 
   async addSubject(classId: string, dto: AdminCreateTuitionSubjectDto) {
-    if (!Types.ObjectId.isValid(classId)) throw new BadRequestException('Invalid class ID');
+    if (!Types.ObjectId.isValid(classId))
+      throw new BadRequestException('Invalid class ID');
 
-    const course = await this.courseModel.findOne({ 
-      _id: new Types.ObjectId(classId), 
-      product_type: ProductType.TUITION 
-    }).exec();
+    const course = await this.courseModel
+      .findOne({
+        _id: new Types.ObjectId(classId),
+        product_type: ProductType.TUITION,
+      })
+      .exec();
 
     if (!course) throw new NotFoundException('Tuition class not found');
-    if (!course.tuition_meta) throw new BadRequestException('Missing tuition meta');
+    if (!course.tuition_meta)
+      throw new BadRequestException('Missing tuition meta');
 
     const newSubject = {
       subject_id: new Types.ObjectId(),
@@ -124,24 +146,36 @@ export class AdminTuitionService {
     return { success: true, data: newSubject };
   }
 
-  async updateSubject(classId: string, subjectId: string, dto: AdminUpdateTuitionSubjectDto) {
-    if (!Types.ObjectId.isValid(classId)) throw new BadRequestException('Invalid class ID');
-    if (!Types.ObjectId.isValid(subjectId)) throw new BadRequestException('Invalid subject ID');
+  async updateSubject(
+    classId: string,
+    subjectId: string,
+    dto: AdminUpdateTuitionSubjectDto,
+  ) {
+    if (!Types.ObjectId.isValid(classId))
+      throw new BadRequestException('Invalid class ID');
+    if (!Types.ObjectId.isValid(subjectId))
+      throw new BadRequestException('Invalid subject ID');
 
-    const course = await this.courseModel.findOne({ 
-      _id: new Types.ObjectId(classId), 
-      product_type: ProductType.TUITION 
-    }).exec();
+    const course = await this.courseModel
+      .findOne({
+        _id: new Types.ObjectId(classId),
+        product_type: ProductType.TUITION,
+      })
+      .exec();
 
-    if (!course || !course.tuition_meta) throw new NotFoundException('Tuition class not found');
+    if (!course || !course.tuition_meta)
+      throw new NotFoundException('Tuition class not found');
 
-    const subject = course.tuition_meta.subjects.find(s => s.subject_id.toString() === subjectId);
+    const subject = course.tuition_meta.subjects.find(
+      (s) => s.subject_id.toString() === subjectId,
+    );
     if (!subject) throw new NotFoundException('Subject not found in class');
 
     // Selectively update properties
     if (dto.name !== undefined) subject.name = dto.name;
     if (dto.slug !== undefined) subject.slug = dto.slug;
-    if (dto.short_description !== undefined) subject.short_description = dto.short_description;
+    if (dto.short_description !== undefined)
+      subject.short_description = dto.short_description;
     if (dto.pricing !== undefined) subject.pricing = dto.pricing as any;
 
     await course.save();
@@ -149,19 +183,24 @@ export class AdminTuitionService {
   }
 
   async removeSubject(classId: string, subjectId: string) {
-    if (!Types.ObjectId.isValid(classId)) throw new BadRequestException('Invalid class ID');
-    if (!Types.ObjectId.isValid(subjectId)) throw new BadRequestException('Invalid subject ID');
+    if (!Types.ObjectId.isValid(classId))
+      throw new BadRequestException('Invalid class ID');
+    if (!Types.ObjectId.isValid(subjectId))
+      throw new BadRequestException('Invalid subject ID');
 
-    const course = await this.courseModel.findOne({ 
-      _id: new Types.ObjectId(classId), 
-      product_type: ProductType.TUITION 
-    }).exec();
+    const course = await this.courseModel
+      .findOne({
+        _id: new Types.ObjectId(classId),
+        product_type: ProductType.TUITION,
+      })
+      .exec();
 
-    if (!course || !course.tuition_meta) throw new NotFoundException('Tuition class not found');
+    if (!course || !course.tuition_meta)
+      throw new NotFoundException('Tuition class not found');
 
     const initialLength = course.tuition_meta.subjects.length;
     course.tuition_meta.subjects = course.tuition_meta.subjects.filter(
-      s => s.subject_id.toString() !== subjectId
+      (s) => s.subject_id.toString() !== subjectId,
     );
 
     if (course.tuition_meta.subjects.length === initialLength) {
@@ -172,18 +211,29 @@ export class AdminTuitionService {
     return { success: true, data: { deleted: true } };
   }
 
-  async publishSubject(classId: string, subjectId: string, publishDto: AdminTuitionPublishDto) {
-    if (!Types.ObjectId.isValid(classId)) throw new BadRequestException('Invalid class ID');
-    if (!Types.ObjectId.isValid(subjectId)) throw new BadRequestException('Invalid subject ID');
-    
-    const course = await this.courseModel.findOne({ 
-      _id: new Types.ObjectId(classId), 
-      product_type: ProductType.TUITION 
-    }).exec();
+  async publishSubject(
+    classId: string,
+    subjectId: string,
+    publishDto: AdminTuitionPublishDto,
+  ) {
+    if (!Types.ObjectId.isValid(classId))
+      throw new BadRequestException('Invalid class ID');
+    if (!Types.ObjectId.isValid(subjectId))
+      throw new BadRequestException('Invalid subject ID');
 
-    if (!course || !course.tuition_meta) throw new NotFoundException('Tuition class not found');
+    const course = await this.courseModel
+      .findOne({
+        _id: new Types.ObjectId(classId),
+        product_type: ProductType.TUITION,
+      })
+      .exec();
 
-    const subject = course.tuition_meta.subjects.find(s => s.subject_id.toString() === subjectId);
+    if (!course || !course.tuition_meta)
+      throw new NotFoundException('Tuition class not found');
+
+    const subject = course.tuition_meta.subjects.find(
+      (s) => s.subject_id.toString() === subjectId,
+    );
     if (!subject) throw new NotFoundException('Subject not found');
 
     subject.status = publishDto.status;
@@ -194,18 +244,29 @@ export class AdminTuitionService {
 
   // ── Instructor Assignment ──────────────────────────────────────────────
 
-  async assignInstructor(classId: string, subjectId: string, dto: AdminAssignTuitionInstructorDto) {
-    if (!Types.ObjectId.isValid(classId)) throw new BadRequestException('Invalid class ID');
-    if (!Types.ObjectId.isValid(subjectId)) throw new BadRequestException('Invalid subject ID');
+  async assignInstructor(
+    classId: string,
+    subjectId: string,
+    dto: AdminAssignTuitionInstructorDto,
+  ) {
+    if (!Types.ObjectId.isValid(classId))
+      throw new BadRequestException('Invalid class ID');
+    if (!Types.ObjectId.isValid(subjectId))
+      throw new BadRequestException('Invalid subject ID');
 
-    const course = await this.courseModel.findOne({ 
-      _id: new Types.ObjectId(classId), 
-      product_type: ProductType.TUITION 
-    }).exec();
+    const course = await this.courseModel
+      .findOne({
+        _id: new Types.ObjectId(classId),
+        product_type: ProductType.TUITION,
+      })
+      .exec();
 
-    if (!course || !course.tuition_meta) throw new NotFoundException('Tuition class not found');
+    if (!course || !course.tuition_meta)
+      throw new NotFoundException('Tuition class not found');
 
-    const subject = course.tuition_meta.subjects.find(s => s.subject_id.toString() === subjectId);
+    const subject = course.tuition_meta.subjects.find(
+      (s) => s.subject_id.toString() === subjectId,
+    );
     if (!subject) throw new NotFoundException('Subject not found');
 
     if (!subject.assigned_instructor_ids) {
@@ -224,22 +285,35 @@ export class AdminTuitionService {
     return { success: true, data: subject };
   }
 
-  async unassignInstructor(classId: string, subjectId: string, instructorId: string) {
-    if (!Types.ObjectId.isValid(classId)) throw new BadRequestException('Invalid class ID');
-    if (!Types.ObjectId.isValid(subjectId)) throw new BadRequestException('Invalid subject ID');
+  async unassignInstructor(
+    classId: string,
+    subjectId: string,
+    instructorId: string,
+  ) {
+    if (!Types.ObjectId.isValid(classId))
+      throw new BadRequestException('Invalid class ID');
+    if (!Types.ObjectId.isValid(subjectId))
+      throw new BadRequestException('Invalid subject ID');
 
-    const course = await this.courseModel.findOne({ 
-      _id: new Types.ObjectId(classId), 
-      product_type: ProductType.TUITION 
-    }).exec();
+    const course = await this.courseModel
+      .findOne({
+        _id: new Types.ObjectId(classId),
+        product_type: ProductType.TUITION,
+      })
+      .exec();
 
-    if (!course || !course.tuition_meta) throw new NotFoundException('Tuition class not found');
+    if (!course || !course.tuition_meta)
+      throw new NotFoundException('Tuition class not found');
 
-    const subject = course.tuition_meta.subjects.find(s => s.subject_id.toString() === subjectId);
+    const subject = course.tuition_meta.subjects.find(
+      (s) => s.subject_id.toString() === subjectId,
+    );
     if (!subject) throw new NotFoundException('Subject not found');
 
     if (subject.assigned_instructor_ids) {
-      subject.assigned_instructor_ids = subject.assigned_instructor_ids.filter(id => id !== instructorId);
+      subject.assigned_instructor_ids = subject.assigned_instructor_ids.filter(
+        (id) => id !== instructorId,
+      );
     }
 
     if (subject.lead_instructor_id === instructorId) {

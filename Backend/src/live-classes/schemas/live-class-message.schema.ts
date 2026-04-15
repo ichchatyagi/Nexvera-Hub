@@ -19,7 +19,7 @@ export class LiveClassMessage {
 
   @Prop({ type: String, default: null })
   user_role: string | null; // 'student' | 'teacher' | 'admin'
-  
+
   // created_at injected by timestamps option
   created_at?: Date;
 }

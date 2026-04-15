@@ -4,13 +4,17 @@ import {
   ForbiddenException,
   Logger,
   InternalServerErrorException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { randomUUID } from 'crypto';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Video, VideoDocument } from './schemas/video.schema';
+import {
+  LiveClass,
+  LiveClassDocument,
+} from '../live-classes/schemas/live-class.schema';
 import {
   InitiateUploadDto,
   AddCaptionDto,
@@ -19,6 +23,7 @@ import {
 import { UserRole } from '../users/entities/user.entity';
 import { AppConfigService } from '../app-config/app-config.service';
 import { VideoProcessingQueueService } from '../video-processing-queue/video-processing-queue.service';
+import { EnrollmentsService } from '../enrollments/enrollments.service';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -50,8 +55,11 @@ export class VideosService {
 
   constructor(
     @InjectModel(Video.name) private readonly videoModel: Model<VideoDocument>,
+    @InjectModel(LiveClass.name)
+    private readonly liveClassModel: Model<LiveClassDocument>,
     private readonly appConfig: AppConfigService,
     private readonly queueService: VideoProcessingQueueService,
+    private readonly enrollmentsService: EnrollmentsService,
   ) {
     this.s3 = new S3Client({
       region: this.appConfig.awsRegion,
@@ -63,7 +71,9 @@ export class VideosService {
   /** Build a CloudFront URL for a given S3 key in the processed bucket. */
   private cdnUrl(s3Key: string): string {
     const domain = this.appConfig.cloudfrontVideoDomain;
-    return domain ? `https://${domain}/${s3Key}` : `https://cdn.example.com/${s3Key}`;
+    return domain
+      ? `https://${domain}/${s3Key}`
+      : `https://cdn.example.com/${s3Key}`;
   }
 
   /** Generate the S3 object key for a raw upload. */
@@ -144,7 +154,9 @@ export class VideosService {
       expiresIn: expiresInSeconds,
     });
 
-    const expiresAt = new Date(Date.now() + expiresInSeconds * 1000).toISOString();
+    const expiresAt = new Date(
+      Date.now() + expiresInSeconds * 1000,
+    ).toISOString();
 
     return {
       upload_url: uploadUrl,
@@ -158,7 +170,8 @@ export class VideosService {
   // ─── Find / read ──────────────────────────────────────────────────────────
 
   async findById(id: string): Promise<VideoDocument> {
-    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Invalid video ID');
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException('Invalid video ID');
     const video = await this.videoModel.findById(id).exec();
     if (!video) throw new NotFoundException('Video not found');
     return video;
@@ -167,7 +180,7 @@ export class VideosService {
   /** List all videos belonging to a specific teacher. Admin sees everything. */
   async findByTeacher(teacherId: string, role?: string) {
     const query = role === UserRole.ADMIN ? {} : { teacher_id: teacherId };
-    
+
     const data = await this.videoModel
       .find(query)
       .sort({ created_at: -1 })
@@ -190,8 +203,12 @@ export class VideosService {
    * event (s3:ObjectCreated) and does NOT need this endpoint for production.
    * This endpoint exists for manual/admin triggers and local testing.
    */
-  async triggerProcessing(id: string, requesterId: string): Promise<{ success: boolean; data: VideoDocument }> {
-    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Invalid video ID');
+  async triggerProcessing(
+    id: string,
+    requesterId: string,
+  ): Promise<{ success: boolean; data: VideoDocument }> {
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException('Invalid video ID');
 
     const video = await this.videoModel.findById(id).exec();
     if (!video) throw new NotFoundException('Video not found');
@@ -235,25 +252,74 @@ export class VideosService {
     const video = await this.videoModel.findById(id).exec();
     if (!video) throw new NotFoundException('Video not found');
 
-    // If worker reports a failure, mark the job as failed and bail out.
-    if (payload.status === 'failed') {
-      video.processed.status = 'failed';
-      await video.save();
-      this.logger.error(
-        `Video ${id} processing marked as FAILED by worker callback.`,
+    const currentStatus = video.processed.status;
+
+    // ── Idempotency & Order Check ────────────────────────────────────────────
+
+    // 1. If already completed and we get another 'completed', return early.
+    if (currentStatus === 'completed' && payload.status === 'completed') {
+      this.logger.log(`Video ${id} already completed. Idempotent return.`);
+      return { success: true, data: video };
+    }
+
+    // 2. If already completed and we get 'failed', ignore it (don't regress).
+    if (currentStatus === 'completed' && payload.status === 'failed') {
+      this.logger.warn(
+        `Ignoring 'failed' status for already completed video ${id}.`,
       );
       return { success: true, data: video };
     }
 
-    const base = payload.base_key || `videos/${id}`;
+    // ── Handle Failure ───────────────────────────────────────────────────────
+    if (payload.status === 'failed') {
+      video.processed.status = 'failed';
+      await video.save();
+      this.logger.error(`Video ${id} processing marked as FAILED by worker.`);
+
+      // Update LiveClass only if it's not already 'available'
+      if (video.source === 'live_recording' && video.live_class_id) {
+        await this.liveClassModel.findOneAndUpdate(
+          {
+            _id: video.live_class_id,
+            'recording.status': { $ne: 'available' },
+          },
+          { 'recording.status': 'failed' },
+        );
+      }
+
+      return { success: true, data: video };
+    }
+
+    // ── Handle Success ───────────────────────────────────────────────────────
+
+    // We expect base_key to be provided by the worker in production.
+    if (!payload.base_key) {
+      throw new BadRequestException(
+        'base_key is required for successful processing',
+      );
+    }
+
+    const base = payload.base_key;
     const hlsManifestKey = `${base}/master.m3u8`;
 
-    // Standard quality ladder & bitrates, aligned with simulateProcessing
+    // Standard quality ladder & bitrates
     const qualities = [
       { resolution: '360p', bitrate: 800_000, key: `${base}/360p/index.m3u8` },
-      { resolution: '480p', bitrate: 1_500_000, key: `${base}/480p/index.m3u8` },
-      { resolution: '720p', bitrate: 2_500_000, key: `${base}/720p/index.m3u8` },
-      { resolution: '1080p', bitrate: 5_000_000, key: `${base}/1080p/index.m3u8` },
+      {
+        resolution: '480p',
+        bitrate: 1_500_000,
+        key: `${base}/480p/index.m3u8`,
+      },
+      {
+        resolution: '720p',
+        bitrate: 2_500_000,
+        key: `${base}/720p/index.m3u8`,
+      },
+      {
+        resolution: '1080p',
+        bitrate: 5_000_000,
+        key: `${base}/1080p/index.m3u8`,
+      },
     ];
 
     video.processed.status = 'completed';
@@ -264,14 +330,29 @@ export class VideosService {
       url: this.cdnUrl(q.key),
     })) as any;
     video.processed.thumbnail_url = this.cdnUrl(`${base}/thumbnail.jpg`);
-    video.processed.thumbnails_vtt = this.cdnUrl(`${base}/thumbnails.vtt`);
+    video.processed.thumbnails_vtt = null;
 
     if (typeof payload.duration_seconds === 'number') {
       video.original.duration_seconds = payload.duration_seconds;
     }
 
-    video.processed_at = new Date();
+    // Only set processed_at on the first transition to completed
+    if (!video.processed_at) {
+      video.processed_at = new Date();
+    }
+
     await video.save();
+
+    // ── Sync to LiveClass if it's a recording ────────────────────────────────
+    if (video.source === 'live_recording' && video.live_class_id) {
+      await this.liveClassModel.findByIdAndUpdate(video.live_class_id, {
+        'recording.status': 'available',
+        'recording.video_id': video._id,
+      });
+      this.logger.log(
+        `Live class ${video.live_class_id} recording marked as AVAILABLE.`,
+      );
+    }
 
     this.logger.log(
       `Video ${id} processing completed. HLS manifest: ${video.processed.manifest_url}`,
@@ -294,11 +375,16 @@ export class VideosService {
    *     3. Builds CloudFront URLs.
    *     4. Updates the Video document with real manifest_url / qualities.
    */
-  async simulateProcessing(id: string): Promise<{ success: boolean; data: VideoDocument }> {
+  async simulateProcessing(
+    id: string,
+  ): Promise<{ success: boolean; data: VideoDocument }> {
     if (this.appConfig.environment === 'production') {
-      throw new ForbiddenException('simulateProcessing is not available in production');
+      throw new ForbiddenException(
+        'simulateProcessing is not available in production',
+      );
     }
-    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Invalid video ID');
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException('Invalid video ID');
 
     const video = await this.videoModel.findById(id).exec();
     if (!video) throw new NotFoundException('Video not found');
@@ -308,10 +394,26 @@ export class VideosService {
 
     // Fake HLS outputs matching the MediaConvert template in the plan
     const qualities = [
-      { resolution: '360p',  bitrate: 800_000,  url: this.cdnUrl(`${base}/360p/index.m3u8`) },
-      { resolution: '480p',  bitrate: 1_500_000, url: this.cdnUrl(`${base}/480p/index.m3u8`) },
-      { resolution: '720p',  bitrate: 2_500_000, url: this.cdnUrl(`${base}/720p/index.m3u8`) },
-      { resolution: '1080p', bitrate: 5_000_000, url: this.cdnUrl(`${base}/1080p/index.m3u8`) },
+      {
+        resolution: '360p',
+        bitrate: 800_000,
+        url: this.cdnUrl(`${base}/360p/index.m3u8`),
+      },
+      {
+        resolution: '480p',
+        bitrate: 1_500_000,
+        url: this.cdnUrl(`${base}/480p/index.m3u8`),
+      },
+      {
+        resolution: '720p',
+        bitrate: 2_500_000,
+        url: this.cdnUrl(`${base}/720p/index.m3u8`),
+      },
+      {
+        resolution: '1080p',
+        bitrate: 5_000_000,
+        url: this.cdnUrl(`${base}/1080p/index.m3u8`),
+      },
     ];
 
     video.processed.status = 'completed';
@@ -335,13 +437,42 @@ export class VideosService {
    *   - Available quality renditions
    *   - Caption tracks
    *
-   * Intentionally **excludes** internal details (raw S3 keys, teacher_id, etc.).
-   *
-   * TODO: Add enrollment check once the EnrollmentsService is injectable here.
-   * See IMPLEMENTATION_PLAN_PART2.md §5 (Enrollments Collection) for the query.
+   * Only allows access to:
+   *   1. Admins
+   *   2. The owning teacher
+   *   3. Actively enrolled students
    */
-  async getPlaybackMetadata(id: string) {
+  async getPlaybackMetadata(
+    id: string,
+    requester: { id: string; role: UserRole } | null,
+  ) {
+    if (!requester) {
+      throw new ForbiddenException(
+        'Authentication required to access playback',
+      );
+    }
+
     const video = await this.findById(id);
+
+    // ── Authorization Logic ──────────────────────────────────────────────────
+    let isAuthorized = false;
+
+    if (requester.role === UserRole.ADMIN) {
+      isAuthorized = true;
+    } else if (requester.role === UserRole.TEACHER) {
+      isAuthorized = video.teacher_id === requester.id;
+    } else if (requester.role === UserRole.STUDENT) {
+      isAuthorized = await this.enrollmentsService.isActiveCourseEnrollment(
+        video.course_id.toString(),
+        requester.id,
+      );
+    }
+
+    if (!isAuthorized) {
+      throw new ForbiddenException(
+        'You do not have permission to view this video. Enrollment required.',
+      );
+    }
 
     if (video.processed.status !== 'completed') {
       return {
@@ -381,7 +512,8 @@ export class VideosService {
 
   async addCaption(id: string, teacherId: string, dto: AddCaptionDto) {
     const video = await this.findById(id);
-    if (video.teacher_id !== teacherId) throw new ForbiddenException('Not your video');
+    if (video.teacher_id !== teacherId)
+      throw new ForbiddenException('Not your video');
 
     video.captions.push({
       language: dto.language,
@@ -408,11 +540,14 @@ export class VideosService {
 
   async remove(id: string, requesterId: string): Promise<{ success: boolean }> {
     const video = await this.findById(id);
-    if (video.teacher_id !== requesterId) throw new ForbiddenException('Not your video');
+    if (video.teacher_id !== requesterId)
+      throw new ForbiddenException('Not your video');
 
     // TODO: Also delete S3 objects (original + processed) using AWS SDK
     await this.videoModel.findByIdAndDelete(id).exec();
-    this.logger.log(`Video ${id} deleted. TODO: remove S3 objects for key prefix videos/${id}/`);
+    this.logger.log(
+      `Video ${id} deleted. TODO: remove S3 objects for key prefix videos/${id}/`,
+    );
 
     return { success: true };
   }
@@ -430,6 +565,8 @@ export class VideosService {
     const video = await this.videoModel.create({
       course_id: new Types.ObjectId(courseId),
       teacher_id: teacherId,
+      live_class_id: new Types.ObjectId(liveClassId),
+      source: 'live_recording',
       original: {
         key: s3Key,
         format: 'video/mp4', // Agora default

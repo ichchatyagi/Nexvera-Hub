@@ -1,4 +1,10 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 export enum PayoutStatus {
   PENDING = 'pending',
@@ -7,7 +13,7 @@ export enum PayoutStatus {
 }
 
 /**
- * Payout for an assigned Nexvera-owned course, session, or cohort. 
+ * Payout for an assigned Nexvera-owned course, session, or cohort.
  * Teachers are compensated based on teaching assignments (e.g., as lead or supporting instructors),
  * not course ownership. Nexvera Hub manages the catalog centrally.
  */
@@ -16,14 +22,14 @@ export class TeacherPayout {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  /** 
+  /**
    * UUID of the assigned instructor receiving the payout.
    */
   @Column({ type: 'uuid' })
   teacherId: string;
 
   /**
-   * MongoDB Course _id of the assigned teaching segment. 
+   * MongoDB Course _id of the assigned teaching segment.
    * Represented as a string since the Course catalog resides in MongoDB.
    */
   @Column({ type: 'varchar', length: 50, nullable: true })
@@ -46,7 +52,7 @@ export class TeacherPayout {
   })
   status: PayoutStatus;
 
-  /** 
+  /**
    * Generic provider payout reference (e.g., Stripe Transfer ID, Razorpay Payout ID, or bank ref).
    */
   @Column({ nullable: true })
@@ -54,10 +60,10 @@ export class TeacherPayout {
 
   @Column({ type: 'jsonb', nullable: true })
   metadata: {
-      basis: 'enrollment' | 'lecture' | 'performance_bonus';
-      units?: number;
-      assigned_at?: Date;
-      course_title?: string;
+    basis: 'enrollment' | 'lecture' | 'performance_bonus';
+    units?: number;
+    assigned_at?: Date;
+    course_title?: string;
   };
 
   @CreateDateColumn()

@@ -25,7 +25,9 @@ export class AuthController {
 
   @Post('register')
   register(@Body() dto: RegisterDto) {
-    console.log(`[AuthController] Received register request for: \${dto.email}`);
+    console.log(
+      `[AuthController] Received register request for: \${dto.email}`,
+    );
     return this.authService.register(dto);
   }
 

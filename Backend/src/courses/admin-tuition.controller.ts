@@ -33,12 +33,18 @@ export class AdminTuitionController {
   }
 
   @Put(':classId')
-  updateClass(@Param('classId') classId: string, @Body() dto: AdminUpdateTuitionClassDto) {
+  updateClass(
+    @Param('classId') classId: string,
+    @Body() dto: AdminUpdateTuitionClassDto,
+  ) {
     return this.adminTuitionService.updateClass(classId, dto);
   }
 
   @Post(':classId/publish')
-  publishClass(@Param('classId') classId: string, @Body() dto: AdminTuitionPublishDto) {
+  publishClass(
+    @Param('classId') classId: string,
+    @Body() dto: AdminTuitionPublishDto,
+  ) {
     return this.adminTuitionService.publishClass(classId, dto);
   }
 
@@ -48,7 +54,10 @@ export class AdminTuitionController {
   }
 
   @Post(':classId/subjects')
-  addSubject(@Param('classId') classId: string, @Body() dto: AdminCreateTuitionSubjectDto) {
+  addSubject(
+    @Param('classId') classId: string,
+    @Body() dto: AdminCreateTuitionSubjectDto,
+  ) {
     return this.adminTuitionService.addSubject(classId, dto);
   }
 
@@ -62,7 +71,10 @@ export class AdminTuitionController {
   }
 
   @Delete(':classId/subjects/:subjectId')
-  removeSubject(@Param('classId') classId: string, @Param('subjectId') subjectId: string) {
+  removeSubject(
+    @Param('classId') classId: string,
+    @Param('subjectId') subjectId: string,
+  ) {
     return this.adminTuitionService.removeSubject(classId, subjectId);
   }
 
@@ -90,6 +102,10 @@ export class AdminTuitionController {
     @Param('subjectId') subjectId: string,
     @Param('instructorId') instructorId: string,
   ) {
-    return this.adminTuitionService.unassignInstructor(classId, subjectId, instructorId);
+    return this.adminTuitionService.unassignInstructor(
+      classId,
+      subjectId,
+      instructorId,
+    );
   }
 }

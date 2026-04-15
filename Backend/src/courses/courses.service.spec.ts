@@ -54,7 +54,11 @@ describe('CoursesService', () => {
 
   describe('createCourse', () => {
     it('should create a course as an admin', async () => {
-      const dto: any = { title: 'Test Course', slug: 'test-course', lead_instructor_id: 't1' };
+      const dto: any = {
+        title: 'Test Course',
+        slug: 'test-course',
+        lead_instructor_id: 't1',
+      };
       mockCourseModel.create.mockResolvedValue({ _id: '1', ...dto });
 
       const result = await service.create(dto);
@@ -72,7 +76,7 @@ describe('CoursesService', () => {
     it('should return courses where teacher is lead or assigned', async () => {
       const mockCourses = [{ _id: 'c1', title: 'Course 1' }];
       mockCourseModel.find.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(mockCourses)
+        exec: jest.fn().mockResolvedValue(mockCourses),
       });
 
       const result = await service.findAssignedToTeacher('t1');
@@ -80,10 +84,7 @@ describe('CoursesService', () => {
       expect(result.success).toBe(true);
       expect(result.data).toEqual(mockCourses);
       expect(mockCourseModel.find).toHaveBeenCalledWith({
-        $or: [
-          { lead_instructor_id: 't1' },
-          { assigned_instructor_ids: 't1' }
-        ]
+        $or: [{ lead_instructor_id: 't1' }, { assigned_instructor_ids: 't1' }],
       });
     });
   });
@@ -93,7 +94,7 @@ describe('CoursesService', () => {
       const courseId = new Types.ObjectId().toString();
       const mockCourse = { _id: courseId, title: 'Course 1' };
       mockCourseModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(mockCourse)
+        exec: jest.fn().mockResolvedValue(mockCourse),
       });
 
       const result = await service.getTeacherCourseView(courseId, 't1');
@@ -105,10 +106,12 @@ describe('CoursesService', () => {
     it('should throw ForbiddenException if not assigned', async () => {
       const courseId = new Types.ObjectId().toString();
       mockCourseModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null)
+        exec: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.getTeacherCourseView(courseId, 't1')).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.getTeacherCourseView(courseId, 't1'),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -116,7 +119,7 @@ describe('CoursesService', () => {
     it('should query for regular courses only (excluding tuition)', async () => {
       const slug = 'some-slug';
       mockCourseModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue({ _id: '1', slug })
+        exec: jest.fn().mockResolvedValue({ _id: '1', slug }),
       });
 
       const result = await service.findBySlug(slug);
@@ -124,16 +127,18 @@ describe('CoursesService', () => {
       expect(result.success).toBe(true);
       expect(mockCourseModel.findOne).toHaveBeenCalledWith({
         slug,
-        product_type: { $ne: 'tuition' }
+        product_type: { $ne: 'tuition' },
       });
     });
 
     it('should throw NotFoundException if course not found', async () => {
       mockCourseModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null)
+        exec: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.findBySlug('missing-slug')).rejects.toThrow(NotFoundException);
+      await expect(service.findBySlug('missing-slug')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -164,9 +169,11 @@ describe('CoursesService', () => {
     it('should throw an error if already reviewed', async () => {
       const courseId = new Types.ObjectId().toString();
       mockReviewModel.findOne.mockResolvedValue({ _id: 'r1' });
-      
+
       const dto = { rating: 5 };
-      await expect(service.createReview(courseId, 's1', dto)).rejects.toThrow(ForbiddenException);
+      await expect(service.createReview(courseId, 's1', dto)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -177,7 +184,7 @@ describe('CoursesService', () => {
         skip: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnValue({
-          exec: jest.fn().mockResolvedValue(mockResult)
+          exec: jest.fn().mockResolvedValue(mockResult),
         }),
       });
       mockCourseModel.countDocuments.mockResolvedValue(1);
@@ -195,7 +202,7 @@ describe('CoursesService', () => {
       const mockCourse = { _id: 't1', slug: 'class-10' };
       mockCourseModel.findOne.mockReturnValue({
         select: jest.fn().mockReturnValue({
-          exec: jest.fn().mockResolvedValue(mockCourse)
+          exec: jest.fn().mockResolvedValue(mockCourse),
         }),
       });
 
@@ -209,12 +216,10 @@ describe('CoursesService', () => {
       const mockClass = {
         _id: classId,
         tuition_meta: {
-          subjects: [
-            { slug: 'math', status: 'published' }
-          ]
-        }
+          subjects: [{ slug: 'math', status: 'published' }],
+        },
       };
-      
+
       mockCourseModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockClass),
       });
@@ -227,45 +232,44 @@ describe('CoursesService', () => {
 
   describe('DTO Validation Checks', () => {
     it('should fail if regular course missing category/pricing', async () => {
-        const dto = new CreateCourseDto();
-        dto.title = 'Title';
-        dto.slug = 'slug';
-        dto.product_type = ProductType.COURSE;
-        
-        const errors = await validate(dto);
-        expect(errors.length).toBeGreaterThan(0);
-        expect(errors.find(e => e.property === 'category')).toBeDefined();
-        expect(errors.find(e => e.property === 'pricing')).toBeDefined();
+      const dto = new CreateCourseDto();
+      dto.title = 'Title';
+      dto.slug = 'slug';
+      dto.product_type = ProductType.COURSE;
+
+      const errors = await validate(dto);
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.find((e) => e.property === 'category')).toBeDefined();
+      expect(errors.find((e) => e.property === 'pricing')).toBeDefined();
     });
 
     it('should pass if tuition missing category/pricing', async () => {
-        const dto = new CreateCourseDto();
-        dto.title = 'Title';
-        dto.slug = 'slug';
-        dto.product_type = ProductType.TUITION;
-        const meta = new TuitionMetaDto();
-        meta.class_level = 10;
-        dto.tuition_meta = meta;
+      const dto = new CreateCourseDto();
+      dto.title = 'Title';
+      dto.slug = 'slug';
+      dto.product_type = ProductType.TUITION;
+      const meta = new TuitionMetaDto();
+      meta.class_level = 10;
+      dto.tuition_meta = meta;
 
-        const errors = await validate(dto);
-        expect(errors.length).toBe(0);
+      const errors = await validate(dto);
+      expect(errors.length).toBe(0);
     });
 
     it('should fail if tuition class_level is out of bounds', async () => {
-        const dto = new CreateCourseDto();
-        dto.title = 'Title';
-        dto.slug = 'slug';
-        dto.product_type = ProductType.TUITION;
-        const meta = new TuitionMetaDto();
-        meta.class_level = 4; // Out of bounds min=5
-        dto.tuition_meta = meta;
+      const dto = new CreateCourseDto();
+      dto.title = 'Title';
+      dto.slug = 'slug';
+      dto.product_type = ProductType.TUITION;
+      const meta = new TuitionMetaDto();
+      meta.class_level = 4; // Out of bounds min=5
+      dto.tuition_meta = meta;
 
-        const errors = await validate(dto);
-        const metaError = errors.find((e: any) => e.property === 'tuition_meta');
-        expect(metaError).toBeDefined();
-        expect(metaError?.children?.[0].property).toBe('class_level');
-        expect(metaError?.children?.[0].constraints?.min).toBeDefined();
+      const errors = await validate(dto);
+      const metaError = errors.find((e: any) => e.property === 'tuition_meta');
+      expect(metaError).toBeDefined();
+      expect(metaError?.children?.[0].property).toBe('class_level');
+      expect(metaError?.children?.[0].constraints?.min).toBeDefined();
     });
   });
 });
-

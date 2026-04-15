@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Hls from 'hls.js';
 import { 
   Play, 
@@ -15,34 +15,51 @@ import {
   Loader2, 
   History,
   Volume2,
-  BookOpen
+  BookOpen,
+  Sparkles
 } from 'lucide-react';
+import StudentAssistantPanel from '@/components/StudentAssistantPanel';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
+import { lessonsService } from '@/services/lessons.service';
+import { videosService } from '@/services/videos.service';
+import { coursesService } from '@/services/courses.service';
+import { enrollmentsService } from '@/services/enrollments.service';
+
 
 const LessonPlayer = () => {
   const { slug, lessonId } = useParams();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playbackData, setPlaybackData] = useState<any>(null);
   const [curriculum, setCurriculum] = useState<any[]>([]);
+  const [enrollment, setEnrollment] = useState<any>(null);
+  const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isAiOpen, setIsAiOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     if (lessonId) fetchLessonData();
-    if (slug) fetchCurriculum();
-  }, [lessonId]);
+    if (slug) fetchCurriculumAndProgress();
+  }, [lessonId, slug]);
+
+  useEffect(() => {
+    if (enrollment && lessonId) {
+      enrollmentsService.updateProgress(enrollment.course_id, {
+        current_lesson: lessonId as string
+      }).catch(err => console.error("Failed to update current lesson", err));
+    }
+  }, [enrollment, lessonId]);
 
   const fetchLessonData = async () => {
     try {
       setIsLoading(true);
-      const lessonRes = await api.get(`/lessons/${lessonId}`);
-      const lesson = lessonRes.data;
+      const lesson = await lessonsService.getLesson(lessonId as string);
 
-      if (lesson.video_id) {
-        const playbackRes = await api.get(`/videos/${lesson.video_id}/playback`);
-        setPlaybackData({ ...lesson, ...playbackRes.data });
+      if (lesson.content?.video_id) {
+        const playbackData = await videosService.getPlaybackData(lesson.content.video_id);
+        setPlaybackData({ ...lesson, ...playbackData });
       } else {
         setPlaybackData(lesson);
       }
@@ -54,14 +71,68 @@ const LessonPlayer = () => {
     }
   };
 
-  const fetchCurriculum = async () => {
+  const fetchCurriculumAndProgress = async () => {
     try {
-      const curriculumRes = await api.get(`/courses/${slug}/curriculum`);
-      setCurriculum(curriculumRes.data || []);
+      const curriculumData = await coursesService.getCurriculum(slug as string);
+      setCurriculum(curriculumData || []);
+
+      // Get course ID from local cached course or from the first lesson if needed
+      // Actually coursesService.getCourse(slug) is better to get the ID
+      const course = await coursesService.getCourse(slug as string);
+      const enr = await enrollmentsService.getProgress(course._id || course.id);
+      setEnrollment(enr);
+      setCompletedLessons(enr.progress?.completed_lessons || []);
     } catch (error) {
-      console.error('Failed to fetch curriculum for sidebar', error);
+      console.error('Failed to fetch curriculum or progress', error);
     }
   };
+
+  const findNextLesson = () => {
+    if (!curriculum.length) return null;
+    
+    let currentLessonFound = false;
+    for (const section of curriculum) {
+      for (const lesson of section.lessons) {
+        if (currentLessonFound) return lesson;
+        if (lesson.lesson_id === lessonId) currentLessonFound = true;
+      }
+    }
+    return null;
+  };
+
+  const handleMarkComplete = async () => {
+    if (!enrollment) return;
+    
+    try {
+      const isAlreadyComplete = completedLessons.includes(lessonId as string);
+      const newCompleted = isAlreadyComplete 
+        ? completedLessons 
+        : [...completedLessons, lessonId as string];
+      
+      // Calculate new percentage
+      const totalLessons = curriculum.reduce((acc, section) => acc + section.lessons.length, 0);
+      const percentage = Math.round((newCompleted.length / totalLessons) * 100);
+
+      const nextLesson = findNextLesson();
+
+      await enrollmentsService.updateProgress(enrollment.course_id, {
+        completed_lessons: [lessonId as string], // Backend merges them
+        percentage: percentage,
+        current_lesson: nextLesson?.lesson_id || lessonId as string
+      });
+
+      setCompletedLessons(newCompleted);
+      toast.success('Progress saved!');
+
+      if (nextLesson) {
+        router.push(`/courses/${slug}/lessons/${nextLesson.lesson_id}`);
+      }
+    } catch (error) {
+      toast.error('Failed to save progress');
+      console.error(error);
+    }
+  };
+
 
   useEffect(() => {
     if (playbackData?.manifest_url && videoRef.current) {
@@ -113,6 +184,15 @@ const LessonPlayer = () => {
              <History size={16} />
              <span>Progress Saved</span>
            </div>
+           
+           <button 
+             onClick={() => setIsAiOpen(true)}
+             className="flex items-center gap-2 bg-blue-600/20 text-blue-400 px-4 py-2 rounded-xl border border-blue-600/20 hover:bg-blue-600/30 transition-all group"
+           >
+              <Sparkles size={14} className="group-hover:rotate-12 transition-transform" />
+              <span className="text-[10px] font-black uppercase tracking-widest">Ask AI</span>
+           </button>
+
            <button 
              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isSidebarOpen ? 'bg-blue-600 text-white' : 'hover:bg-white/10'}`}
@@ -141,8 +221,11 @@ const LessonPlayer = () => {
                   <p className="text-white/60 text-lg leading-relaxed mb-10 font-medium">
                      {playbackData?.content || "This lesson contains study materials and notes for your review. No video playback is available for this specific module."}
                   </p>
-                  <button className="px-12 py-5 bg-white text-slate-950 font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-blue-50 transition-all active:scale-95 shadow-2xl shadow-blue-500/10">
-                     Mark Module Complete
+                  <button 
+                    onClick={handleMarkComplete}
+                    className="px-12 py-5 bg-white text-slate-950 font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-blue-50 transition-all active:scale-95 shadow-2xl shadow-blue-500/10"
+                  >
+                     {completedLessons.includes(lessonId as string) ? 'Module Completed' : 'Mark Module Complete'}
                   </button>
                </div>
              )}
@@ -152,9 +235,16 @@ const LessonPlayer = () => {
             <div className="max-w-4xl mx-auto">
               <div className="flex items-center justify-between mb-8">
                  <h1 className="text-3xl font-black uppercase tracking-tighter">{playbackData?.title}</h1>
-                 <button className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 font-bold text-xs uppercase tracking-widest transition-all">
-                    <CheckCircle2 size={16} className="text-green-400" />
-                    Completed
+                 <button 
+                   onClick={handleMarkComplete}
+                   className={`flex items-center gap-2 px-6 py-3 rounded-xl border border-white/10 font-bold text-xs uppercase tracking-widest transition-all ${
+                     completedLessons.includes(lessonId as string) 
+                     ? 'bg-blue-600/20 text-blue-400' 
+                     : 'bg-white/5 hover:bg-white/10 text-white/60'
+                   }`}
+                 >
+                    <CheckCircle2 size={16} className={completedLessons.includes(lessonId as string) ? "text-blue-400" : "text-white/20"} />
+                    {completedLessons.includes(lessonId as string) ? 'Completed' : 'Mark Complete'}
                  </button>
               </div>
               <p className="text-white/60 text-lg font-medium leading-relaxed max-w-3xl">
@@ -176,45 +266,63 @@ const LessonPlayer = () => {
             
             <div className="space-y-4">
               {curriculum.map((section: any) => (
-                <div key={section.id} className="space-y-2">
+                <div key={section.section_id} className="space-y-2">
                    <h4 className="px-4 py-2 bg-white/5 rounded-xl text-[10px] font-black text-white/80 uppercase tracking-[0.2em] border border-white/10">
                       {section.title}
                    </h4>
                    <div className="space-y-1">
-                      {section.lessons.map((lesson: any) => (
-                         <button
-                           key={lesson.id}
-                           onClick={() => router.push(`/courses/${slug}/lessons/${lesson.id}`)}
-                           className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all group overflow-hidden relative ${
-                             lesson.id === lessonId 
-                             ? 'bg-blue-600 text-white shadow-xl shadow-blue-600/20' 
-                             : 'text-white/40 hover:bg-white/5 hover:text-white'
-                           }`}
-                         >
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                              lesson.id === lessonId ? 'bg-white/20' : 'bg-white/5 text-white/20'
-                            }`}>
-                               {lesson.id === lessonId ? <Play size={12} fill="currentColor" /> : <Play size={12} />}
-                            </div>
-                            <div className="flex flex-col items-start truncate overflow-hidden">
-                               <span className="text-[11px] font-bold uppercase tracking-tight truncate w-full text-left">
-                                 {lesson.title}
-                               </span>
-                               <span className={`text-[9px] font-black uppercase tracking-widest mt-0.5 ${
-                                 lesson.id === lessonId ? 'text-white/60' : 'text-white/20'
-                               }`}>
-                                 {lesson.duration}m
-                               </span>
-                            </div>
-                         </button>
-                      ))}
+                      {section.lessons.map((lesson: any) => {
+                         const isCompleted = completedLessons.includes(lesson.lesson_id);
+                         const isActive = lesson.lesson_id === lessonId;
+
+                         return (
+                           <button
+                             key={lesson.lesson_id}
+                             onClick={() => router.push(`/courses/${slug}/lessons/${lesson.lesson_id}`)}
+                             className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all group overflow-hidden relative ${
+                               isActive 
+                               ? 'bg-blue-600 text-white shadow-xl shadow-blue-600/20' 
+                               : 'text-white/40 hover:bg-white/5 hover:text-white'
+                             }`}
+                           >
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                                isActive ? 'bg-white/20' : (isCompleted ? 'bg-blue-500/20 text-blue-400' : 'bg-white/5 text-white/20')
+                              }`}>
+                                 {isActive ? <Play size={12} fill="currentColor" /> : (isCompleted ? <CheckCircle2 size={12} /> : <Play size={12} />)}
+                              </div>
+                              <div className="flex flex-col items-start truncate overflow-hidden">
+                                 <span className={`text-[11px] font-bold uppercase tracking-tight truncate w-full text-left ${isActive ? 'text-white' : (isCompleted ? 'text-white/80' : 'text-white/40')}`}>
+                                   {lesson.title}
+                                 </span>
+                                 <span className={`text-[9px] font-black uppercase tracking-widest mt-0.5 ${
+                                   isActive ? 'text-white/60' : 'text-white/20'
+                                 }`}>
+                                   {lesson.duration_minutes}m
+                                 </span>
+                              </div>
+                              {isCompleted && !isActive && (
+                                <div className="absolute right-4">
+                                   <CheckCircle2 size={12} className="text-blue-500" />
+                                </div>
+                              )}
+                           </button>
+                         );
+                      })}
                    </div>
                 </div>
               ))}
             </div>
+
           </div>
         </motion.div>
       </div>
+
+      <StudentAssistantPanel 
+        courseIdOrSlug={slug as string}
+        lessonId={lessonId as string}
+        isOpen={isAiOpen}
+        onClose={() => setIsAiOpen(false)}
+      />
     </div>
   );
 };

@@ -8,7 +8,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CoursesService } from './courses.service';
-import { CreateSectionDto, UpdateSectionDto, CreateLessonDto, UpdateLessonDto } from './dto/curriculum.dto';
+import {
+  CreateSectionDto,
+  UpdateSectionDto,
+  CreateLessonDto,
+  UpdateLessonDto,
+} from './dto/curriculum.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -37,7 +42,12 @@ export class TeacherCoursesController {
     @Param('id') id: string,
     @Body() dto: CreateSectionDto,
   ) {
-    return this.coursesService.addSectionForTeacher(id, user.id, dto, user.role);
+    return this.coursesService.addSectionForTeacher(
+      id,
+      user.id,
+      dto,
+      user.role,
+    );
   }
 
   @Put(':id/sections/:sectionId')
@@ -47,7 +57,13 @@ export class TeacherCoursesController {
     @Param('sectionId') sectionId: string,
     @Body() dto: UpdateSectionDto,
   ) {
-    return this.coursesService.updateSectionForTeacher(id, user.id, sectionId, dto, user.role);
+    return this.coursesService.updateSectionForTeacher(
+      id,
+      user.id,
+      sectionId,
+      dto,
+      user.role,
+    );
   }
 
   @Post(':id/sections/:sectionId/lessons')
@@ -57,7 +73,13 @@ export class TeacherCoursesController {
     @Param('sectionId') sectionId: string,
     @Body() dto: CreateLessonDto,
   ) {
-    return this.coursesService.addLessonForTeacher(id, user.id, sectionId, dto, user.role);
+    return this.coursesService.addLessonForTeacher(
+      id,
+      user.id,
+      sectionId,
+      dto,
+      user.role,
+    );
   }
 
   @Put(':id/sections/:sectionId/lessons/:lessonId')
@@ -68,6 +90,13 @@ export class TeacherCoursesController {
     @Param('lessonId') lessonId: string,
     @Body() dto: UpdateLessonDto,
   ) {
-    return this.coursesService.updateLessonForTeacher(id, user.id, sectionId, lessonId, dto, user.role);
+    return this.coursesService.updateLessonForTeacher(
+      id,
+      user.id,
+      sectionId,
+      lessonId,
+      dto,
+      user.role,
+    );
   }
 }

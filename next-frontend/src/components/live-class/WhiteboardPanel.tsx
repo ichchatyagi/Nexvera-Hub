@@ -98,6 +98,10 @@ export const WhiteboardPanel: React.FC<WhiteboardPanelProps> = ({ liveClassId, i
       }
     });
 
+    socket.on('error', (err) => {
+      console.error('Whiteboard Socket error:', err);
+    });
+
     return () => {
       socket.disconnect();
     };
@@ -193,6 +197,7 @@ export const WhiteboardPanel: React.FC<WhiteboardPanelProps> = ({ liveClassId, i
   };
 
   const clearBoard = () => {
+    if (!isTeacher) return;
     if (confirm('Clear entire whiteboard?')) {
       socketRef.current?.emit('whiteboard:clear');
     }

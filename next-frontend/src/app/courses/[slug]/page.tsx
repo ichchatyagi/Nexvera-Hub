@@ -23,6 +23,12 @@ import {
 import api from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
+import { coursesService } from '@/services/courses.service';
+import { enrollmentsService } from '@/services/enrollments.service';
+import { paymentsService } from '@/services/payments.service';
+import { Sparkles } from 'lucide-react';
+import StudentAssistantPanel from '@/components/StudentAssistantPanel';
+
 
 interface Lesson {
   lesson_id: string;
@@ -70,7 +76,9 @@ const CourseDetail = () => {
   const [curriculum, setCurriculum] = useState<Section[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeSection, setActiveSection] = useState<string | null>(null);
-  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [enrollment, setEnrollment] = useState<any>(null);
+  const [isAiOpen, setIsAiOpen] = useState(false);
+  const isEnrolled = !!enrollment;
   const router = useRouter();
 
   useEffect(() => {
@@ -80,27 +88,24 @@ const CourseDetail = () => {
   const fetchCourseData = async () => {
     try {
       setIsLoading(true);
-      const courseRes = await api.get(`/courses/${slug}`); // Backend should handle lookup by slug
-      const courseData = courseRes.data;
-      setCourse(courseData);
+      const courseData = await coursesService.getCourse(slug as string);
+      setCourse(courseData as any);
 
       // Fetch curriculum
-      const curriculumRes = await api.get(`/courses/${courseData._id || courseData.id}/curriculum`);
-      setCurriculum(curriculumRes.data || []);
-      if (curriculumRes.data?.length > 0) {
-        setActiveSection(curriculumRes.data[0].section_id);
+      const curriculumData = await coursesService.getCurriculum(courseData._id || courseData.id);
+      setCurriculum(curriculumData || []);
+      if (curriculumData?.length > 0) {
+        setActiveSection(curriculumData[0].section_id);
       }
 
       // Check enrollment status if authenticated
       if (isAuthenticated) {
         try {
-          // Use progress endpoint to check enrollment
-          const progressRes = await api.get(`/courses/${courseData._id || courseData.id}/progress`);
-          // If the request succeeds, the user is enrolled
-          setIsEnrolled(true);
+          // Use enrollments service to check status
+          const enr = await enrollmentsService.getProgress(courseData._id || courseData.id);
+          setEnrollment(enr);
         } catch (e) {
-          // If 403/404, user is likely not enrolled
-          setIsEnrolled(false);
+          setEnrollment(null);
           console.log('User not enrolled in this course');
         }
       }
@@ -112,6 +117,7 @@ const CourseDetail = () => {
     }
   };
 
+
   const handleEnroll = async () => {
     if (!isAuthenticated) {
       router.push(`/login?redirect=/courses/${slug}`);
@@ -122,8 +128,9 @@ const CourseDetail = () => {
       toast.loading('Initializing checkout...', { id: 'payment' });
       
       // 1. Create Razorpay Order via Backend
-      const orderRes = await api.post('/payments/order', { courseId: course?._id || course?.id });
-      const { keyId, orderId, amount, currency } = orderRes.data;
+      const orderData = await paymentsService.createOrder(course?._id || course?.id || '');
+      const { keyId, orderId, amount, currency } = orderData;
+
 
       // 2. Load Razorpay script dynamically
       if (!(window as any).Razorpay) {
@@ -149,15 +156,14 @@ const CourseDetail = () => {
           try {
             toast.loading('Verifying payment...', { id: 'payment' });
             
-            const verifyRes = await api.post('/payments/verify', {
+            const verifyData = await paymentsService.verifyPayment({
               courseId: course?._id || course?.id,
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
             });
 
-            if (verifyRes.data.enrolled) {
-              setIsEnrolled(true);
+            if (verifyData.enrolled) {
               toast.success('Course purchased successfully!', { id: 'payment' });
               // Refresh to unlock lessons
               fetchCourseData();
@@ -217,6 +223,24 @@ const CourseDetail = () => {
       </div>
     );
   }
+
+  const getContinueLearningUrl = () => {
+    if (!enrollment || !curriculum.length) return '#';
+    
+    // 1. Use current_lesson if it exists in enrollment progress
+    const currentLessonId = enrollment.progress?.current_lesson;
+    if (currentLessonId) {
+      return `/courses/${course.slug}/lessons/${currentLessonId}`;
+    }
+
+    // 2. Fallback to the first lesson of the first section
+    const firstLessonId = curriculum[0]?.lessons[0]?.lesson_id;
+    if (firstLessonId) {
+      return `/courses/${course.slug}/lessons/${firstLessonId}`;
+    }
+
+    return '#';
+  };
 
   return (
     <div className="bg-transparent pb-24">
@@ -315,7 +339,7 @@ const CourseDetail = () => {
                 </div>
 
                 <button 
-                  onClick={isEnrolled ? () => router.push(`/courses/${course._id || course.id}/lessons/${curriculum[0]?.lessons[0]?.lesson_id}`) : handleEnroll}
+                  onClick={isEnrolled ? () => router.push(getContinueLearningUrl()) : handleEnroll}
                   className={`w-full py-6 rounded-[1.8rem] font-black uppercase tracking-widest text-xs transition-all active:scale-95 shadow-2xl ${
                     isEnrolled 
                     ? 'bg-slate-950 text-white hover:bg-black shadow-slate-900/20' 
@@ -323,6 +347,14 @@ const CourseDetail = () => {
                   }`}
                 >
                   {isEnrolled ? 'Continue Learning' : `Buy Course | ₹${(course.pricing?.price || 0).toLocaleString()}`}
+                </button>
+
+                <button 
+                  onClick={() => setIsAiOpen(true)}
+                  className="w-full mt-4 py-4 rounded-2xl border border-slate-100 flex items-center justify-center gap-3 text-slate-400 font-bold uppercase tracking-widest text-[10px] hover:bg-slate-50 transition-all group"
+                >
+                   <Sparkles size={14} className="text-blue-600 group-hover:rotate-12 transition-transform" />
+                   Ask AI about this course
                 </button>
 
                 <div className="mt-10 space-y-4">
@@ -439,6 +471,12 @@ const CourseDetail = () => {
           </div>
         </div>
       </section>
+
+      <StudentAssistantPanel 
+        courseIdOrSlug={slug as string}
+        isOpen={isAiOpen}
+        onClose={() => setIsAiOpen(false)}
+      />
     </div>
   );
 };

@@ -10,7 +10,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CoursesService } from './courses.service';
-import { CreateCourseDto, UpdateCourseDto, CreateReviewDto, AssignInstructorDto } from './dto/course.dto';
+import {
+  CreateCourseDto,
+  UpdateCourseDto,
+  CreateReviewDto,
+  AssignInstructorDto,
+} from './dto/course.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -56,10 +61,7 @@ export class CoursesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Put(':id')
-  updateCourse(
-    @Param('id') id: string,
-    @Body() dto: UpdateCourseDto,
-  ) {
+  updateCourse(@Param('id') id: string, @Body() dto: UpdateCourseDto) {
     return this.coursesService.update(id, dto);
   }
 
@@ -73,20 +75,14 @@ export class CoursesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Post(':id/publish')
-  publishCourse(
-    @Param('id') id: string,
-    @Body('status') status: string,
-  ) {
+  publishCourse(@Param('id') id: string, @Body('status') status: string) {
     return this.coursesService.publish(id, status || 'pending_review');
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Post(':id/assign-instructor')
-  assignInstructor(
-    @Param('id') id: string,
-    @Body() dto: AssignInstructorDto,
-  ) {
+  assignInstructor(@Param('id') id: string, @Body() dto: AssignInstructorDto) {
     return this.coursesService.assignInstructor(id, dto);
   }
 
@@ -113,4 +109,3 @@ export class CoursesController {
     return this.coursesService.createReview(id, user.id, dto);
   }
 }
-

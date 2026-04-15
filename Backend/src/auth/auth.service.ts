@@ -10,7 +10,14 @@ import { UsersService } from '../users/users.service';
 import { ContactService } from '../contact/contact.service';
 import { AppConfigService } from '../app-config/app-config.service';
 import { User, UserRole } from '../users/entities/user.entity';
-import { RegisterDto, LoginDto, RefreshTokenDto, ForgotPasswordDto, ResetPasswordDto, VerifyOtpDto } from './dto/auth.dto';
+import {
+  RegisterDto,
+  LoginDto,
+  RefreshTokenDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  VerifyOtpDto,
+} from './dto/auth.dto';
 import { mapUserToResponse } from '../users/dto/user-response.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
 
@@ -88,16 +95,18 @@ export class AuthService {
 
     // Send Verification Email
     const displayName = user.name || user.email.split('@')[0];
-    this.contactService.sendVerificationEmail(user.email, displayName, otp).catch((err) => {
-      console.error('Failed to send verification email:', err);
-    });
+    this.contactService
+      .sendVerificationEmail(user.email, displayName, otp)
+      .catch((err) => {
+        console.error('Failed to send verification email:', err);
+      });
 
     return {
       success: true,
       message: 'Registration successful. Please verify your email.',
-      data: { 
+      data: {
         user: { email: user.email, name: user.name, status: user.status },
-        isVerified: false 
+        isVerified: false,
       },
     };
   }
@@ -122,7 +131,7 @@ export class AuthService {
         success: false,
         statusCode: 403,
         message: 'Account not verified. Please verify your email.',
-        data: { email: user.email, isVerified: false }
+        data: { email: user.email, isVerified: false },
       };
     }
 
@@ -209,16 +218,18 @@ export class AuthService {
     for (let i = 0; i < 5; i++) {
       otp += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    
+
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     await this.usersService.setResetOtp(user.email, otp, expiresAt);
 
     // Send OTP Email
     const displayName = user.name || user.email.split('@')[0];
-    this.contactService.sendOtpEmail(user.email, displayName, otp).catch((err) => {
-      console.error('Failed to send OTP email:', err);
-    });
+    this.contactService
+      .sendOtpEmail(user.email, displayName, otp)
+      .catch((err) => {
+        console.error('Failed to send OTP email:', err);
+      });
 
     return {
       success: true,
@@ -271,7 +282,12 @@ export class AuthService {
 
   async verifyRegistrationOtp(dto: VerifyOtpDto) {
     const user = await this.usersService.findByEmail(dto.email);
-    if (!user || user.status !== 'pending' || !user.verificationOtp || !user.verificationOtpExpiresAt) {
+    if (
+      !user ||
+      user.status !== 'pending' ||
+      !user.verificationOtp ||
+      !user.verificationOtpExpiresAt
+    ) {
       throw new UnauthorizedException('Invalid verification request');
     }
 
@@ -289,9 +305,11 @@ export class AuthService {
     // Send Welcome Email now that they are verified
     console.log('Email verified, initiating welcome email...');
     const displayName = updatedUser.name || updatedUser.email.split('@')[0];
-    this.contactService.sendSignupEmail(updatedUser.email, displayName).catch((err) => {
-      console.error('Failed to send signup email:', err);
-    });
+    this.contactService
+      .sendSignupEmail(updatedUser.email, displayName)
+      .catch((err) => {
+        console.error('Failed to send signup email:', err);
+      });
 
     return {
       success: true,
@@ -303,7 +321,9 @@ export class AuthService {
   async resendVerificationOtp(email: string) {
     const user = await this.usersService.findByEmail(email);
     if (!user || user.status !== 'pending') {
-      throw new BadRequestException('Verification not required for this account');
+      throw new BadRequestException(
+        'Verification not required for this account',
+      );
     }
 
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -315,7 +335,11 @@ export class AuthService {
 
     await this.usersService.setVerificationOtp(user.email, otp, expiresAt);
     const displayName = user.name || user.email.split('@')[0];
-    await this.contactService.sendVerificationEmail(user.email, displayName, otp);
+    await this.contactService.sendVerificationEmail(
+      user.email,
+      displayName,
+      otp,
+    );
 
     return {
       success: true,
@@ -325,6 +349,9 @@ export class AuthService {
 
   async verifyEmail(_token: string) {
     // Legacy support for token-based verification if needed
-    return { success: true, data: { message: 'Email verification — use OTP portal' } };
+    return {
+      success: true,
+      data: { message: 'Email verification — use OTP portal' },
+    };
   }
 }

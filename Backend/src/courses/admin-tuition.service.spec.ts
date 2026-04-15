@@ -40,7 +40,11 @@ describe('AdminTuitionService', () => {
   describe('createClass', () => {
     it('should create tuition class successfully', async () => {
       const dto = { title: 'Test', slug: 'test', class_level: 5 };
-      mockCourseModel.create.mockResolvedValue({ _id: '1', ...dto, product_type: ProductType.TUITION });
+      mockCourseModel.create.mockResolvedValue({
+        _id: '1',
+        ...dto,
+        product_type: ProductType.TUITION,
+      });
 
       const result = await service.createClass(dto as any);
       expect(result.success).toBe(true);
@@ -55,13 +59,20 @@ describe('AdminTuitionService', () => {
     it('should transition to published and set published_at', async () => {
       const courseId = new Types.ObjectId().toString();
       const mockSave = jest.fn();
-      const mockCourse = { _id: courseId, product_type: ProductType.TUITION, status: 'draft', save: mockSave };
-      
+      const mockCourse = {
+        _id: courseId,
+        product_type: ProductType.TUITION,
+        status: 'draft',
+        save: mockSave,
+      };
+
       mockCourseModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockCourse),
       });
 
-      const result = await service.publishClass(courseId, { status: 'published' });
+      const result = await service.publishClass(courseId, {
+        status: 'published',
+      });
       expect(result.success).toBe(true);
       expect(mockCourse.status).toBe('published');
       expect((mockCourse as any).published_at).toBeDefined();
@@ -71,8 +82,13 @@ describe('AdminTuitionService', () => {
     it('should transition to unpublished', async () => {
       const courseId = new Types.ObjectId().toString();
       const mockSave = jest.fn();
-      const mockCourse = { _id: courseId, product_type: ProductType.TUITION, status: 'published', save: mockSave };
-      
+      const mockCourse = {
+        _id: courseId,
+        product_type: ProductType.TUITION,
+        status: 'published',
+        save: mockSave,
+      };
+
       mockCourseModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockCourse),
       });
@@ -89,10 +105,12 @@ describe('AdminTuitionService', () => {
       const courseId = new Types.ObjectId().toString();
       // Assume DB correctly returns null since non-tuition classes trigger the product_type filter exception
       mockCourseModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null), 
+        exec: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.updateClass(courseId, {})).rejects.toThrow(NotFoundException);
+      await expect(service.updateClass(courseId, {})).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -127,16 +145,18 @@ describe('AdminTuitionService', () => {
       const courseId = new Types.ObjectId().toString();
       const subjectId = new Types.ObjectId().toString();
       const mockSave = jest.fn();
-      
+
       const mockCourse = {
         _id: courseId,
         product_type: ProductType.TUITION,
         tuition_meta: {
-          subjects: [{
-            subject_id: subjectId,
-            name: 'Old Name',
-            syllabus: [{ section_id: 's1', title: 'Chapter 1', lessons: [] }]
-          }]
+          subjects: [
+            {
+              subject_id: subjectId,
+              name: 'Old Name',
+              syllabus: [{ section_id: 's1', title: 'Chapter 1', lessons: [] }],
+            },
+          ],
         },
         save: mockSave,
       };
@@ -164,7 +184,9 @@ describe('AdminTuitionService', () => {
       const mockCourse = {
         _id: courseId,
         product_type: ProductType.TUITION,
-        tuition_meta: { subjects: [{ subject_id: subjectId, status: 'draft' }] },
+        tuition_meta: {
+          subjects: [{ subject_id: subjectId, status: 'draft' }],
+        },
         save: mockSave,
       };
 
@@ -172,7 +194,9 @@ describe('AdminTuitionService', () => {
         exec: jest.fn().mockResolvedValue(mockCourse),
       });
 
-      const result = await service.publishSubject(courseId, subjectId, { status: 'published' });
+      const result = await service.publishSubject(courseId, subjectId, {
+        status: 'published',
+      });
       expect(result.success).toBe(true);
       expect(mockCourse.tuition_meta.subjects[0].status).toBe('published');
       expect(mockSave).toHaveBeenCalled();
@@ -185,7 +209,9 @@ describe('AdminTuitionService', () => {
       const mockCourse = {
         _id: courseId,
         product_type: ProductType.TUITION,
-        tuition_meta: { subjects: [{ subject_id: subjectId, status: 'published' }] },
+        tuition_meta: {
+          subjects: [{ subject_id: subjectId, status: 'published' }],
+        },
         save: mockSave,
       };
 
@@ -193,7 +219,9 @@ describe('AdminTuitionService', () => {
         exec: jest.fn().mockResolvedValue(mockCourse),
       });
 
-      const result = await service.publishSubject(courseId, subjectId, { status: 'draft' });
+      const result = await service.publishSubject(courseId, subjectId, {
+        status: 'draft',
+      });
       expect(result.success).toBe(true);
       expect(mockCourse.tuition_meta.subjects[0].status).toBe('draft');
       expect(mockSave).toHaveBeenCalled();
@@ -209,11 +237,13 @@ describe('AdminTuitionService', () => {
         _id: courseId,
         product_type: ProductType.TUITION,
         tuition_meta: {
-          subjects: [{
-            subject_id: subjectId,
-            assigned_instructor_ids: ['inst_1'],
-            lead_instructor_id: 'inst_1',
-          }]
+          subjects: [
+            {
+              subject_id: subjectId,
+              assigned_instructor_ids: ['inst_1'],
+              lead_instructor_id: 'inst_1',
+            },
+          ],
         },
         save: mockSave,
       };
@@ -241,7 +271,9 @@ describe('AdminTuitionService', () => {
         _id: courseId,
         product_type: ProductType.TUITION,
         tuition_meta: {
-          subjects: [{ subject_id: subjectId, assigned_instructor_ids: ['inst_1'] }]
+          subjects: [
+            { subject_id: subjectId, assigned_instructor_ids: ['inst_1'] },
+          ],
         },
         save: mockSave,
       };
@@ -250,9 +282,13 @@ describe('AdminTuitionService', () => {
         exec: jest.fn().mockResolvedValue(mockCourse),
       });
 
-      const result = await service.assignInstructor(courseId, subjectId, { instructor_id: 'inst_1' });
+      const result = await service.assignInstructor(courseId, subjectId, {
+        instructor_id: 'inst_1',
+      });
       expect(result.success).toBe(true);
-      expect(mockCourse.tuition_meta.subjects[0].assigned_instructor_ids).toEqual(['inst_1']);
+      expect(
+        mockCourse.tuition_meta.subjects[0].assigned_instructor_ids,
+      ).toEqual(['inst_1']);
       expect(mockSave).toHaveBeenCalled();
     });
   });
@@ -266,11 +302,13 @@ describe('AdminTuitionService', () => {
         _id: courseId,
         product_type: ProductType.TUITION,
         tuition_meta: {
-          subjects: [{
-            subject_id: subjectId,
-            assigned_instructor_ids: ['inst_1', 'inst_2'],
-            lead_instructor_id: 'inst_2',
-          }]
+          subjects: [
+            {
+              subject_id: subjectId,
+              assigned_instructor_ids: ['inst_1', 'inst_2'],
+              lead_instructor_id: 'inst_2',
+            },
+          ],
         },
         save: mockSave,
       };
@@ -279,7 +317,11 @@ describe('AdminTuitionService', () => {
         exec: jest.fn().mockResolvedValue(mockCourse),
       });
 
-      const result = await service.unassignInstructor(courseId, subjectId, 'inst_2');
+      const result = await service.unassignInstructor(
+        courseId,
+        subjectId,
+        'inst_2',
+      );
 
       expect(result.success).toBe(true);
       const subject = mockCourse.tuition_meta.subjects[0];
@@ -293,11 +335,23 @@ describe('AdminTuitionService', () => {
     it('should throw BadRequestException if subjectId is invalid in target mutations', async () => {
       const validClassId = new Types.ObjectId().toString();
       const invalidSubjectId = 'invalid-id';
-      
-      await expect(service.removeSubject(validClassId, invalidSubjectId)).rejects.toThrow(BadRequestException);
-      await expect(service.publishSubject(validClassId, invalidSubjectId, { status: 'draft' })).rejects.toThrow(BadRequestException);
-      await expect(service.assignInstructor(validClassId, invalidSubjectId, { instructor_id: 'inst' })).rejects.toThrow(BadRequestException);
-      await expect(service.unassignInstructor(validClassId, invalidSubjectId, 'inst')).rejects.toThrow(BadRequestException);
+
+      await expect(
+        service.removeSubject(validClassId, invalidSubjectId),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.publishSubject(validClassId, invalidSubjectId, {
+          status: 'draft',
+        }),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.assignInstructor(validClassId, invalidSubjectId, {
+          instructor_id: 'inst',
+        }),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.unassignInstructor(validClassId, invalidSubjectId, 'inst'),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

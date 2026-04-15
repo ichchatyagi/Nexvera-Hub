@@ -4,7 +4,11 @@ import { TeacherTuitionService } from './teacher-tuition.service';
 import { Course } from './schemas/course.schema';
 import { Types } from 'mongoose';
 import { ProductType } from './dto/course.dto';
-import { ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 
 const mockCourseModel = {
   find: jest.fn(),
@@ -35,18 +39,27 @@ describe('TeacherTuitionService', () => {
   describe('findAssignedSubjects', () => {
     it('should return combined class and subject instances matched to teacher', async () => {
       const mockCourse = {
-        _id: 'class_1', title: 'Science 10', 
+        _id: 'class_1',
+        title: 'Science 10',
         tuition_meta: {
           class_level: 10,
           subjects: [
-            { subject_id: 'sub_1', name: 'Physics', assigned_instructor_ids: ['t1'] },
-            { subject_id: 'sub_2', name: 'Chem', assigned_instructor_ids: ['t2'] }
-          ]
-        }
+            {
+              subject_id: 'sub_1',
+              name: 'Physics',
+              assigned_instructor_ids: ['t1'],
+            },
+            {
+              subject_id: 'sub_2',
+              name: 'Chem',
+              assigned_instructor_ids: ['t2'],
+            },
+          ],
+        },
       };
-      
+
       mockCourseModel.find.mockReturnValue({
-        exec: jest.fn().mockResolvedValue([mockCourse])
+        exec: jest.fn().mockResolvedValue([mockCourse]),
       });
 
       const result = await service.findAssignedSubjects('t1');
@@ -62,12 +75,14 @@ describe('TeacherTuitionService', () => {
       const subjectId = new Types.ObjectId().toString();
       mockCourseModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue({
-          _id: '1', title: 'A', status: 'draft',
+          _id: '1',
+          title: 'A',
+          status: 'draft',
           tuition_meta: {
             class_level: 10,
-            subjects: [{ subject_id: subjectId, lead_instructor_id: 't1' }]
-          }
-        })
+            subjects: [{ subject_id: subjectId, lead_instructor_id: 't1' }],
+          },
+        }),
       });
 
       const result = await service.getSubjectTeachingView(subjectId, 't1');
@@ -81,12 +96,16 @@ describe('TeacherTuitionService', () => {
       mockCourseModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue({
           tuition_meta: {
-            subjects: [{ subject_id: subjectId, assigned_instructor_ids: ['t2'] }]
-          }
-        })
+            subjects: [
+              { subject_id: subjectId, assigned_instructor_ids: ['t2'] },
+            ],
+          },
+        }),
       });
 
-      await expect(service.getSubjectTeachingView(subjectId, 't1')).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.getSubjectTeachingView(subjectId, 't1'),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -94,12 +113,16 @@ describe('TeacherTuitionService', () => {
     it('should push a new section securely into the targeted nested syllabus preventing top-level modification', async () => {
       const subjectId = new Types.ObjectId().toString();
       const mockSave = jest.fn();
-      const topLevelCurriculum = [{ section_id: 'top1', title: 'Top level', lessons: [] }];
-      
+      const topLevelCurriculum = [
+        { section_id: 'top1', title: 'Top level', lessons: [] },
+      ];
+
       const mockCourse = {
         curriculum: [...topLevelCurriculum], // Provide top level payload
         tuition_meta: {
-          subjects: [{ subject_id: subjectId, lead_instructor_id: 't1', syllabus: [] }]
+          subjects: [
+            { subject_id: subjectId, lead_instructor_id: 't1', syllabus: [] },
+          ],
         },
         save: mockSave,
       };
@@ -108,10 +131,14 @@ describe('TeacherTuitionService', () => {
         exec: jest.fn().mockResolvedValue(mockCourse),
       });
 
-      const result = await service.addSection(subjectId, 't1', { title: 'Chapter 1' } as any);
+      const result = await service.addSection(subjectId, 't1', {
+        title: 'Chapter 1',
+      } as any);
       expect(result.success).toBe(true);
       expect(mockCourse.tuition_meta.subjects[0].syllabus.length).toBe(1);
-      expect(mockCourse.tuition_meta.subjects[0].syllabus[0].title).toBe('Chapter 1');
+      expect(mockCourse.tuition_meta.subjects[0].syllabus[0].title).toBe(
+        'Chapter 1',
+      );
       expect(mockCourse.curriculum).toEqual(topLevelCurriculum); // Ensure untreated
       expect(mockSave).toHaveBeenCalled();
     });
@@ -122,15 +149,24 @@ describe('TeacherTuitionService', () => {
       const subjectId = new Types.ObjectId().toString();
       const sectionId = new Types.ObjectId().toString();
       const mockSave = jest.fn();
-      
+
       const mockCourse = {
         curriculum: [],
         tuition_meta: {
-          subjects: [{
-            subject_id: subjectId,
-            lead_instructor_id: 't1',
-            syllabus: [{ section_id: sectionId, title: 'Old Title', order: 0, lessons: [] }]
-          }]
+          subjects: [
+            {
+              subject_id: subjectId,
+              lead_instructor_id: 't1',
+              syllabus: [
+                {
+                  section_id: sectionId,
+                  title: 'Old Title',
+                  order: 0,
+                  lessons: [],
+                },
+              ],
+            },
+          ],
         },
         save: mockSave,
       };
@@ -139,9 +175,13 @@ describe('TeacherTuitionService', () => {
         exec: jest.fn().mockResolvedValue(mockCourse),
       });
 
-      const result = await service.updateSection(subjectId, 't1', sectionId, { title: 'New Title' });
+      const result = await service.updateSection(subjectId, 't1', sectionId, {
+        title: 'New Title',
+      });
       expect(result.success).toBe(true);
-      expect(mockCourse.tuition_meta.subjects[0].syllabus[0].title).toBe('New Title');
+      expect(mockCourse.tuition_meta.subjects[0].syllabus[0].title).toBe(
+        'New Title',
+      );
       expect(mockSave).toHaveBeenCalled();
     });
   });
@@ -151,15 +191,19 @@ describe('TeacherTuitionService', () => {
       const subjectId = new Types.ObjectId().toString();
       const sectionId = new Types.ObjectId().toString();
       const mockSave = jest.fn();
-      
+
       const mockCourse = {
         curriculum: [],
         tuition_meta: {
-          subjects: [{
-            subject_id: subjectId,
-            lead_instructor_id: 't1',
-            syllabus: [{ section_id: sectionId, title: 'Chapter 1', lessons: [] }]
-          }]
+          subjects: [
+            {
+              subject_id: subjectId,
+              lead_instructor_id: 't1',
+              syllabus: [
+                { section_id: sectionId, title: 'Chapter 1', lessons: [] },
+              ],
+            },
+          ],
         },
         save: mockSave,
       };
@@ -168,7 +212,11 @@ describe('TeacherTuitionService', () => {
         exec: jest.fn().mockResolvedValue(mockCourse),
       });
 
-      const result = await service.addLesson(subjectId, 't1', sectionId, { title: 'Lesson A', type: 'video', duration_minutes: 10 } as any);
+      const result = await service.addLesson(subjectId, 't1', sectionId, {
+        title: 'Lesson A',
+        type: 'video',
+        duration_minutes: 10,
+      } as any);
       expect(result.success).toBe(true);
       const section = mockCourse.tuition_meta.subjects[0].syllabus[0];
       expect(section.lessons.length).toBe(1);
@@ -183,24 +231,36 @@ describe('TeacherTuitionService', () => {
       const sectionId = new Types.ObjectId().toString();
       const lessonId = new Types.ObjectId().toString();
       const mockSave = jest.fn();
-      const topLevelCurriculum = [{ section_id: 'top1', title: 'Top level', lessons: [{ lesson_id: 'l1', title: 'Top Lesson' }] }];
-      
+      const topLevelCurriculum = [
+        {
+          section_id: 'top1',
+          title: 'Top level',
+          lessons: [{ lesson_id: 'l1', title: 'Top Lesson' }],
+        },
+      ];
+
       const mockCourse = {
         curriculum: [...topLevelCurriculum],
         tuition_meta: {
-          subjects: [{
-            subject_id: subjectId,
-            lead_instructor_id: 't1',
-            syllabus: [{
-              section_id: sectionId,
-              lessons: [{
-                lesson_id: lessonId,
-                title: 'Lesson 1',
-                type: 'video',
-                content: { video_id: new Types.ObjectId() }
-              }]
-            }]
-          }]
+          subjects: [
+            {
+              subject_id: subjectId,
+              lead_instructor_id: 't1',
+              syllabus: [
+                {
+                  section_id: sectionId,
+                  lessons: [
+                    {
+                      lesson_id: lessonId,
+                      title: 'Lesson 1',
+                      type: 'video',
+                      content: { video_id: new Types.ObjectId() },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
         },
         save: mockSave,
       };
@@ -210,10 +270,17 @@ describe('TeacherTuitionService', () => {
       });
 
       const updateDto = { title: 'New Lesson Title' } as any;
-      const result = await service.updateLesson(subjectId, 't1', sectionId, lessonId, updateDto);
+      const result = await service.updateLesson(
+        subjectId,
+        't1',
+        sectionId,
+        lessonId,
+        updateDto,
+      );
 
       expect(result.success).toBe(true);
-      const updatedLesson = mockCourse.tuition_meta.subjects[0].syllabus[0].lessons[0];
+      const updatedLesson =
+        mockCourse.tuition_meta.subjects[0].syllabus[0].lessons[0];
       expect(updatedLesson.title).toBe('New Lesson Title');
       expect(updatedLesson.type).toBe('video'); // preserved natively
       expect(updatedLesson.content.video_id).toBeDefined(); // preserved natively
@@ -226,11 +293,25 @@ describe('TeacherTuitionService', () => {
     it('should throw BadRequestException mapping invalid target inputs natively', async () => {
       const validClassId = new Types.ObjectId().toString();
       const validSectionId = new Types.ObjectId().toString();
-      
-      await expect(service.getSubjectTeachingView('bad_subject', 't1')).rejects.toThrow(BadRequestException);
-      await expect(service.updateSection(validClassId, 't1', 'bad_section', {})).rejects.toThrow(BadRequestException);
-      await expect(service.addLesson(validClassId, 't1', 'bad_section', {} as any)).rejects.toThrow(BadRequestException);
-      await expect(service.updateLesson(validClassId, 't1', validSectionId, 'bad_lesson', {} as any)).rejects.toThrow(BadRequestException);
+
+      await expect(
+        service.getSubjectTeachingView('bad_subject', 't1'),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.updateSection(validClassId, 't1', 'bad_section', {}),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.addLesson(validClassId, 't1', 'bad_section', {} as any),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.updateLesson(
+          validClassId,
+          't1',
+          validSectionId,
+          'bad_lesson',
+          {} as any,
+        ),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

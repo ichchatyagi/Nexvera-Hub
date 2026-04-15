@@ -19,6 +19,8 @@ import {
 import { LiveClassesService } from './live-classes.service';
 import { AppConfigService } from '../app-config/app-config.service';
 import { SendChatMessageDto } from './dto/live-class-chat.dto';
+import { EnrollmentsService } from '../enrollments/enrollments.service';
+import { UserRole } from '../users/entities/user.entity';
 
 interface JwtPayload {
   sub: string;
@@ -44,7 +46,9 @@ interface WhiteboardDrawEvent {
   namespace: '/ws/live-classes',
   cors: { origin: true, credentials: true },
 })
-export class LiveClassesGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class LiveClassesGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
@@ -56,6 +60,7 @@ export class LiveClassesGateway implements OnGatewayConnection, OnGatewayDisconn
     private readonly liveClassesService: LiveClassesService,
     private readonly jwtService: JwtService,
     private readonly appConfig: AppConfigService,
+    private readonly enrollmentsService: EnrollmentsService,
   ) {}
 
   // Temporary in-memory state for whiteboard history (per session)
@@ -83,10 +88,12 @@ export class LiveClassesGateway implements OnGatewayConnection, OnGatewayDisconn
       // Only allow socket connection when at least one interactive feature is enabled
       const features = lc.features || {};
       if (!features.chat_enabled && !features.whiteboard_enabled) {
+        client.emit('error', 'INTERACTIVE_FEATURES_DISABLED');
         client.disconnect(true);
         return;
       }
       if (lc.status === 'cancelled' || lc.status === 'ended') {
+        client.emit('error', 'CLASS_NOT_ACTIVE');
         client.disconnect(true);
         return;
       }
@@ -98,7 +105,21 @@ export class LiveClassesGateway implements OnGatewayConnection, OnGatewayDisconn
         liveClassId: String(liveClassId),
       };
 
-      (client.data as any) = data;
+      // Security check: Student must be enrolled
+      if (data.userRole === UserRole.STUDENT) {
+        const isEnrolled =
+          await this.enrollmentsService.isActiveCourseEnrollment(
+            lc.course_id.toString(),
+            data.userId,
+          );
+        if (!isEnrolled) {
+          client.emit('error', 'NOT_ENROLLED');
+          client.disconnect(true);
+          return;
+        }
+      }
+
+      client.data = data;
 
       // Join room for this live class
       client.join(data.liveClassId);
@@ -134,7 +155,26 @@ export class LiveClassesGateway implements OnGatewayConnection, OnGatewayDisconn
     if (!data || !dto.message?.trim()) return;
 
     const lc = await this.liveClassesService.findById(data.liveClassId);
-    if (!lc.features?.chat_enabled) return;
+    if (
+      !lc.features?.chat_enabled ||
+      lc.status === 'cancelled' ||
+      lc.status === 'ended'
+    ) {
+      return;
+    }
+
+    // Secondary security check
+    if (data.userRole === UserRole.STUDENT) {
+      const isEnrolled = await this.enrollmentsService.isActiveCourseEnrollment(
+        lc.course_id.toString(),
+        data.userId,
+      );
+      if (!isEnrolled) {
+        client.emit('error', 'NOT_ENROLLED');
+        client.disconnect(true);
+        return;
+      }
+    }
 
     const doc = await this.messageModel.create({
       live_class_id: new Types.ObjectId(data.liveClassId),
@@ -161,6 +201,15 @@ export class LiveClassesGateway implements OnGatewayConnection, OnGatewayDisconn
   async handleChatHistory(@ConnectedSocket() client: Socket) {
     const data = client.data as LiveClassClientData | undefined;
     if (!data) return;
+
+    const lc = await this.liveClassesService.findById(data.liveClassId);
+    if (
+      !lc.features?.chat_enabled ||
+      lc.status === 'cancelled' ||
+      lc.status === 'ended'
+    ) {
+      return;
+    }
 
     const recent = await this.messageModel
       .find({ live_class_id: new Types.ObjectId(data.liveClassId) })

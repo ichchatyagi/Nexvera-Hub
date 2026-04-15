@@ -6,8 +6,14 @@ import { AnalyticsController } from './analytics.controller';
 import { User } from '../users/entities/user.entity';
 import { Transaction } from '../payments/entities/transaction.entity';
 import { Course, CourseSchema } from '../courses/schemas/course.schema';
-import { Enrollment, EnrollmentSchema } from '../enrollments/schemas/enrollment.schema';
-import { LiveClass, LiveClassSchema } from '../live-classes/schemas/live-class.schema';
+import {
+  Enrollment,
+  EnrollmentSchema,
+} from '../enrollments/schemas/enrollment.schema';
+import {
+  LiveClass,
+  LiveClassSchema,
+} from '../live-classes/schemas/live-class.schema';
 
 @Module({
   imports: [

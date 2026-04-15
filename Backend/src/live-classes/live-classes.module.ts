@@ -12,6 +12,7 @@ import { AdminLiveClassesController } from './admin-live-classes.controller';
 import { AppConfigModule } from '../app-config/app-config.module';
 import { AuthModule } from '../auth/auth.module';
 import { VideosModule } from '../videos/videos.module';
+import { EnrollmentsModule } from '../enrollments/enrollments.module';
 
 @Module({
   imports: [
@@ -22,10 +23,10 @@ import { VideosModule } from '../videos/videos.module';
     AppConfigModule,
     AuthModule,
     VideosModule,
+    EnrollmentsModule,
   ],
   providers: [LiveClassesService, LiveClassesGateway],
   controllers: [LiveClassesController, AdminLiveClassesController],
   exports: [LiveClassesService],
 })
 export class LiveClassesModule {}
-

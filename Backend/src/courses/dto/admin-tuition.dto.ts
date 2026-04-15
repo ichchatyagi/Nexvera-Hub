@@ -8,7 +8,7 @@ import {
   Max,
   IsBoolean,
   IsIn,
-  IsArray
+  IsArray,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { TuitionPricingDto, CourseLevel } from './course.dto';

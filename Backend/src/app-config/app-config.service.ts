@@ -192,4 +192,41 @@ export class AppConfigService {
       this.configService.get<string>('VIDEO_PROCESSING_WEBHOOK_SECRET') || ''
     );
   }
+
+  /** Netless App Identifier (used by frontend SDK) */
+  get agoraWhiteboardAppId(): string {
+    return this.configService.get<string>('AGORA_WHITEBOARD_APP_ID') || '';
+  }
+
+  /**
+   * Netless SDK Token (used by backend for REST API calls).
+   * Should be a "SDK Token" generated from Netless Console.
+   */
+  get agoraWhiteboardAppSecret(): string {
+    return this.configService.get<string>('AGORA_WHITEBOARD_APP_SECRET') || '';
+  }
+
+  /**
+   * Toggle to use Agora whiteboard instead of custom Socket.IO whiteboard.
+   * "true" → use Agora; otherwise fallback to custom implementation.
+   */
+  get useAgoraWhiteboard(): boolean {
+    const raw =
+      this.configService.get<string>('USE_AGORA_WHITEBOARD') || 'false';
+    return raw.toLowerCase() === 'true';
+  }
+
+  get agoraWhiteboardTokenTtlSeconds(): number {
+    const raw = this.configService.get<number | string>(
+      'AGORA_WHITEBOARD_TOKEN_TTL_SECONDS',
+    );
+    const parsed = typeof raw === 'string' ? parseInt(raw, 10) : raw;
+    return Number.isFinite(parsed) && (parsed as number) > 0
+      ? (parsed as number)
+      : 3600; // default 1 hour
+  }
+
+  get agoraWhiteboardRegion(): string {
+    return this.configService.get<string>('AGORA_WHITEBOARD_REGION') || 'cn-hz';
+  }
 }

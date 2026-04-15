@@ -216,8 +216,11 @@ export class VideosController {
    */
   @UseGuards(JwtAuthGuard)
   @Get(':id/playback')
-  getPlayback(@Param('id') id: string) {
-    return this.videosService.getPlaybackMetadata(id);
+  getPlayback(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.videosService.getPlaybackMetadata(id, {
+      id: user.id,
+      role: user.role,
+    });
   }
 
   /**

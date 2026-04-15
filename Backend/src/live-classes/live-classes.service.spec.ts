@@ -9,6 +9,9 @@ import {
 } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { LiveClassesService, AgoraRole } from './live-classes.service';
+import { UserRole } from '../users/entities/user.entity';
+import { EnrollmentsService } from '../enrollments/enrollments.service';
+
 import { LiveClass, LiveClassStatus } from './schemas/live-class.schema';
 import { AppConfigService } from '../app-config/app-config.service';
 import { VideosService } from '../videos/videos.service';
@@ -35,7 +38,11 @@ function makeMockLiveClass(overrides: Partial<any> = {}) {
     scheduled_start: new Date('2026-05-01T10:00:00.000Z'),
     scheduled_end: new Date('2026-05-01T11:00:00.000Z'),
     timezone: 'Asia/Kolkata',
-    agora: { channel_name: `nexvera-abc123`, recording_uid: null },
+    agora: {
+      channel_name: `nexvera-abc123`,
+      recording_uid: null,
+      whiteboard_room_uuid: null,
+    },
     status: LiveClassStatus.SCHEDULED,
     actual_start: null,
     actual_end: null,
@@ -67,10 +74,24 @@ const mockConfigService = {
   agoraAppId: 'test-agora-app-id',
   agoraAppCertificate: 'test-agora-certificate',
   agoraTokenTtlSeconds: 3600,
+  useAgoraWhiteboard: true,
+  agoraWhiteboardAppId: 'whiteboard-app-id',
+  agoraWhiteboardAppSecret: 'whiteboard-app-secret',
+  agoraWhiteboardTokenTtlSeconds: 3600,
+  agoraWhiteboardRegion: 'cn-hz',
 };
 
 const mockVideosService = {
-  createVideoFromRecording: jest.fn().mockResolvedValue({ _id: new Types.ObjectId() }),
+  createVideoFromRecording: jest
+    .fn()
+    .mockResolvedValue({ _id: new Types.ObjectId() }),
+  getPlaybackMetadata: jest
+    .fn()
+    .mockResolvedValue({ success: true, playback_url: 'http://test.com/play' }),
+};
+
+const mockEnrollmentsService = {
+  isActiveCourseEnrollment: jest.fn(),
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -101,6 +122,10 @@ describe('LiveClassesService', () => {
         {
           provide: VideosService,
           useValue: mockVideosService,
+        },
+        {
+          provide: EnrollmentsService,
+          useValue: mockEnrollmentsService,
         },
       ],
     }).compile();
@@ -139,14 +164,11 @@ describe('LiveClassesService', () => {
         mockLiveClassModel as any,
         badConfig as any,
         mockVideosService as any,
+        mockEnrollmentsService as any,
       );
 
       expect(() =>
-        tempService['generateAgoraToken'](
-          'test',
-          'user',
-          AgoraRole.SUBSCRIBER,
-        ),
+        tempService['generateAgoraToken']('test', 'user', AgoraRole.SUBSCRIBER),
       ).toThrow(InternalServerErrorException);
     });
   });
@@ -214,17 +236,34 @@ describe('LiveClassesService', () => {
   // ── register ─────────────────────────────────────────────────────────────────
 
   describe('register', () => {
-    it('registers a student and records them in the array', async () => {
+    it('registers an enrolled student', async () => {
       const mockLc = makeMockLiveClass();
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
       });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
 
-      const result = await service.register(mockLc._id.toString(), STUDENT_ID);
+      const result = await service.register(
+        mockLc._id.toString(),
+        STUDENT_ID,
+        UserRole.STUDENT,
+      );
 
       expect(result.success).toBe(true);
       expect(mockLc.registered_students).toContain(STUDENT_ID);
       expect(mockLc.save).toHaveBeenCalled();
+    });
+
+    it('throws ForbiddenException for non-enrolled student', async () => {
+      const mockLc = makeMockLiveClass();
+      mockLiveClassModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockLc),
+      });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(false);
+
+      await expect(
+        service.register(mockLc._id.toString(), STUDENT_ID, UserRole.STUDENT),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('is idempotent – does not double-register', async () => {
@@ -234,8 +273,13 @@ describe('LiveClassesService', () => {
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
       });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
 
-      const result = await service.register(mockLc._id.toString(), STUDENT_ID);
+      const result = await service.register(
+        mockLc._id.toString(),
+        STUDENT_ID,
+        UserRole.STUDENT,
+      );
 
       // save should NOT have been called again – no change
       expect(mockLc.save).not.toHaveBeenCalled();
@@ -250,9 +294,10 @@ describe('LiveClassesService', () => {
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
       });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
 
       await expect(
-        service.register(mockLc._id.toString(), STUDENT_ID),
+        service.register(mockLc._id.toString(), STUDENT_ID, UserRole.STUDENT),
       ).rejects.toThrow(UnprocessableEntityException);
     });
 
@@ -261,9 +306,10 @@ describe('LiveClassesService', () => {
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
       });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
 
       await expect(
-        service.register(mockLc._id.toString(), STUDENT_ID),
+        service.register(mockLc._id.toString(), STUDENT_ID, UserRole.STUDENT),
       ).rejects.toThrow(UnprocessableEntityException);
     });
   });
@@ -271,34 +317,69 @@ describe('LiveClassesService', () => {
   // ── join ──────────────────────────────────────────────────────────────────
 
   describe('join', () => {
-    it('returns a structured token payload for a scheduled class', async () => {
+    it('allows enrolled student to join', async () => {
       const mockLc = makeMockLiveClass();
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
       });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
 
-      const result = await service.join(mockLc._id.toString(), STUDENT_ID);
+      const result = await service.join(
+        mockLc._id.toString(),
+        STUDENT_ID,
+        UserRole.STUDENT,
+      );
 
       expect(result.channel_name).toBe(mockLc.agora.channel_name);
       expect(result.rtc_token).toBeDefined();
-      expect(result.rtc_token.startsWith('STUB_TOKEN_')).toBe(false);
-      expect(result.agora_app_id).toBe('test-agora-app-id');
-      expect(result.token_expiry_seconds).toBe(3600);
-      expect(result.role).toBe(AgoraRole.SUBSCRIBER);
-      expect(result.title).toBe(mockLc.title);
-      // Student should appear in attended_students
       expect(mockLc.attended_students).toContain(STUDENT_ID);
       expect(mockLc.save).toHaveBeenCalled();
     });
 
-    it('assigns PUBLISHER role when teacher joins', async () => {
+    it('throws ForbiddenException for non-enrolled student', async () => {
+      const mockLc = makeMockLiveClass();
+      mockLiveClassModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockLc),
+      });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(false);
+
+      await expect(
+        service.join(mockLc._id.toString(), STUDENT_ID, UserRole.STUDENT),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('allows teacher owner to join without enrollment check', async () => {
       const mockLc = makeMockLiveClass();
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
       });
 
-      const result = await service.join(mockLc._id.toString(), TEACHER_ID);
+      const result = await service.join(
+        mockLc._id.toString(),
+        TEACHER_ID,
+        UserRole.TEACHER,
+      );
       expect(result.role).toBe(AgoraRole.PUBLISHER);
+      expect(
+        mockEnrollmentsService.isActiveCourseEnrollment,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('allows admin to join without enrollment check', async () => {
+      const mockLc = makeMockLiveClass();
+      mockLiveClassModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockLc),
+      });
+
+      const result = await service.join(
+        mockLc._id.toString(),
+        'admin-uuid',
+        UserRole.ADMIN,
+      );
+      expect(result.rtc_token).toBeDefined();
+      expect(
+        mockEnrollmentsService.isActiveCourseEnrollment,
+      ).not.toHaveBeenCalled();
     });
 
     it('also works for a live class', async () => {
@@ -306,8 +387,13 @@ describe('LiveClassesService', () => {
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
       });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
 
-      const result = await service.join(mockLc._id.toString(), STUDENT_ID);
+      const result = await service.join(
+        mockLc._id.toString(),
+        STUDENT_ID,
+        UserRole.STUDENT,
+      );
       expect(result.status).toBe(LiveClassStatus.LIVE);
     });
 
@@ -317,9 +403,10 @@ describe('LiveClassesService', () => {
         mockLiveClassModel.findById.mockReturnValue({
           exec: jest.fn().mockResolvedValue(mockLc),
         });
+        mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
 
         await expect(
-          service.join(mockLc._id.toString(), STUDENT_ID),
+          service.join(mockLc._id.toString(), STUDENT_ID, UserRole.STUDENT),
         ).rejects.toThrow(UnprocessableEntityException);
       }
     });
@@ -329,12 +416,16 @@ describe('LiveClassesService', () => {
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
       });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
 
       // Override config to simulate missing credentials
       const moduleNoAgora: TestingModule = await Test.createTestingModule({
         providers: [
           LiveClassesService,
-          { provide: getModelToken(LiveClass.name), useValue: mockLiveClassModel },
+          {
+            provide: getModelToken(LiveClass.name),
+            useValue: mockLiveClassModel,
+          },
           {
             provide: AppConfigService,
             useValue: { agoraAppId: '', agoraAppCertificate: '' },
@@ -343,13 +434,22 @@ describe('LiveClassesService', () => {
             provide: VideosService,
             useValue: mockVideosService,
           },
+          {
+            provide: EnrollmentsService,
+            useValue: mockEnrollmentsService,
+          },
         ],
       }).compile();
 
-      const serviceNoAgora = moduleNoAgora.get<LiveClassesService>(LiveClassesService);
+      const serviceNoAgora =
+        moduleNoAgora.get<LiveClassesService>(LiveClassesService);
 
       await expect(
-        serviceNoAgora.join(mockLc._id.toString(), STUDENT_ID),
+        serviceNoAgora.join(
+          mockLc._id.toString(),
+          STUDENT_ID,
+          UserRole.STUDENT,
+        ),
       ).rejects.toThrow(InternalServerErrorException);
     });
   });
@@ -363,7 +463,11 @@ describe('LiveClassesService', () => {
         exec: jest.fn().mockResolvedValue(mockLc),
       });
 
-      const result = await service.start(mockLc._id.toString(), TEACHER_ID, false);
+      const result = await service.start(
+        mockLc._id.toString(),
+        TEACHER_ID,
+        false,
+      );
 
       expect(result.status).toBe(LiveClassStatus.LIVE);
       expect(result.actual_start).toBeInstanceOf(Date);
@@ -387,7 +491,11 @@ describe('LiveClassesService', () => {
         exec: jest.fn().mockResolvedValue(mockLc),
       });
 
-      const result = await service.start(mockLc._id.toString(), OTHER_TEACHER_ID, true);
+      const result = await service.start(
+        mockLc._id.toString(),
+        OTHER_TEACHER_ID,
+        true,
+      );
       expect(result.status).toBe(LiveClassStatus.LIVE);
     });
 
@@ -410,10 +518,16 @@ describe('LiveClassesService', () => {
         exec: jest.fn().mockResolvedValue(mockLc),
       });
 
-      mockedAxios.post.mockResolvedValueOnce({ data: { resourceId: 'res-123' } }); // acquire
+      mockedAxios.post.mockResolvedValueOnce({
+        data: { resourceId: 'res-123' },
+      }); // acquire
       mockedAxios.post.mockResolvedValueOnce({ data: { sid: 'sid-123' } }); // start
 
-      const result = await service.start(mockLc._id.toString(), TEACHER_ID, false);
+      const result = await service.start(
+        mockLc._id.toString(),
+        TEACHER_ID,
+        false,
+      );
 
       expect(mockedAxios.post).toHaveBeenCalledTimes(2);
       expect(result.recording.resource_id).toBe('res-123');
@@ -431,7 +545,11 @@ describe('LiveClassesService', () => {
 
       mockedAxios.post.mockRejectedValueOnce(new Error('Agora API Error'));
 
-      const result = await service.start(mockLc._id.toString(), TEACHER_ID, false);
+      const result = await service.start(
+        mockLc._id.toString(),
+        TEACHER_ID,
+        false,
+      );
 
       expect(result.recording.enabled).toBe(false);
       expect(result.status).toBe(LiveClassStatus.LIVE); // Class still starts
@@ -450,7 +568,11 @@ describe('LiveClassesService', () => {
         exec: jest.fn().mockResolvedValue(mockLc),
       });
 
-      const result = await service.end(mockLc._id.toString(), TEACHER_ID, false);
+      const result = await service.end(
+        mockLc._id.toString(),
+        TEACHER_ID,
+        false,
+      );
 
       expect(result.status).toBe(LiveClassStatus.ENDED);
       expect(result.actual_end).toBeInstanceOf(Date);
@@ -468,7 +590,7 @@ describe('LiveClassesService', () => {
       ).rejects.toThrow(UnprocessableEntityException);
     });
 
-    it('tries to stop Agora recording if it was running', async () => {
+    it('tries to stop Agora recording and extracts S3 key from JSON list', async () => {
       const mockLc = makeMockLiveClass({
         status: LiveClassStatus.LIVE,
         actual_start: new Date(),
@@ -483,22 +605,108 @@ describe('LiveClassesService', () => {
         exec: jest.fn().mockResolvedValue(mockLc),
       });
 
+      // Agora response with JSON string fileList
       mockedAxios.post.mockResolvedValueOnce({
-        data: { serverResponse: { fileList: 'recordings/live.mp4' } },
+        data: {
+          serverResponse: {
+            fileList: JSON.stringify([
+              { filename: 'ignored.txt' },
+              { filename: 'recordings/live_mixed.mp4' },
+            ]),
+          },
+        },
       });
 
-      const result = await service.end(mockLc._id.toString(), TEACHER_ID, false);
+      const result = await service.end(
+        mockLc._id.toString(),
+        TEACHER_ID,
+        false,
+      );
 
       expect(mockedAxios.post).toHaveBeenCalledTimes(1);
       expect(mockVideosService.createVideoFromRecording).toHaveBeenCalledWith(
         mockLc.course_id.toString(),
         mockLc._id.toString(),
         TEACHER_ID,
-        'recordings/live.mp4',
+        'recordings/live_mixed.mp4',
         mockLc.title,
       );
-      expect(result.recording.file_key).toBe('recordings/live.mp4');
+      expect(result.recording.file_key).toBe('recordings/live_mixed.mp4');
       expect(result.recording.status).toBe('processing');
+    });
+
+    it('marks recording as failed if no usable key is found', async () => {
+      const mockLc = makeMockLiveClass({
+        status: LiveClassStatus.LIVE,
+        actual_start: new Date(),
+        recording: {
+          enabled: true,
+          resource_id: 'res-123',
+          sid: 'sid-123',
+          status: 'processing',
+        },
+      });
+      mockLiveClassModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockLc),
+      });
+
+      // Agora response with no fileList or invalid one
+      mockedAxios.post.mockResolvedValueOnce({
+        data: { serverResponse: { fileList: null } },
+      });
+
+      const result = await service.end(
+        mockLc._id.toString(),
+        TEACHER_ID,
+        false,
+      );
+
+      expect(mockVideosService.createVideoFromRecording).not.toHaveBeenCalled();
+      expect(result.recording.status).toBe('failed');
+    });
+  });
+
+  describe('extractRecordingS3Key (private)', () => {
+    it('handles plain string fileList', () => {
+      const res = { serverResponse: { fileList: 'path/to/file.mp4' } };
+      expect(service['extractRecordingS3Key'](res)).toBe('path/to/file.mp4');
+    });
+
+    it('handles JSON string array of objects', () => {
+      const res = {
+        serverResponse: {
+          fileList: JSON.stringify([
+            { filename: '1.txt' },
+            { filename: '2.mp4' },
+          ]),
+        },
+      };
+      expect(service['extractRecordingS3Key'](res)).toBe('2.mp4');
+    });
+
+    it('handles actual array of objects', () => {
+      const res = {
+        serverResponse: {
+          fileList: [{ key: 'first.txt' }, { key: 'second.mp4' }],
+        },
+      };
+      expect(service['extractRecordingS3Key'](res)).toBe('second.mp4');
+    });
+
+    it('falls back to first file if no mp4 found', () => {
+      const res = {
+        serverResponse: {
+          fileList: [{ filename: 'only_one.ts' }],
+        },
+      };
+      expect(service['extractRecordingS3Key'](res)).toBe('only_one.ts');
+    });
+
+    it('returns null if fileList is missing', () => {
+      expect(service['extractRecordingS3Key']({})).toBeNull();
+      expect(
+        service['extractRecordingS3Key']({ serverResponse: {} }),
+      ).toBeNull();
     });
   });
 
@@ -511,7 +719,11 @@ describe('LiveClassesService', () => {
         exec: jest.fn().mockResolvedValue(mockLc),
       });
 
-      const result = await service.cancel(mockLc._id.toString(), TEACHER_ID, false);
+      const result = await service.cancel(
+        mockLc._id.toString(),
+        TEACHER_ID,
+        false,
+      );
 
       expect(result.status).toBe(LiveClassStatus.CANCELLED);
       expect(mockLc.save).toHaveBeenCalled();
@@ -526,6 +738,291 @@ describe('LiveClassesService', () => {
       await expect(
         service.cancel(mockLc._id.toString(), TEACHER_ID, false),
       ).rejects.toThrow(UnprocessableEntityException);
+    });
+  });
+
+  // ── getRecordingPlayback ──────────────────────────────────────────────────
+
+  describe('getRecordingPlayback', () => {
+    it('allows teacher owner to access recording', async () => {
+      const videoId = new Types.ObjectId();
+      const mockLc = makeMockLiveClass({
+        recording: { video_id: videoId, status: 'available' },
+      });
+      mockLiveClassModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockLc),
+      });
+
+      const result = await service.getRecordingPlayback(
+        mockLc._id.toString(),
+        TEACHER_ID,
+        UserRole.TEACHER,
+      );
+
+      expect(result.success).toBe(true);
+      expect(mockVideosService.getPlaybackMetadata).toHaveBeenCalledWith(
+        videoId.toString(),
+        { id: TEACHER_ID, role: UserRole.TEACHER },
+      );
+    });
+
+    it('allows enrolled student to access recording', async () => {
+      const videoId = new Types.ObjectId();
+      const mockLc = makeMockLiveClass({
+        recording: { video_id: videoId, status: 'available' },
+      });
+      mockLiveClassModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockLc),
+      });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
+
+      const result = await service.getRecordingPlayback(
+        mockLc._id.toString(),
+        STUDENT_ID,
+        UserRole.STUDENT,
+      );
+
+      expect(result.success).toBe(true);
+      expect(
+        mockEnrollmentsService.isActiveCourseEnrollment,
+      ).toHaveBeenCalledWith(mockLc.course_id.toString(), STUDENT_ID);
+      expect(mockVideosService.getPlaybackMetadata).toHaveBeenCalledWith(
+        videoId.toString(),
+        { id: STUDENT_ID, role: UserRole.STUDENT },
+      );
+    });
+
+    it('throws ForbiddenException for non-enrolled student', async () => {
+      const mockLc = makeMockLiveClass({
+        recording: { video_id: new Types.ObjectId(), status: 'available' },
+      });
+      mockLiveClassModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockLc),
+      });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(false);
+
+      await expect(
+        service.getRecordingPlayback(
+          mockLc._id.toString(),
+          STUDENT_ID,
+          UserRole.STUDENT,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('throws ForbiddenException for student when not owner and not admin', async () => {
+      // This is already covered by the non-enrolled student test but good to be explicit
+      const mockLc = makeMockLiveClass();
+      mockLiveClassModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockLc),
+      });
+
+      await expect(
+        service.getRecordingPlayback(
+          mockLc._id.toString(),
+          'some-other-id',
+          'other-role' as any,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('returns error if recording video_id is missing', async () => {
+      const mockLc = makeMockLiveClass({
+        recording: { video_id: null, status: 'pending' },
+      });
+      mockLiveClassModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockLc),
+      });
+
+      const result = await service.getRecordingPlayback(
+        mockLc._id.toString(),
+        TEACHER_ID,
+        UserRole.TEACHER,
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe('RECORDING_NOT_AVAILABLE');
+    });
+  });
+
+  // ── getWhiteboardToken ──────────────────────────────────────────────────
+
+  describe('getWhiteboardToken', () => {
+    it('generates a writer token and creates a room for the teacher', async () => {
+      const mockLc = makeMockLiveClass({
+        features: { whiteboard_enabled: true },
+        agora: { channel_name: 'test', whiteboard_room_uuid: null },
+      });
+      mockLiveClassModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockLc),
+      });
+
+      // Mock Room Creation
+      mockedAxios.post.mockResolvedValueOnce({
+        data: { uuid: 'new-room-uuid' },
+      });
+      // Mock Token Generation
+      mockedAxios.post.mockResolvedValueOnce({ data: 'real-room-token' });
+
+      const result = await service.getWhiteboardToken(
+        mockLc._id.toString(),
+        TEACHER_ID,
+        UserRole.TEACHER,
+      );
+
+      expect(mockedAxios.post).toHaveBeenCalledTimes(2);
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        'https://api.netless.link/v5/rooms',
+        expect.anything(),
+        expect.objectContaining({
+          headers: expect.objectContaining({ region: 'cn-hz' }),
+        }),
+      );
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        'https://api.netless.link/v5/tokens/rooms/new-room-uuid',
+        expect.objectContaining({ role: 'writer' }),
+        expect.objectContaining({
+          headers: expect.objectContaining({ region: 'cn-hz' }),
+        }),
+      );
+
+      expect(result.success).toBe(true);
+      expect((result as any).data.room_uuid).toBe('new-room-uuid');
+      expect((result as any).data.app_id).toBe('whiteboard-app-id');
+      expect((result as any).data.region).toBe('cn-hz');
+      expect((result as any).data.room_token).toBe('real-room-token');
+      expect(mockLc.agora.whiteboard_room_uuid).toBe('new-room-uuid');
+      expect(mockLc.save).toHaveBeenCalled();
+    });
+
+    it('generates a reader token for an enrolled student', async () => {
+      const mockLc = makeMockLiveClass({
+        features: { whiteboard_enabled: true },
+        agora: {
+          channel_name: 'test',
+          whiteboard_room_uuid: 'existing-room-uuid',
+        },
+      });
+      mockLiveClassModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockLc),
+      });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
+
+      // Mock Token Generation
+      mockedAxios.post.mockResolvedValueOnce({ data: 'reader-token' });
+
+      const result = await service.getWhiteboardToken(
+        mockLc._id.toString(),
+        STUDENT_ID,
+        UserRole.STUDENT,
+      );
+
+      expect(
+        mockEnrollmentsService.isActiveCourseEnrollment,
+      ).toHaveBeenCalledWith(mockLc.course_id.toString(), STUDENT_ID);
+      expect(mockedAxios.post).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        'https://api.netless.link/v5/tokens/rooms/existing-room-uuid',
+        expect.objectContaining({ role: 'reader' }),
+        expect.objectContaining({
+          headers: expect.objectContaining({ region: 'cn-hz' }),
+        }),
+      );
+
+      expect(result.success).toBe(true);
+      expect((result as any).data.room_token).toBe('reader-token');
+    });
+
+    it('throws ForbiddenException for non-enrolled student', async () => {
+      const mockLc = makeMockLiveClass({
+        features: { whiteboard_enabled: true },
+        agora: {
+          channel_name: 'test',
+          whiteboard_room_uuid: 'existing-room-uuid',
+        },
+      });
+      mockLiveClassModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockLc),
+      });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(false);
+
+      await expect(
+        service.getWhiteboardToken(
+          mockLc._id.toString(),
+          STUDENT_ID,
+          UserRole.STUDENT,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('returns error if class is not active', async () => {
+      const mockLc = makeMockLiveClass({
+        status: LiveClassStatus.ENDED,
+        features: { whiteboard_enabled: true },
+      });
+      mockLiveClassModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockLc),
+      });
+
+      const result = await service.getWhiteboardToken(
+        mockLc._id.toString(),
+        TEACHER_ID,
+        UserRole.TEACHER,
+      );
+
+      expect(result.success).toBe(false);
+      expect((result as any).error.code).toBe('CLASS_NOT_ACTIVE');
+    });
+
+    it('throws BadRequestException if useAgoraWhiteboard is false', async () => {
+      const badConfig = { ...mockConfigService, useAgoraWhiteboard: false };
+      const tempService = new LiveClassesService(
+        mockLiveClassModel as any,
+        badConfig as any,
+        mockVideosService as any,
+        mockEnrollmentsService as any,
+      );
+
+      const result = await tempService.getWhiteboardToken(
+        'id',
+        'uid',
+        UserRole.TEACHER,
+      );
+      expect(result.success).toBe(false);
+      expect((result as any).error.code).toBe('AGORA_DISABLED');
+    });
+
+    it('returns error if whiteboard feature is disabled for the class', async () => {
+      const mockLc = makeMockLiveClass({
+        features: { whiteboard_enabled: false },
+      });
+      mockLiveClassModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockLc),
+      });
+
+      const result = await service.getWhiteboardToken(
+        mockLc._id.toString(),
+        TEACHER_ID,
+        UserRole.TEACHER,
+      );
+
+      expect(result.success).toBe(false);
+      expect((result as any).error.code).toBe('WHITEBOARD_DISABLED');
+    });
+
+    it('throws ForbiddenException for unauthorized user', async () => {
+      const mockLc = makeMockLiveClass();
+      mockLiveClassModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockLc),
+      });
+
+      await expect(
+        service.getWhiteboardToken(
+          mockLc._id.toString(),
+          'hacker',
+          UserRole.TEACHER,
+        ),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 });

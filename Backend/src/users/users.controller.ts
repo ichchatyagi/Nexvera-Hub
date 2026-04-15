@@ -29,10 +29,7 @@ export class UsersController {
   }
 
   @Put('me')
-  async updateMe(
-    @CurrentUser() user: User,
-    @Body() dto: UpdateProfileDto,
-  ) {
+  async updateMe(@CurrentUser() user: User, @Body() dto: UpdateProfileDto) {
     const updated = await this.usersService.updateProfile(user.id, dto);
     return { success: true, data: mapUserToResponse(updated) };
   }
@@ -53,7 +50,10 @@ export class UsersController {
   @Roles(UserRole.ADMIN)
   @Get('admin/dashboard')
   async adminDashboard() {
-    return { success: true, data: { message: 'Admin dashboard – coming soon' } };
+    return {
+      success: true,
+      data: { message: 'Admin dashboard – coming soon' },
+    };
   }
 
   @UseGuards(RolesGuard)
@@ -80,10 +80,7 @@ export class UsersController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
   @Put(':id/role')
-  async adminUpdateRole(
-    @Param('id') id: string,
-    @Body('role') role: UserRole,
-  ) {
+  async adminUpdateRole(@Param('id') id: string, @Body('role') role: UserRole) {
     const updated = await this.usersService.updateRole(id, role);
     return { success: true, data: mapUserToResponse(updated) };
   }

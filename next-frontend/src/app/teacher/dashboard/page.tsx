@@ -56,7 +56,11 @@ const TeacherDashboard = () => {
 
       // Fetch teacher's live classes
       const liveRes = await api.get('/live-classes/mine');
-      setLiveClasses(liveRes.data?.filter((l: any) => l.status !== 'ended' && l.status !== 'cancelled') || []);
+      // Keep upcoming/live classes OR completed classes that have a recording
+      setLiveClasses(liveRes.data?.filter((l: any) => 
+        (l.status !== 'ended' && l.status !== 'cancelled') || 
+        (l.status === 'ended' && l.recording?.video_id)
+      ) || []);
 
       // Fetch teacher's assigned tuition subjects
       try {
@@ -311,13 +315,23 @@ const TeacherDashboard = () => {
                              {new Date(item.scheduled_start).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                           </span>
                        </div>
-                       <Link 
-                         href={`/live-classes/${item._id || item.id}/join`}
-                         className="flex items-center justify-between w-full p-4 bg-slate-50 hover:bg-blue-600 hover:text-white rounded-2xl transition-all group/btn"
-                       >
-                         <span className="text-[10px] font-black uppercase tracking-widest">Start Stream</span>
-                         <Play size={12} fill="currentColor" className="group-hover/btn:scale-125 transition-transform" />
-                       </Link>
+                         {item.status === 'ended' ? (
+                           <Link 
+                             href={`/live-classes/${item._id || item.id}/recording`}
+                             className="flex items-center justify-between w-full p-4 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-2xl transition-all group/btn"
+                           >
+                             <span className="text-[10px] font-black uppercase tracking-widest">View Recording</span>
+                             <Play size={12} fill="currentColor" className="group-hover/btn:scale-125 transition-transform" />
+                           </Link>
+                         ) : (
+                           <Link 
+                             href={`/live-classes/${item._id || item.id}/join`}
+                             className="flex items-center justify-between w-full p-4 bg-slate-50 hover:bg-blue-600 hover:text-white rounded-2xl transition-all group/btn"
+                           >
+                             <span className="text-[10px] font-black uppercase tracking-widest">Start Stream</span>
+                             <Play size={12} fill="currentColor" className="group-hover/btn:scale-125 transition-transform" />
+                           </Link>
+                         )}
                     </div>
                  </div>
                 )) : (

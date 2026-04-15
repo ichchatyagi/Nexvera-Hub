@@ -1,4 +1,10 @@
-import { Injectable, OnModuleInit, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { InjectModel } from '@nestjs/mongoose';
@@ -42,38 +48,53 @@ export class PaymentsService implements OnModuleInit {
 
     const course = await this.courseModel.findById(courseId);
     if (!course || course.status !== 'published') {
-      throw new NotFoundException('Course not found or not available for purchase');
+      throw new NotFoundException(
+        'Course not found or not available for purchase',
+      );
     }
 
     let price = course.pricing?.price || 0;
     let currency = course.pricing?.currency || 'INR';
 
     if (course.product_type === 'tuition' || dto.product_type === 'tuition') {
-      if (!course.tuition_meta) throw new BadRequestException('Invalid tuition configuration');
-      if (course.product_type !== 'tuition') throw new BadRequestException('Mismatched product type');
-      
+      if (!course.tuition_meta)
+        throw new BadRequestException('Invalid tuition configuration');
+      if (course.product_type !== 'tuition')
+        throw new BadRequestException('Mismatched product type');
+
       const isBundle = dto.billing_mode === 'bundle';
       currency = course.tuition_meta.pricing?.currency || 'INR';
 
       if (dto.access_scope === 'class') {
         const pricing = course.tuition_meta.pricing;
         if (isBundle) {
-          if (!pricing?.bundle_enabled) throw new BadRequestException('Class bundle purchase not enabled');
+          if (!pricing?.bundle_enabled)
+            throw new BadRequestException('Class bundle purchase not enabled');
           price = pricing.bundle_price || 0;
         } else {
-          if (!pricing?.monthly_enabled) throw new BadRequestException('Class monthly purchase not enabled');
+          if (!pricing?.monthly_enabled)
+            throw new BadRequestException('Class monthly purchase not enabled');
           price = pricing.monthly_price || 0;
         }
       } else if (dto.access_scope === 'subject') {
         if (!dto.subjectId) throw new BadRequestException('Missing subject ID');
-        const subject = course.tuition_meta.subjects.find(s => s.subject_id.toString() === dto.subjectId);
-        if (!subject || !subject.pricing) throw new BadRequestException('Invalid tuition subject or pricing');
-        
+        const subject = course.tuition_meta.subjects.find(
+          (s) => s.subject_id.toString() === dto.subjectId,
+        );
+        if (!subject || !subject.pricing)
+          throw new BadRequestException('Invalid tuition subject or pricing');
+
         if (isBundle) {
-          if (!subject.pricing.bundle_enabled) throw new BadRequestException('Subject bundle purchase not enabled');
+          if (!subject.pricing.bundle_enabled)
+            throw new BadRequestException(
+              'Subject bundle purchase not enabled',
+            );
           price = subject.pricing.bundle_price || 0;
         } else {
-          if (!subject.pricing.monthly_enabled) throw new BadRequestException('Subject monthly purchase not enabled');
+          if (!subject.pricing.monthly_enabled)
+            throw new BadRequestException(
+              'Subject monthly purchase not enabled',
+            );
           price = subject.pricing.monthly_price || 0;
         }
       } else {
@@ -81,7 +102,9 @@ export class PaymentsService implements OnModuleInit {
       }
 
       if (!price || price <= 0) {
-        throw new BadRequestException('Resolved tuition price cannot be zero or less');
+        throw new BadRequestException(
+          'Resolved tuition price cannot be zero or less',
+        );
       }
     }
 
@@ -108,8 +131,8 @@ export class PaymentsService implements OnModuleInit {
       status: TransactionStatus.PENDING,
       razorpayOrderId: order.id,
       stripePaymentId: order.id, // Legacy compatibility
-      metadata: { 
-        type: 'course_purchase', 
+      metadata: {
+        type: 'course_purchase',
         courseTitle: course.title,
         gateway: 'razorpay',
         product_type: dto.product_type || course.product_type,
@@ -141,7 +164,12 @@ export class PaymentsService implements OnModuleInit {
    * Verify Razorpay payment signature and confirm enrollment.
    */
   async verifyAndConfirmPayment(userId: string, dto: VerifyRazorpayDto) {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, courseId } = dto;
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      courseId,
+    } = dto;
 
     // Verify signature
     const text = razorpay_order_id + '|' + razorpay_payment_id;
@@ -156,20 +184,20 @@ export class PaymentsService implements OnModuleInit {
 
     // Find transaction
     let transaction = await this.transactionRepository.findOne({
-      where: { 
-        razorpayOrderId: razorpay_order_id, 
-        userId, 
-        courseId: courseId 
+      where: {
+        razorpayOrderId: razorpay_order_id,
+        userId,
+        courseId: courseId,
       },
     });
 
     // Fallback for legacy
     if (!transaction) {
       transaction = await this.transactionRepository.findOne({
-        where: { 
-          stripePaymentId: razorpay_order_id, 
-          userId, 
-          courseId: courseId 
+        where: {
+          stripePaymentId: razorpay_order_id,
+          userId,
+          courseId: courseId,
         },
       });
     }
@@ -179,7 +207,10 @@ export class PaymentsService implements OnModuleInit {
     }
 
     if (transaction.status === TransactionStatus.COMPLETED) {
-        return { success: true, data: { enrolled: true, alreadyCompleted: true } };
+      return {
+        success: true,
+        data: { enrolled: true, alreadyCompleted: true },
+      };
     }
 
     // Update transaction
@@ -195,7 +226,11 @@ export class PaymentsService implements OnModuleInit {
     await this.transactionRepository.save(transaction);
 
     // Create enrollment
-    await this.enrollmentsService.enroll(courseId, userId, transaction.metadata as any);
+    await this.enrollmentsService.enroll(
+      courseId,
+      userId,
+      transaction.metadata,
+    );
 
     return {
       success: true,

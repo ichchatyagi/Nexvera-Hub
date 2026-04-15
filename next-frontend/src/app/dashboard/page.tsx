@@ -21,11 +21,17 @@ import {
   TrendingDown,
   Activity,
   AlertCircle,
-  Shield
+  Shield,
+  Sparkles
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
+import { liveClassesService } from '@/services/live-classes.service';
+import { paymentsService } from '@/services/payments.service';
+import { enrollmentsService } from '@/services/enrollments.service';
+import StudentAssistantPanel from '@/components/StudentAssistantPanel';
+
 
 const Dashboard = () => {
   const { user, isLoading: isLoadingAuth } = useAuth();
@@ -33,6 +39,7 @@ const Dashboard = () => {
   const [liveSessions, setLiveSessions] = useState<any[]>([]);
   const [earnings, setEarnings] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAiOpen, setIsAiOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoadingAuth && user) {
@@ -45,14 +52,14 @@ const Dashboard = () => {
       setIsLoading(true);
       
       // Data for all users (upcoming live classes)
-      const liveRes = await api.get('/live-classes');
-      setLiveSessions(liveRes.data?.filter((l: any) => l.status !== 'completed').slice(0, 3) || []);
+      const liveData = await liveClassesService.listLiveClasses();
+      setLiveSessions(liveData?.filter((l: any) => l.status !== 'completed').slice(0, 3) || []);
 
       if (user?.role === 'teacher' || user?.role === 'admin') {
         // Teacher specific data
         try {
-          const earningsRes = await api.get('/instructor/earnings');
-          setEarnings(earningsRes.data);
+          const earningsData = await paymentsService.getInstructorEarnings();
+          setEarnings(earningsData);
         } catch (e) {
           console.error('Failed to load instructor earnings:', e);
         }
@@ -60,12 +67,13 @@ const Dashboard = () => {
 
       // Student/Learning data
       try {
-        const enrollRes = await api.get('/enrollments/my-learning');
-        setEnrollments(enrollRes.data || []);
+        const enrollmentsData = await enrollmentsService.getMyLearning();
+        setEnrollments(enrollmentsData || []);
       } catch (e) {
         // Teachers might not have enrollments, that's fine
         setEnrollments([]);
       }
+
       
     } catch (error) {
       toast.error('Failed to sync hub metrics');
@@ -84,11 +92,25 @@ const Dashboard = () => {
     );
   }
 
+  // Calculate real student metrics
+  const totalCourses = enrollments.length;
+  const completedCourses = enrollments.filter(en => en.certificate?.issued).length;
+  const avgProgress = totalCourses > 0 
+    ? Math.round(enrollments.reduce((acc, en) => acc + (en.progress?.percentage || 0), 0) / totalCourses)
+    : 0;
+  
+  // Calculate total learning time from watch history (in hours)
+  const totalSeconds = enrollments.reduce((acc, en) => {
+    const history = en.watch_history || [];
+    return acc + history.reduce((hAcc: number, h: any) => hAcc + (h.watch_time_seconds || 0), 0);
+  }, 0);
+  const learningHours = (totalSeconds / 3600).toFixed(1);
+
   const studentStats = [
-    { label: 'Active Courses', value: enrollments.length.toString(), icon: <BookOpen size={20} />, color: 'bg-blue-600' },
-    { label: 'Learning Time', value: '12.5h', icon: <Clock size={20} />, color: 'bg-cyan-500' },
-    { label: 'Certifications', value: '2', icon: <Trophy size={20} />, color: 'bg-orange-500' },
-    { label: 'Avg. Progress', value: '68%', icon: <TrendingUp size={20} />, color: 'bg-indigo-600' },
+    { label: 'Active Courses', value: totalCourses.toString(), icon: <BookOpen size={20} />, color: 'bg-blue-600' },
+    { label: 'Learning Time', value: `${learningHours}h`, icon: <Clock size={20} />, color: 'bg-cyan-500' },
+    { label: 'Certifications', value: completedCourses.toString(), icon: <Trophy size={20} />, color: 'bg-orange-500' },
+    { label: 'Avg. Progress', value: `${avgProgress}%`, icon: <TrendingUp size={20} />, color: 'bg-indigo-600' },
   ];
 
   return (
@@ -127,6 +149,13 @@ const Dashboard = () => {
                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">System Live • {user?.role}</span>
              </div>
+             <button 
+                onClick={() => setIsAiOpen(true)}
+                className="flex items-center gap-3 bg-blue-600 text-white px-6 py-3 rounded-2xl shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all group scale-105"
+              >
+                 <Sparkles size={14} className="group-hover:rotate-12 transition-transform" />
+                 <span className="text-[10px] font-black uppercase tracking-widest">Ask Nexvera AI</span>
+              </button>
           </div>
         </div>
 
@@ -242,8 +271,26 @@ const Dashboard = () => {
             <div className="space-y-8">
               {enrollments.length > 0 ? enrollments.map((enr, i) => {
                 const course = enr.course;
-                const progress = enr.progress || 0;
+                const progress = enr.progress?.percentage || 0;
                 
+                const getContinueLearningUrl = () => {
+                  if (!course) return '#';
+                  
+                  // 1. Use current_lesson if it exists in enrollment progress
+                  const currentLessonId = enr.progress?.current_lesson;
+                  if (currentLessonId) {
+                    return `/courses/${course.slug}/lessons/${currentLessonId}`;
+                  }
+
+                  // 2. Use first_lesson_id provided by backend as fallback
+                  if (course.first_lesson_id) {
+                    return `/courses/${course.slug}/lessons/${course.first_lesson_id}`;
+                  }
+
+                  // 3. Absolute fallback to course detail
+                  return `/courses/${course.slug}`;
+                };
+
                 return (
                   <div key={enr.id} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-10 hover:shadow-2xl hover:shadow-blue-500/5 transition-all group">
                      <div className="w-56 h-36 rounded-[2.5rem] bg-slate-100 overflow-hidden shrink-0 border-2 border-slate-50">
@@ -280,7 +327,7 @@ const Dashboard = () => {
                         </div>
                      </div>
                      <Link 
-                       href={`/courses/${course.slug}`}
+                       href={getContinueLearningUrl()}
                        className="w-16 h-16 rounded-[2rem] bg-slate-950 text-white flex items-center justify-center hover:bg-blue-600 hover:scale-110 transition-all active:scale-90 shadow-xl"
                      >
                        <Play fill="currentColor" size={24} className="ml-1" />
@@ -348,6 +395,12 @@ const Dashboard = () => {
              </div>
           </div>
         </div>
+        
+        {/* Render AI Assistant */}
+        <StudentAssistantPanel 
+          isOpen={isAiOpen} 
+          onClose={() => setIsAiOpen(false)} 
+        />
       </div>
     </div>
   );

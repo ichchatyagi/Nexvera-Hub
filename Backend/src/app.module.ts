@@ -16,6 +16,7 @@ import { CommonModule } from './common/common.module';
 import { DatabaseModule } from './database/database.module';
 import { AppConfigModule } from './app-config/app-config.module';
 import { ContactModule } from './contact/contact.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { ContactModule } from './contact/contact.module';
     DatabaseModule,
     AppConfigModule,
     ContactModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService],

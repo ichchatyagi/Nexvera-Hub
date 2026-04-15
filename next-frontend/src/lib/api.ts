@@ -24,21 +24,26 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor to handle token refresh / expired tokens
+// Response interceptor to handle the { success, data, meta } envelope
 api.interceptors.response.use(
   (response) => {
-    // If backend returns a {success: true, data: ...} wrapper, 
-    // we want to return response.data.data for convenience in components
-    // Note: We check if it's already unwrapped by seeing if success field exists
-    if (response.data && response.data.success === true && response.data.data !== undefined) {
-      return {
-        ...response,
-        data: response.data.data,
-        meta: response.data.meta, // Preserve meta for pagination etc.
-      };
+    // Standardize unwrapping: if we have the success/data envelope, return data.data
+    // but keep meta attached to the promise result if possible.
+    // Axios response data is what components usually access.
+    if (response.data && typeof response.data === 'object' && 'success' in response.data && 'data' in response.data) {
+      const originalData = response.data;
+      // We want components to do `const courses = await api.get('/courses')` 
+      // where `courses` is the array/object from 'data'
+      // But we also want to preserve 'meta' for pagination
+      response.data = originalData.data;
+      
+      // We can attach meta to the response object itself
+      (response as any).meta = originalData.meta;
+      (response as any).success = originalData.success;
     }
     return response;
   },
+
   async (error) => {
     const originalRequest = error.config;
     

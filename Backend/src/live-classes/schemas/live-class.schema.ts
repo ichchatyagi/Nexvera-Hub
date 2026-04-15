@@ -25,6 +25,13 @@ export class LiveClassAgora {
    */
   @Prop({ type: String, default: null })
   recording_uid: string | null;
+
+  /**
+   * Room UUID for the Agora Whiteboard (Netless).
+   * Populated on first request to the whiteboard config endpoint.
+   */
+  @Prop({ type: String, default: null })
+  whiteboard_room_uuid: string | null;
 }
 
 /** Recording state and reference for a live class. */
@@ -49,10 +56,11 @@ export class LiveClassRecording {
    * pending    → recording enabled but not yet started / available
    * processing → Agora delivered the file; MediaConvert job running
    * available  → Video is ready for playback
+   * failed     → Recording stop or pipeline failed
    */
   @Prop({
     type: String,
-    enum: ['pending', 'processing', 'available'],
+    enum: ['pending', 'processing', 'available', 'failed'],
     default: 'pending',
   })
   status: string;

@@ -60,12 +60,14 @@ describe('PayoutsService', () => {
   });
 
   it('should link payouts to teaching assignments, not course ownership', async () => {
-     // This test ensures the calculateEarnings uses the correctly assigned courses
-     expect(courseModel.find).toHaveBeenCalledWith(expect.objectContaining({
-         $or: [
-             { lead_instructor_id: 'teacher-123' },
-             { assigned_instructor_ids: 'teacher-123' }
-         ]
-     }));
+    // This test ensures the calculateEarnings uses the correctly assigned courses
+    expect(courseModel.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        $or: [
+          { lead_instructor_id: 'teacher-123' },
+          { assigned_instructor_ids: 'teacher-123' },
+        ],
+      }),
+    );
   });
 });

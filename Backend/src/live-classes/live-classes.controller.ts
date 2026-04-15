@@ -123,7 +123,12 @@ export class LiveClassesController {
     @Body() dto: UpdateLiveClassDto,
   ) {
     const isAdmin = user.role === UserRole.ADMIN;
-    const data = await this.liveClassesService.update(id, user.id, isAdmin, dto);
+    const data = await this.liveClassesService.update(
+      id,
+      user.id,
+      isAdmin,
+      dto,
+    );
     return { success: true, data };
   }
 
@@ -165,10 +170,10 @@ export class LiveClassesController {
   async start(@CurrentUser() user: User, @Param('id') id: string) {
     const isAdmin = user.role === UserRole.ADMIN;
     const data = await this.liveClassesService.start(id, user.id, isAdmin);
-    
+
     // Broadcast start
     this.liveClassesGateway.server.to(id).emit('class:started');
-    
+
     return { success: true, data };
   }
 
@@ -190,7 +195,7 @@ export class LiveClassesController {
   async end(@CurrentUser() user: User, @Param('id') id: string) {
     const isAdmin = user.role === UserRole.ADMIN;
     const data = await this.liveClassesService.end(id, user.id, isAdmin);
-    
+
     // Broadcast end
     this.liveClassesGateway.server.to(id).emit('class:ended');
 
@@ -217,7 +222,7 @@ export class LiveClassesController {
   @Post(':id/register')
   @HttpCode(HttpStatus.OK)
   register(@CurrentUser() user: User, @Param('id') id: string) {
-    return this.liveClassesService.register(id, user.id);
+    return this.liveClassesService.register(id, user.id, user.role);
   }
 
   /**
@@ -236,7 +241,49 @@ export class LiveClassesController {
   @Post(':id/join')
   @HttpCode(HttpStatus.OK)
   async join(@CurrentUser() user: User, @Param('id') id: string) {
-    const data = await this.liveClassesService.join(id, user.id);
+    const data = await this.liveClassesService.join(id, user.id, user.role);
     return { success: true, data };
+  }
+
+  /**
+   * GET /live-classes/:id/recording
+   *
+   * Returns playback metadata for the live-class recording (if available).
+   *
+   * Roles: TEACHER (owner), ADMIN
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.STUDENT, UserRole.TEACHER, UserRole.ADMIN)
+  @Get(':id/recording')
+  async getRecording(@CurrentUser() user: User, @Param('id') id: string) {
+    const result = await this.liveClassesService.getRecordingPlayback(
+      id,
+      user.id,
+      user.role,
+    );
+    return result;
+  }
+
+  /**
+   * GET /live-classes/:id/whiteboard
+   *
+   * Returns Agora whiteboard room + token metadata (stubbed for now).
+   * Frontend uses this when USE_AGORA_WHITEBOARD=true.
+   *
+   * Roles: STUDENT, TEACHER, ADMIN
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.STUDENT, UserRole.TEACHER, UserRole.ADMIN)
+  @Get(':id/whiteboard')
+  async getWhiteboardConfig(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+  ) {
+    const result = await this.liveClassesService.getWhiteboardToken(
+      id,
+      user.id,
+      user.role,
+    );
+    return result;
   }
 }

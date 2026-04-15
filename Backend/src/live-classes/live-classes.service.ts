@@ -6,6 +6,7 @@ import {
   UnprocessableEntityException,
   Logger,
   InternalServerErrorException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -21,6 +22,7 @@ import { CreateLiveClassDto, UpdateLiveClassDto } from './dto/live-class.dto';
 import { AppConfigService } from '../app-config/app-config.service';
 import { RtcTokenBuilder, RtcRole } from 'agora-access-token';
 import { VideosService } from '../videos/videos.service';
+import { EnrollmentsService } from '../enrollments/enrollments.service';
 
 // ─── Agora token shape ────────────────────────────────────────────────────────
 
@@ -57,7 +59,7 @@ export interface JoinClassResponse {
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Injectable()
-export class LiveClassesService {
+export class LiveClassesService implements OnModuleInit {
   private readonly logger = new Logger(LiveClassesService.name);
 
   constructor(
@@ -65,7 +67,31 @@ export class LiveClassesService {
     private readonly liveClassModel: Model<LiveClassDocument>,
     private readonly appConfig: AppConfigService,
     private readonly videosService: VideosService,
+    private readonly enrollmentsService: EnrollmentsService,
   ) {}
+
+  onModuleInit() {
+    const isEnabled = this.appConfig.useAgoraWhiteboard;
+    const appId = this.appConfig.agoraWhiteboardAppId;
+    const appSecret = this.appConfig.agoraWhiteboardAppSecret;
+    const region = this.appConfig.agoraWhiteboardRegion;
+
+    if (isEnabled) {
+      if (!appId || !appSecret) {
+        this.logger.warn(
+          'Agora Whiteboard is ENABLED but AGORA_WHITEBOARD_APP_ID or AGORA_WHITEBOARD_APP_SECRET is missing.',
+        );
+      } else {
+        this.logger.log(
+          `Agora Whiteboard is ENABLED and configured (App ID and SDK Token present). Region: ${region}`,
+        );
+      }
+    } else {
+      this.logger.log(
+        'Agora Whiteboard is DISABLED (using custom implementation).',
+      );
+    }
+  }
 
   // ─── Agora token generation ──────────────────────────────────────────────
 
@@ -150,7 +176,9 @@ export class LiveClassesService {
     const end = new Date(dto.scheduled_end);
 
     if (end <= start) {
-      throw new BadRequestException('scheduled_end must be after scheduled_start');
+      throw new BadRequestException(
+        'scheduled_end must be after scheduled_start',
+      );
     }
 
     if (!dto.course_id || !Types.ObjectId.isValid(dto.course_id)) {
@@ -161,8 +189,14 @@ export class LiveClassesService {
 
     const liveClass = await this.liveClassModel.create({
       course_id: new Types.ObjectId(dto.course_id),
-      subject_id: dto.subject_id && Types.ObjectId.isValid(dto.subject_id) ? new Types.ObjectId(dto.subject_id) : null,
-      lesson_id: dto.lesson_id && Types.ObjectId.isValid(dto.lesson_id) ? new Types.ObjectId(dto.lesson_id) : null,
+      subject_id:
+        dto.subject_id && Types.ObjectId.isValid(dto.subject_id)
+          ? new Types.ObjectId(dto.subject_id)
+          : null,
+      lesson_id:
+        dto.lesson_id && Types.ObjectId.isValid(dto.lesson_id)
+          ? new Types.ObjectId(dto.lesson_id)
+          : null,
       teacher_id: teacherId,
       title: dto.title,
       description: dto.description ?? null,
@@ -245,7 +279,9 @@ export class LiveClassesService {
         ? new Date(dto.scheduled_end)
         : lc.scheduled_end;
       if (end <= start) {
-        throw new BadRequestException('scheduled_end must be after scheduled_start');
+        throw new BadRequestException(
+          'scheduled_end must be after scheduled_start',
+        );
       }
       lc.scheduled_start = start;
       lc.scheduled_end = end;
@@ -254,7 +290,8 @@ export class LiveClassesService {
     if (dto.title !== undefined) lc.title = dto.title;
     if (dto.description !== undefined) lc.description = dto.description;
     if (dto.timezone !== undefined) lc.timezone = dto.timezone;
-    if (dto.max_participants !== undefined) lc.max_participants = dto.max_participants;
+    if (dto.max_participants !== undefined)
+      lc.max_participants = dto.max_participants;
 
     // Merge feature flags
     if (dto.features) {
@@ -267,7 +304,9 @@ export class LiveClassesService {
     }
 
     await lc.save();
-    this.logger.log(`Live class "${id}" updated by requester "${requesterId}".`);
+    this.logger.log(
+      `Live class "${id}" updated by requester "${requesterId}".`,
+    );
     return lc;
   }
 
@@ -321,10 +360,14 @@ export class LiveClassesService {
     this.assertOwner(lc, requesterId, isAdmin);
 
     if (lc.status === LiveClassStatus.CANCELLED) {
-      throw new UnprocessableEntityException('Cannot start a cancelled live class.');
+      throw new UnprocessableEntityException(
+        'Cannot start a cancelled live class.',
+      );
     }
     if (lc.status === LiveClassStatus.ENDED) {
-      throw new UnprocessableEntityException('Cannot restart an ended live class.');
+      throw new UnprocessableEntityException(
+        'Cannot restart an ended live class.',
+      );
     }
     if (lc.status === LiveClassStatus.LIVE) {
       throw new UnprocessableEntityException('Live class is already live.');
@@ -346,7 +389,7 @@ export class LiveClassesService {
         const recordingToken = this.generateAgoraToken(
           lc.agora.channel_name,
           recordingUid,
-          AgoraRole.PUBLISHER, // Needs publisher to subscribe to all streams in mixed mode? 
+          AgoraRole.PUBLISHER, // Needs publisher to subscribe to all streams in mixed mode?
           // Actually Agora docs say it needs to join with a token if token is enabled.
         );
 
@@ -360,12 +403,14 @@ export class LiveClassesService {
         lc.recording.resource_id = resourceId;
         lc.recording.sid = sid;
         lc.recording.status = 'processing'; // It's recording, but status 'processing' implies lifecycle
-        // Wait, 'processing' enum was for the VOD pipeline later. 
+        // Wait, 'processing' enum was for the VOD pipeline later.
         // For now, let's keep it as is or maybe add 'recording' state if needed.
         // The plan says: "available  → Video is ready for playback".
         // Let's stick to the schema enum for now.
       } catch (err) {
-        this.logger.error(`Failed to start Agora recording for class ${id}: ${err.message}`);
+        this.logger.error(
+          `Failed to start Agora recording for class ${id}: ${err.message}`,
+        );
         // Per plan: "If recording call fails, keep class live but set lc.recording.enabled = false"
         lc.recording.enabled = false;
       }
@@ -422,12 +467,11 @@ export class LiveClassesService {
           lc.agora.channel_name,
         );
 
-        // Extract S3 key if available from Agora response
-        // Agora response shape: { resourceId, sid, serverResponse: { fileList: "..." } }
-        // For simple mixed recording, we can construct or extract it.
-        const fileList = stopResponse.serverResponse?.fileList;
-        if (fileList) {
-          lc.recording.file_key = fileList;
+        // Normalize S3 key from Agora response
+        const s3Key = this.extractRecordingS3Key(stopResponse);
+
+        if (s3Key) {
+          lc.recording.file_key = s3Key;
 
           // ── Create Video Document ──────────────────────────────────────────
           try {
@@ -435,7 +479,7 @@ export class LiveClassesService {
               lc.course_id.toString(),
               lc._id.toString(),
               lc.teacher_id,
-              fileList, // Agora returns the S3 path in fileList
+              s3Key,
               lc.title,
             );
             lc.recording.video_id = video._id as any;
@@ -445,9 +489,16 @@ export class LiveClassesService {
               `Failed to create VOD for live class ${id}: ${vErr.message}`,
             );
           }
+        } else {
+          this.logger.warn(
+            `No usable recording file found in Agora response for class ${id}.`,
+          );
+          lc.recording.status = 'failed';
         }
       } catch (err) {
-        this.logger.warn(`Failed to stop Agora recording for class ${id}: ${err.message}`);
+        this.logger.warn(
+          `Failed to stop Agora recording for class ${id}: ${err.message}`,
+        );
         // Class still ends, but recording might have issues
       }
     }
@@ -456,6 +507,66 @@ export class LiveClassesService {
 
     this.logger.log(`Live class "${id}" ended by "${requesterId}".`);
     return lc;
+  }
+
+  /**
+   * Normalizes Agora's serverResponse.fileList into a single S3 object key.
+   * Handles JSON strings, arrays of objects, or simple strings.
+   * Prefers .mp4 files (mixed recording).
+   */
+  private extractRecordingS3Key(stopResponse: any): string | null {
+    try {
+      const fileList = stopResponse?.serverResponse?.fileList;
+      if (!fileList) return null;
+
+      let parsedList: any[] = [];
+
+      if (typeof fileList === 'string') {
+        try {
+          // If it's a JSON string array
+          const parsed = JSON.parse(fileList);
+          parsedList = Array.isArray(parsed) ? parsed : [parsed];
+        } catch {
+          // It's just a plain string key
+          return fileList;
+        }
+      } else if (Array.isArray(fileList)) {
+        parsedList = fileList;
+      } else {
+        // Single object?
+        parsedList = [fileList];
+      }
+
+      // If we have a list of objects (Agora file info), look for filename/filename
+      // Mixed recording usually produces one or more files.
+      // Search for the first .mp4 key.
+      for (const file of parsedList) {
+        const key =
+          typeof file === 'string'
+            ? file
+            : file.filename || file.fileName || file.file_name || file.key;
+        if (
+          key &&
+          typeof key === 'string' &&
+          key.toLowerCase().endsWith('.mp4')
+        ) {
+          return key;
+        }
+      }
+
+      // Fallback to the first thing that looks like a key if no mp4 found
+      const first = parsedList[0];
+      return typeof first === 'string'
+        ? first
+        : first?.filename ||
+            first?.fileName ||
+            first?.file_name ||
+            first?.key ||
+            null;
+    } catch (err) {
+      this.logger.error(`Error extracting recording S3 key: ${err.message}`);
+      return null;
+    }
   }
 
   // ─── Student ──────────────────────────────────────────────────────────────
@@ -490,8 +601,25 @@ export class LiveClassesService {
   async register(
     id: string,
     studentId: string,
-  ): Promise<{ success: boolean; data: { registered: boolean; count: number } }> {
+    requesterRole: UserRole,
+  ): Promise<{
+    success: boolean;
+    data: { registered: boolean; count: number };
+  }> {
     const lc = await this.findById(id);
+
+    // If student, check course enrollment
+    if (requesterRole === UserRole.STUDENT) {
+      const isEnrolled = await this.enrollmentsService.isActiveCourseEnrollment(
+        lc.course_id.toString(),
+        studentId,
+      );
+      if (!isEnrolled) {
+        throw new ForbiddenException(
+          'You must be enrolled in this course to register for its live sessions.',
+        );
+      }
+    }
 
     // Cannot register for cancelled or ended classes
     if (
@@ -542,8 +670,33 @@ export class LiveClassesService {
    *   See EnrollmentsModule – EnrollmentsService.findEnrollment(courseId, userId).
    *   Leave enrolled teachers and admins unrestricted.
    */
-  async join(id: string, userId: string): Promise<JoinClassResponse> {
+  async join(
+    id: string,
+    userId: string,
+    requesterRole: UserRole,
+  ): Promise<JoinClassResponse> {
     const lc = await this.findById(id);
+
+    const isOwner = lc.teacher_id === userId;
+    const isAdmin = requesterRole === UserRole.ADMIN;
+
+    // Access control: teacher/admin or enrolled student
+    if (!isOwner && !isAdmin) {
+      if (requesterRole !== UserRole.STUDENT) {
+        throw new ForbiddenException(
+          'You are not allowed to join this session.',
+        );
+      }
+      const isEnrolled = await this.enrollmentsService.isActiveCourseEnrollment(
+        lc.course_id.toString(),
+        userId,
+      );
+      if (!isEnrolled) {
+        throw new ForbiddenException(
+          'You must be enrolled in this course to join its live sessions.',
+        );
+      }
+    }
 
     if (
       lc.status !== LiveClassStatus.SCHEDULED &&
@@ -594,7 +747,6 @@ export class LiveClassesService {
     };
   }
 
-
   // ─── Admin Monitoring ─────────────────────────────────────────────────────
 
   /**
@@ -630,10 +782,277 @@ export class LiveClassesService {
       }
     }
 
-    return this.liveClassModel
-      .find(query)
-      .sort({ scheduled_start: -1 })
-      .exec();
+    return this.liveClassModel.find(query).sort({ scheduled_start: -1 }).exec();
+  }
+
+  /**
+   * Derives a stable whiteboard room name from the live class ID.
+   * Used by the frontend + Agora whiteboard integration.
+   */
+  getWhiteboardRoomId(liveClassId: string): string {
+    return `nexvera-liveclass-${liveClassId}`;
+  }
+
+  /**
+   * Creates a new persistent whiteboard room via Agora (Netless) REST API.
+   * Returns the room UUID.
+   */
+  private async createWhiteboardRoom(): Promise<string> {
+    const appSecret = this.appConfig.agoraWhiteboardAppSecret;
+    const region = this.appConfig.agoraWhiteboardRegion;
+
+    if (!appSecret) {
+      const err = new Error('Agora Whiteboard SDK Token not configured.');
+      (err as any).code = 'AGORA_NOT_CONFIGURED';
+      throw err;
+    }
+
+    try {
+      const url = 'https://api.netless.link/v5/rooms';
+      const response = await axios.post(
+        url,
+        {},
+        {
+          headers: {
+            token: appSecret,
+            region: region,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+      return response.data.uuid;
+    } catch (err) {
+      const status = err.response?.status;
+      const data = err.response?.data;
+      this.logger.error(
+        `Failed to create Agora whiteboard room. Status: ${status}, Data: ${JSON.stringify(data)}, URL: https://api.netless.link/v5/rooms, Region: ${region}`,
+      );
+
+      const error = new Error('Failed to create whiteboard room');
+      if (status === 401 || status === 403) {
+        (error as any).code = 'AGORA_AUTH_FAILED';
+        (error as any).message =
+          'Whiteboard provider rejected credentials (401/403). Check AGORA_WHITEBOARD_APP_SECRET (Netless SDK Token) and AGORA_WHITEBOARD_REGION.';
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Generates a short-lived room token for an existing whiteboard room.
+   */
+  private async generateWhiteboardRoomToken(
+    roomUuid: string,
+    role: 'writer' | 'reader',
+  ): Promise<string> {
+    const appSecret = this.appConfig.agoraWhiteboardAppSecret;
+    const region = this.appConfig.agoraWhiteboardRegion;
+    const ttlMs = this.appConfig.agoraWhiteboardTokenTtlSeconds * 1000;
+
+    try {
+      const url = `https://api.netless.link/v5/tokens/rooms/${roomUuid}`;
+      const response = await axios.post(
+        url,
+        { lifespan: ttlMs, role },
+        {
+          headers: {
+            token: appSecret,
+            region: region,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+      return response.data;
+    } catch (err) {
+      const status = err.response?.status;
+      const data = err.response?.data;
+      this.logger.error(
+        `Failed to generate Agora whiteboard token for room ${roomUuid}. Status: ${status}, Data: ${JSON.stringify(data)}, Region: ${region}`,
+      );
+
+      const error = new Error('Failed to generate whiteboard token');
+      if (status === 401 || status === 403) {
+        (error as any).code = 'AGORA_AUTH_FAILED';
+        (error as any).message =
+          'Whiteboard provider rejected credentials (401/403). Check AGORA_WHITEBOARD_APP_SECRET (Netless SDK Token) and AGORA_WHITEBOARD_REGION.';
+      }
+      throw error;
+    }
+  }
+
+  async getWhiteboardToken(
+    liveClassId: string,
+    requesterId: string,
+    requesterRole: UserRole,
+  ) {
+    if (!this.appConfig.useAgoraWhiteboard) {
+      return {
+        success: false,
+        error: {
+          code: 'AGORA_DISABLED',
+          message: 'Agora whiteboard is currently disabled.',
+        },
+      };
+    }
+
+    if (
+      !this.appConfig.agoraWhiteboardAppId ||
+      !this.appConfig.agoraWhiteboardAppSecret
+    ) {
+      return {
+        success: false,
+        error: {
+          code: 'AGORA_NOT_CONFIGURED',
+          message:
+            'Agora Whiteboard credentials not configured. Set AGORA_WHITEBOARD_APP_ID and AGORA_WHITEBOARD_APP_SECRET.',
+        },
+      };
+    }
+
+    const lc = await this.findById(liveClassId);
+
+    const isOwner = lc.teacher_id === requesterId;
+    const isAdmin = requesterRole === UserRole.ADMIN;
+
+    // Access control: teacher/admin or enrolled student
+    if (!isOwner && !isAdmin && requesterRole !== UserRole.STUDENT) {
+      throw new ForbiddenException(
+        'You are not allowed to access this whiteboard.',
+      );
+    }
+
+    if (
+      lc.status !== LiveClassStatus.SCHEDULED &&
+      lc.status !== LiveClassStatus.LIVE
+    ) {
+      return {
+        success: false,
+        error: {
+          code: 'CLASS_NOT_ACTIVE',
+          message: `Whiteboard is not available when class status is "${lc.status}".`,
+        },
+      };
+    }
+
+    if (!lc.features?.whiteboard_enabled) {
+      return {
+        success: false,
+        error: {
+          code: 'WHITEBOARD_DISABLED',
+          message: 'Whiteboard is not enabled for this live class.',
+        },
+      };
+    }
+
+    if (!isOwner && !isAdmin && requesterRole === UserRole.STUDENT) {
+      const isEnrolled = await this.enrollmentsService.isActiveCourseEnrollment(
+        lc.course_id.toString(),
+        requesterId,
+      );
+      if (!isEnrolled) {
+        throw new ForbiddenException(
+          'You must be enrolled in this course to access the whiteboard.',
+        );
+      }
+    }
+
+    // Provision room if missing
+    if (!lc.agora.whiteboard_room_uuid) {
+      try {
+        const roomUuid = await this.createWhiteboardRoom();
+        lc.agora.whiteboard_room_uuid = roomUuid;
+        await lc.save();
+      } catch (err) {
+        return {
+          success: false,
+          error: {
+            code: err.code || 'AGORA_PROVISIONING_FAILED',
+            message: err.message,
+          },
+        };
+      }
+    }
+
+    // Determine role for token
+    const tokenRole = isOwner || isAdmin ? 'writer' : 'reader';
+    try {
+      const token = await this.generateWhiteboardRoomToken(
+        lc.agora.whiteboard_room_uuid,
+        tokenRole,
+      );
+
+      return {
+        success: true,
+        data: {
+          room_uuid: lc.agora.whiteboard_room_uuid,
+          app_id: this.appConfig.agoraWhiteboardAppId,
+          region: this.appConfig.agoraWhiteboardRegion,
+          room_token: token,
+          role: requesterRole, // 'student' / 'teacher' / 'admin'
+        },
+      };
+    } catch (err) {
+      return {
+        success: false,
+        error: {
+          code: err.code || 'AGORA_TOKEN_FAILED',
+          message: err.message,
+        },
+      };
+    }
+  }
+
+  /**
+   * Returns playback metadata for a live-class recording (if available),
+   * delegating to VideosService.getPlaybackMetadata().
+   *
+   * Access control:
+   *  - Teacher owner
+   *  - Admin
+   */
+  async getRecordingPlayback(
+    id: string,
+    requesterId: string,
+    requesterRole: UserRole,
+  ) {
+    const lc = await this.findById(id);
+
+    const isOwner = lc.teacher_id === requesterId;
+    const isAdmin = requesterRole === UserRole.ADMIN;
+
+    if (!isOwner && !isAdmin) {
+      if (requesterRole !== UserRole.STUDENT) {
+        throw new ForbiddenException(
+          'You are not allowed to access this recording.',
+        );
+      }
+      const ok = await this.enrollmentsService.isActiveCourseEnrollment(
+        lc.course_id.toString(),
+        requesterId,
+      );
+      if (!ok) {
+        throw new ForbiddenException('You are not enrolled in this course.');
+      }
+    }
+
+    if (!lc.recording?.video_id) {
+      return {
+        success: false,
+        error: {
+          code: 'RECORDING_NOT_AVAILABLE',
+          message: 'Recording is not available for this live class yet.',
+          status: lc.recording?.status ?? 'pending',
+        },
+      };
+    }
+
+    // Delegate to VideosService
+    const playback = await this.videosService.getPlaybackMetadata(
+      lc.recording.video_id.toString(),
+      { id: requesterId, role: requesterRole },
+    );
+
+    return playback;
   }
 
   /**
@@ -646,12 +1065,12 @@ export class LiveClassesService {
     const data = await this.liveClassModel
       .find({
         status: { $in: [LiveClassStatus.SCHEDULED, LiveClassStatus.LIVE] },
-        scheduled_end: { $gte: new Date() }
+        scheduled_end: { $gte: new Date() },
       })
       .sort({ scheduled_start: 1 })
       .select('-agora.recording_uid -registered_students -attended_students')
       .exec();
-    
+
     return { success: true, data };
   }
 
@@ -685,7 +1104,10 @@ export class LiveClassesService {
 
   // ─── Agora Cloud Recording API Helpers ────────────────────────────────────
 
-  private async acquireRecording(channelName: string, uid: string): Promise<string> {
+  private async acquireRecording(
+    channelName: string,
+    uid: string,
+  ): Promise<string> {
     const url = `https://api.agora.io/v1/apps/${this.appConfig.agoraAppId}/cloud_recording/acquire`;
     const response = await axios.post(
       url,
