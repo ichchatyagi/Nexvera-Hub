@@ -163,12 +163,12 @@ const TeacherDashboard = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-          {stats.map((stat, i) => (
+          {stats.map((stat, statIdx) => (
             <motion.div 
-              key={i}
+              key={stat.label}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: i * 0.1 }}
+              transition={{ delay: statIdx * 0.1 }}
               className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group"
             >
               <div className={`w-12 h-12 ${stat.color} text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform`}>
@@ -278,8 +278,8 @@ const TeacherDashboard = () => {
                         </tr>
                      </thead>
                      <tbody className="divide-y divide-slate-50">
-                        {earnings?.breakdown?.map((item: any, i: number) => (
-                           <tr key={i} className="group hover:bg-slate-50/50 transition-colors">
+                        {earnings?.breakdown?.map((item: any) => (
+                           <tr key={item.courseId} className="group hover:bg-slate-50/50 transition-colors">
                               <td className="py-5 pl-4">
                                  <p className="text-[13px] font-black text-slate-800 uppercase tracking-tight">{item.courseTitle}</p>
                                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">ID: {item.courseId.substring(0, 8)}</p>

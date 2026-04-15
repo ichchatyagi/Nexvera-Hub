@@ -10,6 +10,22 @@ import type {
 
 export type AgoraRole = 'host' | 'audience';
 
+/**
+ * Converts a UUID string to a stable positive numeric UID for Agora RTC.
+ * Agora recommends an integer UID to avoid the string-UID warning.
+ * Uses the djb2 algorithm, clamped to (0, 2^31-1].
+ */
+function toNumericUid(uid: string): number {
+  let hash = 5381;
+  for (let i = 0; i < uid.length; i++) {
+    hash = ((hash << 5) + hash) ^ uid.charCodeAt(i);
+    hash |= 0; // coerce to 32-bit signed int
+  }
+  // Ensure the result is a positive non-zero integer within INT31 range.
+  const result = (Math.abs(hash) % 0x7ffffffe) + 1;
+  return result;
+}
+
 // Singleton-like promise to ensure we only load and use one instance of the SDK
 let agoraLoader: Promise<any> | null = null;
 const getAgoraRTC = async () => {
@@ -23,7 +39,7 @@ interface UseAgoraClassroomOptions {
   appId: string;
   channelName: string;
   token: string;
-  uid: string;            // use user.id from AuthContext
+  uid: string;            // user.id from AuthContext – will be hashed to a numeric UID internally
   role: AgoraRole;        // 'host' for teacher, 'audience' for students
 }
 
@@ -116,11 +132,17 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
     isJoiningRef.current = true;
 
     try {
+      // Convert the string UUID to a stable numeric UID to satisfy Agora's
+      // recommendation (avoids "You input a string as the user ID" warning).
+      const numericUid = options.uid ? toNumericUid(options.uid) : 0;
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Agora] joining with uid:', numericUid, typeof numericUid);
+      }
       await client.join(
         options.appId,
         options.channelName,
         options.token,
-        options.uid || null,
+        numericUid,
       );
 
       if (options.role === 'host') {

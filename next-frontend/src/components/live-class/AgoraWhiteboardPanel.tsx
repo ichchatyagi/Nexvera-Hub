@@ -37,6 +37,17 @@ export const AgoraWhiteboardPanel: React.FC<AgoraWhiteboardPanelProps> = ({ live
         });
 
         if (containerRef.current) {
+          // Dev diagnostic: verify the container has non-zero dimensions before binding.
+          if (process.env.NODE_ENV === 'development') {
+            const rect = containerRef.current.getBoundingClientRect();
+            console.log('[AgoraWhiteboard] container rect before bindHtmlElement:', rect);
+            if (rect.width === 0 || rect.height === 0) {
+              console.warn(
+                '[AgoraWhiteboard] Container has zero dimensions! Whiteboard may render blank. ' +
+                'Ensure the parent chain has an explicit height (not just flex-1).',
+              );
+            }
+          }
           room.bindHtmlElement(containerRef.current);
           if (isTeacher) {
             room.setMemberState({ currentApplianceName: 'pencil' });
@@ -98,7 +109,7 @@ export const AgoraWhiteboardPanel: React.FC<AgoraWhiteboardPanelProps> = ({ live
   return (
     <div
       ref={containerRef}
-      className="flex-1 bg-white rounded-[2.5rem] overflow-hidden border border-white/5 shadow-2xl"
+      className="flex-1 w-full h-full bg-white rounded-[2.5rem] overflow-hidden border border-white/5 shadow-2xl"
     >
       {/* Agora whiteboard will mount here */}
     </div>

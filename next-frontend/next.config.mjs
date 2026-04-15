@@ -42,6 +42,13 @@ const nextConfig = {
       }
     ],
   },
+
+  // Next.js 16 uses Turbopack by default.
+  // An empty turbopack config silences the "webpack config but no turbopack config" error.
+  // The white-web-sdk / React 19 compatibility fix lives in scripts/patch-react-dom.cjs
+  // (postinstall) and directly patches node_modules/react-dom/index.js — no bundler
+  // config required.
+  turbopack: {},
 };
 
 export default nextConfig;

@@ -215,8 +215,8 @@ const Dashboard = () => {
                            </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                           {earnings.breakdown?.slice(0, 4).map((item: any, i: number) => (
-                             <tr key={i} className="hover:bg-slate-50/30 transition-colors">
+                           {earnings.breakdown?.slice(0, 4).map((item: any) => (
+                             <tr key={item.courseId} className="hover:bg-slate-50/30 transition-colors">
                                 <td className="px-8 py-6">
                                    <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{item.courseTitle}</p>
                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Commission: {item.basis}</p>
@@ -269,7 +269,7 @@ const Dashboard = () => {
             </h2>
             
             <div className="space-y-8">
-              {enrollments.length > 0 ? enrollments.map((enr, i) => {
+              {enrollments.length > 0 ? enrollments.map((enr, enrIdx) => {
                 const course = enr.course;
                 // Skip enrollments where the course has been deleted or not populated
                 if (!course) return null;
@@ -293,7 +293,7 @@ const Dashboard = () => {
                 };
 
                 return (
-                  <div key={enr.id} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-10 hover:shadow-2xl hover:shadow-blue-500/5 transition-all group">
+                  <div key={enr._id || enr.id || course._id || course.id || enrIdx} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-10 hover:shadow-2xl hover:shadow-blue-500/5 transition-all group">
                      <div className="w-56 h-36 rounded-[2.5rem] bg-slate-100 overflow-hidden shrink-0 border-2 border-slate-50">
                         {course.thumbnail_url ? (
                           <img src={course.thumbnail_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={course.title} />
@@ -366,8 +366,8 @@ const Dashboard = () => {
                     Live <span className="text-cyan-500">Access</span>
                   </h2>
                   <div className="space-y-4">
-                     {liveSessions.length > 0 ? liveSessions.map((session, i) => (
-                       <div key={session.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group overflow-hidden relative">
+                     {liveSessions.length > 0 ? liveSessions.map((session, sessionIdx) => (
+                       <div key={session._id || session.id || `session-${sessionIdx}`} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group overflow-hidden relative">
                           {session.status === 'live' && (
                              <div className="absolute top-4 right-4 animate-pulse">
                                 <span className="w-3 h-3 rounded-full bg-red-600 block shadow-lg shadow-red-200"></span>
