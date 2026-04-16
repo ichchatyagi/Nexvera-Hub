@@ -48,6 +48,27 @@ export const configValidationSchema = Joi.object({
   SENDER_EMAIL: Joi.string().required(),
   SENDER_PASS: Joi.string().required(),
   RECIPIENT_EMAIL: Joi.string().required(),
+
+  // AWS / Video Pipeline Additional
+  AWS_REGION: Joi.string().optional(),
+  AWS_DEFAULT_REGION: Joi.string().optional(),
+  AWS_ACCESS_KEY_ID: Joi.string().optional(),
+  AWS_SECRET_ACCESS_KEY: Joi.string().optional(),
+  AWS_ACCESS_KEY: Joi.string().optional(),
+  AWS_SECRET_KEY: Joi.string().optional(),
+  AWS_SQS_VIDEO_QUEUE_URL: Joi.string().optional(),
+  VIDEO_PROCESSING_WEBHOOK_SECRET: Joi.string().optional(),
+
+  // Agora Cloud Recording & Tokens
+  AGORA_CUSTOMER_ID: Joi.string().optional(),
+  AGORA_CUSTOMER_CERTIFICATE: Joi.string().optional(),
+  AGORA_TOKEN_TTL_SECONDS: Joi.number().optional(),
+
+  // Agora Whiteboard
+  USE_AGORA_WHITEBOARD: Joi.string().valid('true', 'false').default('false'),
+  AGORA_WHITEBOARD_APP_ID: Joi.string().optional(),
+  AGORA_WHITEBOARD_APP_SECRET: Joi.string().optional(),
+  AGORA_WHITEBOARD_TOKEN_TTL_SECONDS: Joi.number().optional(),
   AGORA_WHITEBOARD_REGION: Joi.string()
     .valid('cn-hz', 'us-sv', 'sg', 'in-mum', 'gb-lon')
     .default('cn-hz'),

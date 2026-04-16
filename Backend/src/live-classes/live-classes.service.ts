@@ -47,6 +47,8 @@ export interface JoinClassResponse {
   agora_app_id: string;
   /** Server-assigned live-class role for the current user. */
   role: AgoraRole;
+  /** Derivied numeric UID that the client MUST use to join. */
+  agora_uid: number;
   title: string;
   scheduled_start: Date;
   status: LiveClassStatus;
@@ -141,9 +143,8 @@ export class LiveClassesService implements OnModuleInit {
     const now = Math.floor(Date.now() / 1000);
     const privilegeExpiredTs = now + ttlSeconds;
 
-    // Agora token builder expects a numeric UID; derive a stable one from userId
-    // For simplicity, use uid = 0 to let Agora auto-assign, but encode userId in room logic.
-    const uid = 0;
+    // RTC tokens MUST use the same UID that the client uses to join()
+    const uid = this.deriveAgoraUid(userId);
 
     const rtcRole =
       role === AgoraRole.PUBLISHER ? RtcRole.PUBLISHER : RtcRole.SUBSCRIBER;
@@ -159,10 +160,34 @@ export class LiveClassesService implements OnModuleInit {
       );
     } catch (err) {
       this.logger.error(
-        `Failed to generate Agora token for channel "${channelName}", user "${userId}": ${err instanceof Error ? err.message : String(err)}`,
+        `Failed to generate Agora token for channel "${channelName}", user "${userId}" (uid ${uid}): ${err instanceof Error ? err.message : String(err)}`,
       );
       throw new InternalServerErrorException('Failed to generate Agora token');
     }
+  }
+
+  /**
+   * Derives a stable 32-bit numeric UID from a string userId.
+   * Matches the djb2 hashing logic used in the frontend.
+   */
+  private deriveAgoraUid(userId: string): number {
+    // If it's already a numeric string (e.g. "999" for recording bot), use it directly.
+    if (/^\d+$/.test(userId)) {
+      const parsed = parseInt(userId, 10);
+      if (parsed > 0 && parsed <= 0x7fffffff) {
+        return parsed;
+      }
+    }
+
+    // djb2 hash
+    let hash = 5381;
+    for (let i = 0; i < userId.length; i++) {
+      hash = (hash << 5) + hash ^ userId.charCodeAt(i);
+      hash |= 0; // Coerce to 32-bit
+    }
+
+    // Map to 1..2147483647
+    return (Math.abs(hash) % 0x7ffffffe) + 1;
   }
 
   // ─── Teacher / Admin ──────────────────────────────────────────────────────
@@ -784,6 +809,7 @@ export class LiveClassesService implements OnModuleInit {
       token_expiry_seconds: ttlSeconds,
       agora_app_id: this.appConfig.agoraAppId,
       role,
+      agora_uid: this.deriveAgoraUid(userId),
       title: lc.title,
       scheduled_start: lc.scheduled_start,
       status: lc.status,

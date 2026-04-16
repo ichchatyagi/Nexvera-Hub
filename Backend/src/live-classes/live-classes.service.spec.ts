@@ -327,6 +327,19 @@ describe('LiveClassesService', () => {
 
   // ── join ──────────────────────────────────────────────────────────────────
 
+  function localDeriveUid(userId: string): number {
+    if (/^\d+$/.test(userId)) {
+      const parsed = parseInt(userId, 10);
+      if (parsed > 0 && parsed <= 0x7fffffff) return parsed;
+    }
+    let hash = 5381;
+    for (let i = 0; i < userId.length; i++) {
+      hash = ((hash << 5) + hash) ^ userId.charCodeAt(i);
+      hash |= 0;
+    }
+    return (Math.abs(hash) % 0x7ffffffe) + 1;
+  }
+
   describe('join', () => {
     it('allows enrolled student to join', async () => {
       const mockLc = makeMockLiveClass();
@@ -343,6 +356,7 @@ describe('LiveClassesService', () => {
 
       expect(result.channel_name).toBe(mockLc.agora.channel_name);
       expect(result.rtc_token).toBeDefined();
+      expect(result.agora_uid).toBe(localDeriveUid(STUDENT_ID));
       expect(mockLc.attended_students).toContain(STUDENT_ID);
       expect(mockLc.save).toHaveBeenCalled();
     });

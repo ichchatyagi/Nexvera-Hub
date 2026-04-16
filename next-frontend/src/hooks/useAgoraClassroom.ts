@@ -39,7 +39,7 @@ interface UseAgoraClassroomOptions {
   appId: string;
   channelName: string;
   token: string;
-  uid: string;            // user.id from AuthContext – will be hashed to a numeric UID internally
+  uid: number | string;   // Numeric UID from backend (agora_uid), or string fallback
   role: AgoraRole;        // 'host' for teacher, 'audience' for students
 }
 
@@ -134,9 +134,11 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
     isJoiningRef.current = true;
 
     try {
-      // Convert the string UUID to a stable numeric UID to satisfy Agora's
-      // recommendation (avoids "You input a string as the user ID" warning).
-      const numericUid = options.uid ? toNumericUid(options.uid) : 0;
+      // Use the provided numeric UID directly. If it's a legacy string, hash it.
+      const numericUid = typeof options.uid === 'number'
+        ? options.uid
+        : (options.uid ? toNumericUid(options.uid) : 0);
+
       if (process.env.NODE_ENV === 'development') {
         console.log('[Agora] joining with uid:', numericUid, typeof numericUid);
       }
