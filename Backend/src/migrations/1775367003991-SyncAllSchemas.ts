@@ -72,6 +72,9 @@ export class SyncAllSchemas1775367003991 implements MigrationInterface {
     await queryRunner.query(
       `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "learningGoals" text`,
     );
+    await queryRunner.query(
+      `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "refreshTokenVersion" integer DEFAULT 0`,
+    );
 
     // --- 2. TRANSACTIONS TABLE ---
     await queryRunner.query(

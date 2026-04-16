@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Search, BookOpen, Star, Loader2, ArrowRight, CheckCircle2 } from 'lucide-react';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
+import { useRouter, useSearchParams } from 'next/navigation';
 import IconRenderer from '@/components/IconRenderer';
 
 interface TuitionClass {
@@ -32,29 +33,41 @@ interface TuitionClass {
   };
 }
 
-export default function TuitionCatalog() {
+function TuitionCatalog() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [classes, setClasses] = useState<TuitionClass[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
 
   const categories = [
     'All', 'Class 5', 'Class 6', 'Class 7', 'Class 8',
     'Class 9', 'Class 10', 'Class 11', 'Class 12'
   ];
 
+  // Sync state with URL
+  useEffect(() => {
+    const urlSearch = searchParams.get('search') || '';
+    if (urlSearch !== searchTerm) {
+      setSearchTerm(urlSearch);
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     fetchClasses();
-  }, [activeCategory]);
+  }, [activeCategory, searchParams.get('search')]);
 
   const fetchClasses = async () => {
     try {
       setIsLoading(true);
+      const currentSearch = searchParams.get('search') || '';
       const params: any = {};
       if (activeCategory !== 'All') {
         params.class_level = activeCategory.replace('Class ', '');
       }
-      if (searchTerm) params.search = searchTerm;
+      if (currentSearch) params.search = currentSearch;
 
       const response = await api.get('/tuition/classes', { params });
       setClasses(response.data || []);
@@ -68,6 +81,17 @@ export default function TuitionCatalog() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    const q = searchTerm.trim();
+    
+    // Update URL param
+    const params = new URLSearchParams(searchParams.toString());
+    if (q) {
+      params.set('search', q);
+    } else {
+      params.delete('search');
+    }
+    router.push(`/tuition?${params.toString()}`);
+    
     fetchClasses();
   };
 
@@ -245,5 +269,13 @@ export default function TuitionCatalog() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function TuitionPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-slate-500">Loading...</div>}>
+      <TuitionCatalog />
+    </Suspense>
   );
 }

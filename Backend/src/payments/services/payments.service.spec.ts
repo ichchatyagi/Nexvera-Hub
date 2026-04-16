@@ -9,6 +9,8 @@ import { AppConfigService } from '../../app-config/app-config.service';
 import { Types } from 'mongoose';
 import { BadRequestException } from '@nestjs/common';
 import * as crypto from 'crypto';
+import { NotificationsService } from '../../notifications/notifications.service';
+import { NotificationType } from '../../notifications/schemas/notification.schema';
 
 const mockConfigService = {
   razorpayKeyId: 'test_key',
@@ -29,6 +31,10 @@ const mockEnrollmentsService = {
   enroll: jest.fn(),
 };
 
+const mockNotificationsService = {
+  createNotification: jest.fn(),
+};
+
 describe('PaymentsService Tuition Logic', () => {
   let service: PaymentsService;
 
@@ -43,6 +49,7 @@ describe('PaymentsService Tuition Logic', () => {
         },
         { provide: getModelToken(Course.name), useValue: mockCourseModel },
         { provide: EnrollmentsService, useValue: mockEnrollmentsService },
+        { provide: NotificationsService, useValue: mockNotificationsService },
       ],
     }).compile();
 
@@ -191,7 +198,7 @@ describe('PaymentsService Tuition Logic', () => {
       return { razorpay_order_id, razorpay_payment_id, razorpay_signature };
     };
 
-    it('should enroll subject monthly correctly mapping metadata', async () => {
+    it('should enroll subject monthly correctly mapping metadata and send notification', async () => {
       const courseId = new Types.ObjectId().toString();
       const subjectId = new Types.ObjectId().toString();
       const dto = setupVerifyMock({
@@ -214,6 +221,39 @@ describe('PaymentsService Tuition Logic', () => {
           subjectId,
         }),
       );
+      expect(mockNotificationsService.createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: NotificationType.PAYMENT_CONFIRMED,
+          user_id: 'u1',
+        })
+      );
+    });
+
+    it('should not send notification if transaction is already COMPLETED', async () => {
+      const courseId = new Types.ObjectId().toString();
+      const razorpay_order_id = 'order_valid';
+      const razorpay_payment_id = 'pay_valid';
+      const text = razorpay_order_id + '|' + razorpay_payment_id;
+      const razorpay_signature = crypto
+        .createHmac('sha256', mockConfigService.razorpayKeySecret)
+        .update(text)
+        .digest('hex');
+
+      mockTransactionRepo.findOne.mockResolvedValueOnce({
+        id: 'trans_1',
+        status: TransactionStatus.COMPLETED,
+        metadata: {},
+      });
+
+      const result = await service.verifyAndConfirmPayment('u1', {
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature,
+        courseId
+      });
+
+      expect(result.data.alreadyCompleted).toBe(true);
+      expect(mockNotificationsService.createNotification).not.toHaveBeenCalled();
     });
 
     it('should enroll class monthly correctly', async () => {

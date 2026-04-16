@@ -7,6 +7,8 @@ import { Types } from 'mongoose';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { validate } from 'class-validator';
 import { CreateCourseDto, ProductType, TuitionMetaDto } from './dto/course.dto';
+import { EnrollmentsService } from '../enrollments/enrollments.service';
+import { UserRole } from '../users/entities/user.entity';
 
 const mockCourseModel = {
   find: jest.fn(),
@@ -23,6 +25,10 @@ const mockReviewModel = {
   countDocuments: jest.fn(),
 };
 
+const mockEnrollmentsService = {
+  isActiveCourseEnrollment: jest.fn(),
+};
+
 describe('CoursesService', () => {
   let service: CoursesService;
 
@@ -37,6 +43,10 @@ describe('CoursesService', () => {
         {
           provide: getModelToken(Review.name),
           useValue: mockReviewModel,
+        },
+        {
+          provide: EnrollmentsService,
+          useValue: mockEnrollmentsService,
         },
       ],
     }).compile();
@@ -77,6 +87,10 @@ describe('CoursesService', () => {
       const mockCourses = [{ _id: 'c1', title: 'Course 1' }];
       mockCourseModel.find.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockCourses),
+        skip: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
       });
 
       const result = await service.findAssignedToTeacher('t1');
@@ -143,7 +157,45 @@ describe('CoursesService', () => {
   });
 
   describe('createReview', () => {
-    it('should create a review and update course stats', async () => {
+    it('should create a review and update course stats for an enrolled student', async () => {
+      const courseId = new Types.ObjectId().toString();
+      const mockSave = jest.fn();
+      const mockCourse = {
+        _id: courseId,
+        stats: { total_reviews: 0, average_rating: 0 },
+        save: mockSave,
+      };
+
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
+      mockReviewModel.findOne.mockResolvedValue(null);
+      mockCourseModel.findById.mockResolvedValue(mockCourse);
+      mockReviewModel.create.mockResolvedValue({ _id: 'r1', rating: 5 });
+
+      const dto = { rating: 5, review_text: 'Great' };
+      const result = await service.createReview(courseId, 's1', UserRole.STUDENT, dto);
+
+      expect(result.success).toBe(true);
+      expect(mockReviewModel.create).toHaveBeenCalled();
+      expect(mockCourse.stats.total_reviews).toBe(1);
+      expect(mockCourse.stats.average_rating).toBe(5);
+      expect(mockSave).toHaveBeenCalled();
+    });
+
+    it('should throw ForbiddenException when student is not enrolled', async () => {
+      const courseId = new Types.ObjectId().toString();
+
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(false);
+
+      const dto = { rating: 4, review_text: 'Not enrolled' };
+      await expect(
+        service.createReview(courseId, 's1', UserRole.STUDENT, dto),
+      ).rejects.toThrow(ForbiddenException);
+
+      // Must not proceed to create a review record
+      expect(mockReviewModel.create).not.toHaveBeenCalled();
+    });
+
+    it('should allow admin to review without enrollment check', async () => {
       const courseId = new Types.ObjectId().toString();
       const mockSave = jest.fn();
       const mockCourse = {
@@ -154,26 +206,26 @@ describe('CoursesService', () => {
 
       mockReviewModel.findOne.mockResolvedValue(null);
       mockCourseModel.findById.mockResolvedValue(mockCourse);
-      mockReviewModel.create.mockResolvedValue({ _id: 'r1', rating: 5 });
+      mockReviewModel.create.mockResolvedValue({ _id: 'r2', rating: 4 });
 
-      const dto = { rating: 5, review_text: 'Great' };
-      const result = await service.createReview(courseId, 's1', dto);
+      const dto = { rating: 4, review_text: 'Admin review' };
+      const result = await service.createReview(courseId, 'admin-1', UserRole.ADMIN, dto);
 
       expect(result.success).toBe(true);
-      expect(mockReviewModel.create).toHaveBeenCalled();
-      expect(mockCourse.stats.total_reviews).toBe(1);
-      expect(mockCourse.stats.average_rating).toBe(5);
-      expect(mockSave).toHaveBeenCalled();
+      // Admin bypasses enrollment check entirely
+      expect(mockEnrollmentsService.isActiveCourseEnrollment).not.toHaveBeenCalled();
     });
 
-    it('should throw an error if already reviewed', async () => {
+    it('should throw ForbiddenException if already reviewed', async () => {
       const courseId = new Types.ObjectId().toString();
+
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
       mockReviewModel.findOne.mockResolvedValue({ _id: 'r1' });
 
       const dto = { rating: 5 };
-      await expect(service.createReview(courseId, 's1', dto)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        service.createReview(courseId, 's1', UserRole.STUDENT, dto),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -183,9 +235,9 @@ describe('CoursesService', () => {
       mockCourseModel.find.mockReturnValue({
         skip: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnValue({
-          exec: jest.fn().mockResolvedValue(mockResult),
-        }),
+        select: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue(mockResult),
       });
       mockCourseModel.countDocuments.mockResolvedValue(1);
 
@@ -227,6 +279,78 @@ describe('CoursesService', () => {
       const result = await service.findTuitionSubject(classId, 'math');
       expect(result.success).toBe(true);
       expect(result.data).toEqual({ slug: 'math', status: 'published' });
+    });
+  });
+
+  describe('Search functionality', () => {
+    it('should use $text when search length >= 2', async () => {
+      mockCourseModel.find.mockReturnValue({
+        skip: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([]),
+      });
+      mockCourseModel.countDocuments.mockResolvedValue(0);
+
+      await service.findAll({ search: 'nest' });
+
+      expect(mockCourseModel.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          $text: { $search: 'nest' },
+        }),
+      );
+    });
+
+    it('should ignore search when length < 2', async () => {
+      mockCourseModel.find.mockReturnValue({
+        skip: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([]),
+      });
+      mockCourseModel.countDocuments.mockResolvedValue(0);
+
+      await service.findAll({ search: 'a' });
+
+      const filters = mockCourseModel.find.mock.calls[0][0];
+      expect(filters.$text).toBeUndefined();
+      expect(filters.$or).toBeUndefined();
+    });
+
+    it('should fall back to regex when $text errors', async () => {
+      // First call throws
+      mockCourseModel.find.mockReturnValueOnce({
+        skip: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockRejectedValue(new Error('text index required')),
+      });
+
+      // Second call (fallback) succeeds
+      mockCourseModel.find.mockReturnValueOnce({
+        skip: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([]),
+      });
+      mockCourseModel.countDocuments.mockResolvedValue(0);
+
+      await service.findAll({ search: 'nest' });
+
+      // Verify second attempt used $or regex
+      expect(mockCourseModel.find).toHaveBeenCalledTimes(2);
+      expect(mockCourseModel.find).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          $or: [
+            { title: { $regex: 'nest', $options: 'i' } },
+            { description: { $regex: 'nest', $options: 'i' } },
+          ],
+        }),
+      );
     });
   });
 

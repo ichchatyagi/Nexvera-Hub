@@ -17,6 +17,7 @@ import {
 } from '../enrollments/schemas/enrollment.schema';
 import { AppConfigModule } from '../app-config/app-config.module';
 import { EnrollmentsModule } from '../enrollments/enrollments.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { EnrollmentsModule } from '../enrollments/enrollments.module';
     ]),
     AppConfigModule,
     EnrollmentsModule,
+    NotificationsModule,
   ],
   controllers: [
     InstructorEarningsController,

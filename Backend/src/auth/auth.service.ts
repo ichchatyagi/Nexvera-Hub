@@ -50,8 +50,9 @@ export class AuthService {
     });
 
     // Refresh token lives longer; it will be verified separately.
+    const ver = (user as any).refreshTokenVersion ?? 0;
     const refreshToken = this.jwtService.sign(
-      { sub: user.id, type: 'refresh' } as any,
+      { sub: user.id, type: 'refresh', ver } as any,
       {
         secret: this.appConfigService.jwtSecret,
         expiresIn: '7d' as any,
@@ -185,6 +186,11 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
+    const expectedVer = (user as any).refreshTokenVersion ?? 0;
+    if (payload.ver !== expectedVer) {
+      throw new UnauthorizedException('Refresh token has been revoked');
+    }
+
     const tokens = this.buildTokens(user);
     return { success: true, data: tokens };
   }
@@ -193,8 +199,8 @@ export class AuthService {
   // logout (stub — ready for future token blacklist)
   // -----------------------------------------------------------------------
 
-  async logout(_userId: string) {
-    // TODO: add refreshToken to a blacklist (Redis) to invalidate it
+  async logout(userId: string) {
+    await this.usersService.bumpRefreshTokenVersion(userId);
     return { success: true, data: { message: 'Logged out successfully' } };
   }
 

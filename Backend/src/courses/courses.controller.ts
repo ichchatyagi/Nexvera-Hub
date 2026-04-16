@@ -106,6 +106,6 @@ export class CoursesController {
     @Param('id') id: string,
     @Body() dto: CreateReviewDto,
   ) {
-    return this.coursesService.createReview(id, user.id, dto);
+    return this.coursesService.createReview(id, user.id, user.role, dto);
   }
 }

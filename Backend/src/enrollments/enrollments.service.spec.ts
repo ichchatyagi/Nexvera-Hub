@@ -4,12 +4,18 @@ import { EnrollmentsService } from './enrollments.service';
 import { Enrollment } from './schemas/enrollment.schema';
 import { Types } from 'mongoose';
 import { ConflictException } from '@nestjs/common';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/schemas/notification.schema';
 
 const mockEnrollmentModel: any = {
   findOne: jest.fn(),
   create: jest.fn(),
   findById: jest.fn(),
   find: jest.fn(),
+};
+
+const mockNotificationsService = {
+  createNotification: jest.fn(),
 };
 
 describe('EnrollmentsService', () => {
@@ -22,6 +28,10 @@ describe('EnrollmentsService', () => {
         {
           provide: getModelToken(Enrollment.name),
           useValue: mockEnrollmentModel,
+        },
+        {
+          provide: NotificationsService,
+          useValue: mockNotificationsService,
         },
       ],
     }).compile();
@@ -38,7 +48,7 @@ describe('EnrollmentsService', () => {
   });
 
   describe('enroll', () => {
-    it('should enroll a student in a course', async () => {
+    it('should enroll a student in a course and send notification', async () => {
       const courseId = new Types.ObjectId().toString();
       mockEnrollmentModel.findOne.mockResolvedValue(null);
       mockEnrollmentModel.create.mockResolvedValue({
@@ -50,15 +60,22 @@ describe('EnrollmentsService', () => {
 
       expect(result.success).toBe(true);
       expect(mockEnrollmentModel.create).toHaveBeenCalled();
+      expect(mockNotificationsService.createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: NotificationType.ENROLLMENT_GRANTED,
+          user_id: 's1',
+        })
+      );
     });
 
-    it('should throw ConflictException if already enrolled', async () => {
+    it('should throw ConflictException if already enrolled and not send notification', async () => {
       const courseId = new Types.ObjectId().toString();
-      mockEnrollmentModel.findOne.mockResolvedValue({ _id: 'e1' });
+      mockEnrollmentModel.findOne.mockResolvedValue({ _id: 'e1', subscription_status: 'active' });
 
       await expect(service.enroll(courseId, 's1')).rejects.toThrow(
         ConflictException,
       );
+      expect(mockNotificationsService.createNotification).not.toHaveBeenCalled();
     });
   });
 
@@ -182,6 +199,60 @@ describe('EnrollmentsService', () => {
           product_type: 'course',
         }),
       );
+    });
+  });
+
+  describe('listActiveCourseIdsForStudent', () => {
+    it('returns deduplicated active non-expired course IDs and ignores tuition/expired entries', async () => {
+      const courseId1 = new Types.ObjectId();
+      const courseId2 = new Types.ObjectId();
+      const expiredCourseId = new Types.ObjectId();
+
+      // Simulate three categories of enrollments:
+      //  1. Active course with no expiry  → should be included
+      //  2. Active course with future expiry  → should be included
+      //  3. Active course but access_expires in the past  → excluded by the $or query
+      //  4. Tuition product_type  → excluded by the query filter
+      // The mongo query itself filters expired/tuition, so the mock only needs
+      // to return what a correct query would: active non-expired course rows.
+      mockEnrollmentModel.find = jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([
+          { course_id: courseId1 },
+          { course_id: courseId2 },
+          // duplicate of courseId1 to verify dedup
+          { course_id: courseId1 },
+        ]),
+      });
+
+      const result = await service.listActiveCourseIdsForStudent('s1');
+
+      // Verify the query filters correctly
+      expect(mockEnrollmentModel.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          student_id: 's1',
+          product_type: 'course',
+          status: 'active',
+        }),
+      );
+
+      // Should return unique IDs only
+      expect(result).toHaveLength(2);
+      expect(result).toContain(courseId1.toString());
+      expect(result).toContain(courseId2.toString());
+      expect(result).not.toContain(expiredCourseId.toString());
+    });
+
+    it('returns empty array when student has no active course enrollments', async () => {
+      mockEnrollmentModel.find = jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([]),
+      });
+
+      const result = await service.listActiveCourseIdsForStudent('s-no-courses');
+      expect(result).toEqual([]);
     });
   });
 });

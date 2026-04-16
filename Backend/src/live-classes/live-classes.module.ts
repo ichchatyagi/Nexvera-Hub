@@ -13,6 +13,7 @@ import { AppConfigModule } from '../app-config/app-config.module';
 import { AuthModule } from '../auth/auth.module';
 import { VideosModule } from '../videos/videos.module';
 import { EnrollmentsModule } from '../enrollments/enrollments.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { EnrollmentsModule } from '../enrollments/enrollments.module';
     AuthModule,
     VideosModule,
     EnrollmentsModule,
+    NotificationsModule,
   ],
   providers: [LiveClassesService, LiveClassesGateway],
   controllers: [LiveClassesController, AdminLiveClassesController],

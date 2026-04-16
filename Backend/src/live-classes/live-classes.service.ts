@@ -23,6 +23,8 @@ import { AppConfigService } from '../app-config/app-config.service';
 import { RtcTokenBuilder, RtcRole } from 'agora-access-token';
 import { VideosService } from '../videos/videos.service';
 import { EnrollmentsService } from '../enrollments/enrollments.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/schemas/notification.schema';
 
 // ─── Agora token shape ────────────────────────────────────────────────────────
 
@@ -68,6 +70,7 @@ export class LiveClassesService implements OnModuleInit {
     private readonly appConfig: AppConfigService,
     private readonly videosService: VideosService,
     private readonly enrollmentsService: EnrollmentsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   onModuleInit() {
@@ -418,6 +421,29 @@ export class LiveClassesService implements OnModuleInit {
 
     await lc.save();
 
+    // ── Notifications ───────────────────────────────────────────────────────
+    try {
+      const recipients = new Set([lc.teacher_id, ...(lc.registered_students || [])]);
+      const notifyPromises = Array.from(recipients).map(async (userId) => {
+        const isTeacher = userId === lc.teacher_id;
+        await this.notificationsService.createNotification({
+          user_id: userId,
+          type: NotificationType.LIVE_CLASS_STARTED,
+          title: 'Live class started',
+          body: isTeacher
+            ? `Your live class "${lc.title}" is now live.`
+            : `Class started: "${lc.title}". Join now.`,
+          data: {
+            liveClassId: lc._id.toString(),
+            courseId: lc.course_id.toString(),
+          },
+        });
+      });
+      await Promise.allSettled(notifyPromises);
+    } catch (err) {
+      this.logger.error(`Failed to send start notifications for class ${id}: ${err.message}`);
+    }
+
     this.logger.log(`Live class "${id}" started by "${requesterId}".`);
     return lc;
   }
@@ -504,6 +530,29 @@ export class LiveClassesService implements OnModuleInit {
     }
 
     await lc.save();
+
+    // ── Notifications ───────────────────────────────────────────────────────
+    try {
+      const recipients = new Set([lc.teacher_id, ...(lc.registered_students || [])]);
+      const notifyPromises = Array.from(recipients).map(async (userId) => {
+        const isTeacher = userId === lc.teacher_id;
+        await this.notificationsService.createNotification({
+          user_id: userId,
+          type: NotificationType.LIVE_CLASS_ENDED,
+          title: 'Live class ended',
+          body: isTeacher
+            ? `Your live class "${lc.title}" has ended.`
+            : `Class ended: "${lc.title}".`,
+          data: {
+            liveClassId: lc._id.toString(),
+            courseId: lc.course_id.toString(),
+          },
+        });
+      });
+      await Promise.allSettled(notifyPromises);
+    } catch (err) {
+      this.logger.error(`Failed to send end notifications for class ${id}: ${err.message}`);
+    }
 
     this.logger.log(`Live class "${id}" ended by "${requesterId}".`);
     return lc;
@@ -1060,13 +1109,24 @@ export class LiveClassesService implements OnModuleInit {
    * For students, this helps populate "All Upcoming Sessions" views.
    */
   async findAllForUser(userId: string, role: string) {
-    // Basic implementation: return upcoming non-cancelled classes
-    // Future: Filter by enrollments if role === STUDENT
+    const baseFilter: any = {
+      status: { $in: [LiveClassStatus.SCHEDULED, LiveClassStatus.LIVE] },
+      scheduled_end: { $gte: new Date() },
+    };
+
+    if (role === UserRole.STUDENT) {
+      const courseIds =
+        await this.enrollmentsService.listActiveCourseIdsForStudent(userId);
+      if (courseIds.length === 0) {
+        return { success: true, data: [] };
+      }
+      baseFilter.course_id = {
+        $in: courseIds.map((id) => new Types.ObjectId(id)),
+      };
+    }
+
     const data = await this.liveClassModel
-      .find({
-        status: { $in: [LiveClassStatus.SCHEDULED, LiveClassStatus.LIVE] },
-        scheduled_end: { $gte: new Date() },
-      })
+      .find(baseFilter)
       .sort({ scheduled_start: 1 })
       .select('-agora.recording_uid -registered_students -attended_students')
       .exec();

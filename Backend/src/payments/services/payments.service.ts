@@ -16,6 +16,8 @@ import { Transaction, TransactionStatus } from '../entities/transaction.entity';
 import { Course, CourseDocument } from '../../courses/schemas/course.schema';
 import { EnrollmentsService } from '../../enrollments/enrollments.service';
 import { VerifyRazorpayDto, CreateOrderDto } from '../dto/razorpay.dto';
+import { NotificationsService } from '../../notifications/notifications.service';
+import { NotificationType } from '../../notifications/schemas/notification.schema';
 
 @Injectable()
 export class PaymentsService implements OnModuleInit {
@@ -28,6 +30,7 @@ export class PaymentsService implements OnModuleInit {
     @InjectModel(Course.name)
     private readonly courseModel: Model<CourseDocument>,
     private readonly enrollmentsService: EnrollmentsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   onModuleInit() {
@@ -231,6 +234,30 @@ export class PaymentsService implements OnModuleInit {
       userId,
       transaction.metadata,
     );
+
+    // Send notification
+    try {
+      const metadata = transaction.metadata || {};
+      await this.notificationsService.createNotification({
+        user_id: userId,
+        type: NotificationType.PAYMENT_CONFIRMED,
+        title: 'Payment confirmed',
+        body: metadata.courseTitle
+          ? `Your payment for "${metadata.courseTitle}" was confirmed.`
+          : `Your payment was confirmed.`,
+        data: {
+          courseId,
+          razorpay_order_id,
+          razorpay_payment_id,
+          gateway: 'razorpay',
+          product_type: metadata.product_type,
+          access_scope: metadata.access_scope,
+          subjectId: metadata.subjectId,
+        },
+      });
+    } catch (err) {
+      console.error('Failed to send payment confirmation notification:', err);
+    }
 
     return {
       success: true,

@@ -20,12 +20,14 @@ import {
   UpdateLessonDto,
 } from './dto/curriculum.dto';
 import { UserRole } from '../users/entities/user.entity';
+import { EnrollmentsService } from '../enrollments/enrollments.service';
 
 @Injectable()
 export class CoursesService {
   constructor(
     @InjectModel(Course.name) private courseModel: Model<CourseDocument>,
     @InjectModel(Review.name) private reviewModel: Model<ReviewDocument>,
+    private readonly enrollmentsService: EnrollmentsService,
   ) {}
 
   async findAll(query: any = {}) {
@@ -33,12 +35,6 @@ export class CoursesService {
     if (query.category) filters['category.main'] = query.category;
     if (query.level) filters.level = query.level;
     if (query.price_type) filters['pricing.type'] = query.price_type;
-    if (query.search) {
-      filters.$or = [
-        { title: { $regex: query.search, $options: 'i' } },
-        { description: { $regex: query.search, $options: 'i' } },
-      ];
-    }
 
     if (query.product_type) {
       filters.product_type = query.product_type;
@@ -57,14 +53,55 @@ export class CoursesService {
     const limit = parseInt(query.limit, 10) || 10;
     const skip = (page - 1) * limit;
 
-    const data = await this.courseModel
-      .find(filters)
-      .skip(skip)
-      .limit(limit)
-      .select('-curriculum') // Don't return full curriculum on listing
-      .exec();
+    const trimmedSearch = query.search?.trim();
+    let data;
+    let total;
 
-    const total = await this.courseModel.countDocuments(filters);
+    if (trimmedSearch && trimmedSearch.length >= 2) {
+      const sanitizedSearch = trimmedSearch.slice(0, 64);
+      try {
+        const textFilters = { ...filters, $text: { $search: sanitizedSearch } };
+        data = await this.courseModel
+          .find(textFilters)
+          .skip(skip)
+          .limit(limit)
+          .select('-curriculum')
+          .select({ score: { $meta: 'textScore' } })
+          .sort({
+            score: { $meta: 'textScore' },
+            published_at: -1,
+            created_at: -1,
+          } as any)
+          .exec();
+        total = await this.courseModel.countDocuments(textFilters);
+      } catch (err) {
+        // Fallback to old regex behavior if index is missing
+        const regexFilters = {
+          ...filters,
+          $or: [
+            { title: { $regex: trimmedSearch, $options: 'i' } },
+            { description: { $regex: trimmedSearch, $options: 'i' } },
+          ],
+        };
+        data = await this.courseModel
+          .find(regexFilters)
+          .skip(skip)
+          .limit(limit)
+          .select('-curriculum')
+          .sort({ published_at: -1, created_at: -1 })
+          .exec();
+        total = await this.courseModel.countDocuments(regexFilters);
+      }
+    } else {
+      data = await this.courseModel
+        .find(filters)
+        .skip(skip)
+        .limit(limit)
+        .select('-curriculum')
+        .sort({ published_at: -1, created_at: -1 })
+        .exec();
+      total = await this.courseModel.countDocuments(filters);
+    }
 
     return {
       success: true,
@@ -132,14 +169,55 @@ export class CoursesService {
     const limit = parseInt(query.limit, 10) || 10;
     const skip = (page - 1) * limit;
 
-    const data = await this.courseModel
-      .find(filters)
-      .skip(skip)
-      .limit(limit)
-      .select('-tuition_meta.subjects.syllabus') // exclude heavy payloads
-      .exec();
+    const trimmedSearch = query.search?.trim();
+    let data;
+    let total;
 
-    const total = await this.courseModel.countDocuments(filters);
+    if (trimmedSearch && trimmedSearch.length >= 2) {
+      const sanitizedSearch = trimmedSearch.slice(0, 64);
+      try {
+        const textFilters = { ...filters, $text: { $search: sanitizedSearch } };
+        data = await this.courseModel
+          .find(textFilters)
+          .skip(skip)
+          .limit(limit)
+          .select('-tuition_meta.subjects.syllabus')
+          .select({ score: { $meta: 'textScore' } })
+          .sort({
+            score: { $meta: 'textScore' },
+            published_at: -1,
+            created_at: -1,
+          } as any)
+          .exec();
+        total = await this.courseModel.countDocuments(textFilters);
+      } catch (err) {
+        // Fallback to old regex behavior
+        const regexFilters = {
+          ...filters,
+          $or: [
+            { title: { $regex: trimmedSearch, $options: 'i' } },
+            { description: { $regex: trimmedSearch, $options: 'i' } },
+          ],
+        };
+        data = await this.courseModel
+          .find(regexFilters)
+          .skip(skip)
+          .limit(limit)
+          .select('-tuition_meta.subjects.syllabus')
+          .sort({ published_at: -1, created_at: -1 })
+          .exec();
+        total = await this.courseModel.countDocuments(regexFilters);
+      }
+    } else {
+      data = await this.courseModel
+        .find(filters)
+        .skip(skip)
+        .limit(limit)
+        .select('-tuition_meta.subjects.syllabus')
+        .sort({ published_at: -1, created_at: -1 })
+        .exec();
+      total = await this.courseModel.countDocuments(filters);
+    }
 
     return {
       success: true,
@@ -516,21 +594,28 @@ export class CoursesService {
 
   async createReview(
     courseId: string,
-    studentId: string,
+    requesterId: string,
+    requesterRole: UserRole,
     dto: CreateReviewDto,
   ) {
     if (!Types.ObjectId.isValid(courseId))
       throw new NotFoundException('Invalid ID');
 
-    // TODO: Verify the student is enrolled before allowing a review.
-    // Inject EnrollmentsService (or the Enrollment model directly) and call:
-    //   const enrollment = await this.enrollmentsService.findOne(courseId, studentId);
-    //   if (!enrollment) throw new ForbiddenException('Must be enrolled to leave a review');
+    // Enforce enrollment requirement for students; admins bypass.
+    if (requesterRole === UserRole.STUDENT) {
+      const enrolled = await this.enrollmentsService.isActiveCourseEnrollment(
+        courseId,
+        requesterId,
+      );
+      if (!enrolled) {
+        throw new ForbiddenException('Must be enrolled to leave a review');
+      }
+    }
 
     // Check if already reviewed
     const existing = await this.reviewModel.findOne({
       course_id: new Types.ObjectId(courseId),
-      student_id: studentId,
+      student_id: requesterId,
     });
     if (existing) {
       throw new ForbiddenException('You have already reviewed this course');
@@ -538,7 +623,7 @@ export class CoursesService {
 
     const review = await this.reviewModel.create({
       course_id: new Types.ObjectId(courseId),
-      student_id: studentId,
+      student_id: requesterId,
       rating: dto.rating,
       review_text: dto.review_text,
     });
@@ -549,7 +634,6 @@ export class CoursesService {
       const { stats } = course;
       stats.total_reviews += 1;
       // recalculate average rating
-      // For accurate recalculation we should query all reviews, but for now exact math:
       // new_avg = (old_avg * (n-1) + new_rating) / n
       stats.average_rating =
         (stats.average_rating * (stats.total_reviews - 1) + dto.rating) /
