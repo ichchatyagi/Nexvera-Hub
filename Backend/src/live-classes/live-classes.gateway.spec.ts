@@ -102,26 +102,30 @@ describe('LiveClassesGateway', () => {
       expect(mockSocket.disconnect).toHaveBeenCalledWith(true);
     });
 
-    it('should disconnect if chat is disabled', async () => {
+    it('should NOT disconnect if features are disabled but class is live', async () => {
       const liveClassId = new Types.ObjectId().toString();
       mockSocket.handshake.query = { token: 'valid-token', liveClassId };
       mockJwtService.verify.mockReturnValue({
         sub: 'user-1',
         role: 'student',
         email: 'test@test.com',
+        name: 'Test Student',
       });
       mockLiveClassesService.findById.mockResolvedValue({
         course_id: new Types.ObjectId(),
         features: { chat_enabled: false, whiteboard_enabled: false },
         status: 'live',
       });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
 
       await gateway.handleConnection(mockSocket);
+
+      expect(mockSocket.disconnect).not.toHaveBeenCalled();
+      expect(mockSocket.join).toHaveBeenCalledWith(liveClassId);
       expect(mockSocket.emit).toHaveBeenCalledWith(
-        'error',
-        'INTERACTIVE_FEATURES_DISABLED',
+        'layout:state',
+        expect.any(Object),
       );
-      expect(mockSocket.disconnect).toHaveBeenCalledWith(true);
     });
 
     it('should join room and emit history on success', async () => {
@@ -235,6 +239,61 @@ describe('LiveClassesGateway', () => {
       expect(mockSocket.emit).toHaveBeenCalledWith('error', 'NOT_ENROLLED');
       expect(mockSocket.disconnect).toHaveBeenCalledWith(true);
       expect(mockMessageModel.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('handleLayoutUpdate', () => {
+    let mockSocket: any;
+    let mockServer: any;
+
+    beforeEach(() => {
+      mockSocket = {
+        data: {
+          userId: 'user-1',
+          userRole: 'student',
+          liveClassId: new Types.ObjectId().toString(),
+        },
+        emit: jest.fn(),
+      };
+      mockServer = {
+        to: jest.fn().mockReturnThis(),
+        emit: jest.fn(),
+      };
+      gateway.server = mockServer;
+    });
+
+    it('should ignore if user is not authorized (student)', async () => {
+      const payload = { mode: 'VIDEO_FOCUS' as any };
+      await gateway.handleLayoutUpdate(mockSocket, payload);
+      expect(mockServer.to).not.toHaveBeenCalled();
+    });
+
+    it('should broadcast update if authorized (teacher) and validate/clamp values', async () => {
+      mockSocket.data.userRole = 'teacher';
+      const liveClassId = mockSocket.data.liveClassId;
+
+      const payload = {
+        mode: 'VIDEO_FOCUS' as any,
+        video: { x: 1.5, y: -0.5, w: 0.05, h: 2.0 },
+      };
+
+      await gateway.handleLayoutUpdate(mockSocket, payload);
+
+      expect(mockServer.to).toHaveBeenCalledWith(liveClassId);
+      expect(mockServer.emit).toHaveBeenCalledWith(
+        'layout:update',
+        expect.objectContaining({
+          mode: 'VIDEO_FOCUS',
+          video: {
+            w: 0.12, // clamped from 0.05 to min 0.12
+            h: 1, // clamped from 2.0 to max 1
+            x: 1 - 0.12, // clamped 1.5 to 1-w
+            y: 0, // clamped -0.5 to 0
+          },
+          version: 2, // 1 (default) -> 2
+          updated_at: expect.any(String),
+        }),
+      );
     });
   });
 });

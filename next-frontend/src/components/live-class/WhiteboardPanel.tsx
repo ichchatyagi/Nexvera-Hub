@@ -30,9 +30,14 @@ interface DrawEvent {
 interface WhiteboardPanelProps {
   liveClassId: string;
   isTeacher?: boolean;
+  variant?: 'panel' | 'stage';
 }
 
-export const WhiteboardPanel: React.FC<WhiteboardPanelProps> = ({ liveClassId, isTeacher = false }) => {
+export const WhiteboardPanel: React.FC<WhiteboardPanelProps> = ({
+  liveClassId,
+  isTeacher = false,
+  variant = 'panel',
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -215,7 +220,13 @@ export const WhiteboardPanel: React.FC<WhiteboardPanelProps> = ({ liveClassId, i
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-slate-900 rounded-[2.5rem] overflow-hidden border border-white/5 relative shadow-2xl">
+    <div
+      className={
+        variant === 'stage'
+          ? 'flex-1 flex flex-col bg-white relative w-full h-full'
+          : 'flex-1 flex flex-col bg-slate-900 rounded-[2.5rem] overflow-hidden border border-white/5 relative shadow-2xl'
+      }
+    >
       {/* Toolbar */}
       {isTeacher && (
         <div className="absolute top-6 left-1/2 -translate-x-1/2 p-2 bg-black/60 backdrop-blur-3xl rounded-2xl border border-white/10 flex items-center gap-3 z-20 shadow-2xl">

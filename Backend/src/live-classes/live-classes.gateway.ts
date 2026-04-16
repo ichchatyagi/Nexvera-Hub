@@ -42,6 +42,23 @@ interface WhiteboardDrawEvent {
   width: number;
 }
 
+type LayoutMode = 'WHITEBOARD_FOCUS' | 'VIDEO_FOCUS' | 'SPLIT' | 'CUSTOM';
+
+interface NormalizedRect {
+  x: number; // 0..1
+  y: number; // 0..1
+  w: number; // 0..1
+  h: number; // 0..1
+}
+
+interface LayoutState {
+  liveClassId: string;
+  version: number; // increments on each accepted update
+  mode: LayoutMode;
+  video: NormalizedRect; // instructor video overlay rect
+  updated_at: string; // ISO string
+}
+
 @WebSocketGateway({
   namespace: '/ws/live-classes',
   cors: { origin: true, credentials: true },
@@ -66,6 +83,7 @@ export class LiveClassesGateway
   // Temporary in-memory state for whiteboard history (per session)
   // In production, this should use Redis or a persistent store
   private whiteboardHistory: Map<string, any[]> = new Map();
+  private layoutState: Map<string, LayoutState> = new Map();
 
   async handleConnection(client: Socket) {
     try {
@@ -85,13 +103,7 @@ export class LiveClassesGateway
 
       const lc = await this.liveClassesService.findById(String(liveClassId));
 
-      // Only allow socket connection when at least one interactive feature is enabled
       const features = lc.features || {};
-      if (!features.chat_enabled && !features.whiteboard_enabled) {
-        client.emit('error', 'INTERACTIVE_FEATURES_DISABLED');
-        client.disconnect(true);
-        return;
-      }
       if (lc.status === 'cancelled' || lc.status === 'ended') {
         client.emit('error', 'CLASS_NOT_ACTIVE');
         client.disconnect(true);
@@ -124,19 +136,37 @@ export class LiveClassesGateway
       // Join room for this live class
       client.join(data.liveClassId);
 
-      // Optionally emit recent history on connect
-      const recent = await this.messageModel
-        .find({ live_class_id: new Types.ObjectId(data.liveClassId) })
-        .sort({ created_at: -1 })
-        .limit(50)
-        .lean()
-        .exec();
+      // Layout state (ALWAYS emit)
+      let state = this.layoutState.get(data.liveClassId);
+      if (!state) {
+        state = {
+          liveClassId: data.liveClassId,
+          version: 1,
+          mode: 'WHITEBOARD_FOCUS',
+          video: { x: 0.7, y: 0.68, w: 0.28, h: (0.28 * 9) / 16 },
+          updated_at: new Date().toISOString(),
+        };
+        this.layoutState.set(data.liveClassId, state);
+      }
+      client.emit('layout:state', state);
 
-      client.emit('chat:history', recent.reverse());
+      // Optionally emit recent history on connect
+      if (features.chat_enabled) {
+        const recent = await this.messageModel
+          .find({ live_class_id: new Types.ObjectId(data.liveClassId) })
+          .sort({ created_at: -1 })
+          .limit(50)
+          .lean()
+          .exec();
+
+        client.emit('chat:history', recent.reverse());
+      }
 
       // Whiteboard history
-      const drawHistory = this.whiteboardHistory.get(data.liveClassId) || [];
-      client.emit('whiteboard:history', drawHistory);
+      if (features.whiteboard_enabled) {
+        const drawHistory = this.whiteboardHistory.get(data.liveClassId) || [];
+        client.emit('whiteboard:history', drawHistory);
+      }
     } catch (err) {
       client.disconnect(true);
     }
@@ -261,5 +291,93 @@ export class LiveClassesGateway
     if (!data) return;
     const history = this.whiteboardHistory.get(data.liveClassId) || [];
     client.emit('whiteboard:history', history);
+  }
+
+  @SubscribeMessage('layout:update')
+  handleLayoutUpdate(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    payload: Partial<{ mode: LayoutMode; video: Partial<NormalizedRect> }>,
+  ) {
+    const data = client.data as LiveClassClientData | undefined;
+    if (!data) return;
+
+    // Security: only allow roles teacher, admin, moderator
+    if (!['teacher', 'admin', 'moderator'].includes(data.userRole)) return;
+
+    const liveClassId = data.liveClassId;
+    let state = this.layoutState.get(liveClassId);
+
+    if (!state) {
+      state = {
+        liveClassId,
+        version: 1,
+        mode: 'WHITEBOARD_FOCUS',
+        video: { x: 0.7, y: 0.68, w: 0.28, h: (0.28 * 9) / 16 },
+        updated_at: new Date().toISOString(),
+      };
+    }
+
+    const nextState = { ...state };
+    let changed = false;
+
+    if (
+      payload.mode &&
+      ['WHITEBOARD_FOCUS', 'VIDEO_FOCUS', 'SPLIT', 'CUSTOM'].includes(
+        payload.mode,
+      ) &&
+      payload.mode !== state.mode
+    ) {
+      nextState.mode = payload.mode;
+      changed = true;
+    }
+
+    if (payload.video) {
+      const v = payload.video;
+      const currentV = state.video;
+
+      // Check if at least one field is a finite number
+      const hasFiniteInput =
+        (typeof v.x === 'number' && Number.isFinite(v.x)) ||
+        (typeof v.y === 'number' && Number.isFinite(v.y)) ||
+        (typeof v.w === 'number' && Number.isFinite(v.w)) ||
+        (typeof v.h === 'number' && Number.isFinite(v.h));
+
+      if (hasFiniteInput) {
+        const clamp = (
+          val: any,
+          min: number,
+          max: number,
+          fallbackValue: number,
+        ) => {
+          if (typeof val !== 'number' || !Number.isFinite(val))
+            return fallbackValue;
+          return Math.max(min, Math.min(max, val));
+        };
+
+        const w = clamp(v.w, 0.12, 1, currentV.w);
+        const h = clamp(v.h, 0.12, 1, currentV.h);
+        const x = clamp(v.x, 0, 1 - w, currentV.x);
+        const y = clamp(v.y, 0, 1 - h, currentV.y);
+
+        // Check if computed rect differs
+        if (
+          x !== currentV.x ||
+          y !== currentV.y ||
+          w !== currentV.w ||
+          h !== currentV.h
+        ) {
+          nextState.video = { x, y, w, h };
+          changed = true;
+        }
+      }
+    }
+
+    if (changed) {
+      nextState.version++;
+      nextState.updated_at = new Date().toISOString();
+      this.layoutState.set(liveClassId, nextState);
+      this.server.to(liveClassId).emit('layout:update', nextState);
+    }
   }
 }

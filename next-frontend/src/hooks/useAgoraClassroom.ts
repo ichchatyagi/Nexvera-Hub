@@ -55,6 +55,8 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
   const [remoteStreams, setRemoteStreams] = useState<RemoteStream[]>([]);
   const localAudioRef = useRef<ILocalAudioTrack | null>(null);
   const localVideoRef = useRef<ILocalVideoTrack | null>(null);
+  const [localVideoTrack, setLocalVideoTrack] = useState<ILocalVideoTrack | null>(null);
+  const [localAudioTrack, setLocalAudioTrack] = useState<ILocalAudioTrack | null>(null);
   const isJoiningRef = useRef(false);
 
   // Initialize client when options change
@@ -154,6 +156,8 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
           ]);
           localAudioRef.current = audioTrack;
           localVideoRef.current = videoTrack;
+          setLocalAudioTrack(audioTrack);
+          setLocalVideoTrack(videoTrack);
           
           if (audioTrack && videoTrack) {
             await client.publish([audioTrack, videoTrack]);
@@ -184,6 +188,8 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
     localVideoRef.current?.close();
     localAudioRef.current = null;
     localVideoRef.current = null;
+    setLocalAudioTrack(null);
+    setLocalVideoTrack(null);
     await clientRef.current.leave();
     setRemoteStreams([]);
     setJoined(false);
@@ -210,6 +216,7 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
     leave,
     toggleMic,
     toggleCamera,
-    localVideoTrack: localVideoRef.current,
+    localVideoTrack,
+    localAudioTrack,
   };
 }

@@ -14,6 +14,7 @@ interface AgoraWhiteboardPanelProps {
   liveClassId: string;
   isTeacher: boolean;
   userId?: string;
+  variant?: 'panel' | 'stage';
 }
 
 // white-web-sdk appliance names (v2.x ApplianceNames enum values)
@@ -42,6 +43,7 @@ export const AgoraWhiteboardPanel: React.FC<AgoraWhiteboardPanelProps> = ({
   liveClassId,
   isTeacher,
   userId,
+  variant = 'panel',
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -62,6 +64,7 @@ export const AgoraWhiteboardPanel: React.FC<AgoraWhiteboardPanelProps> = ({
   const toolRef    = useRef<Appliance>('pencil');
   const colorRef   = useRef<string>('#1E1E1E');
   const strokeWRef = useRef<number>(4);
+  const roomInstanceIdRef = useRef(0);
 
   // ── Direct setMemberState helper (reads from refs, never stale) ───────────
   // Calling this with only the changed fields; white-web-sdk merges state.
@@ -72,7 +75,9 @@ export const AgoraWhiteboardPanel: React.FC<AgoraWhiteboardPanelProps> = ({
   }) {
     const room = roomRef.current;
     if (!room) {
-      console.warn('[Whiteboard] applyMemberState: room not ready');
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`[Whiteboard] applyMemberState: room not ready (instanceId: ${roomInstanceIdRef.current})`);
+      }
       return;
     }
     const state: Record<string, unknown> = {};
@@ -88,7 +93,7 @@ export const AgoraWhiteboardPanel: React.FC<AgoraWhiteboardPanelProps> = ({
     const next = room.setMemberState(state);
     if (process.env.NODE_ENV === 'development') {
       // Helpful when diagnosing "tool UI != actual appliance" issues.
-      console.log('[Whiteboard] setMemberState', state, '=>', next?.currentApplianceName);
+      console.log(`[Whiteboard] applyMemberState (instanceId: ${roomInstanceIdRef.current})`, state, '=>', next?.currentApplianceName);
     }
   }
 
@@ -147,7 +152,18 @@ export const AgoraWhiteboardPanel: React.FC<AgoraWhiteboardPanelProps> = ({
   useEffect(() => {
     if (!config || !containerRef.current) return;
 
+    roomInstanceIdRef.current += 1;
+    const currentInitId = roomInstanceIdRef.current;
+    let isCancelled = false;
     let room: any = null;
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Whiteboard] init start (id: ${currentInitId})`, {
+        room_uuid: config.room_uuid,
+        isTeacher,
+      });
+    }
+
     const sdk = new WhiteWebSdk({
       appIdentifier: config.app_id,
       region: config.region as any,
@@ -155,7 +171,7 @@ export const AgoraWhiteboardPanel: React.FC<AgoraWhiteboardPanelProps> = ({
 
     async function initWhiteboard() {
       try {
-        room = await sdk.joinRoom({
+        const joinedRoom = await sdk.joinRoom({
           uuid:                config.room_uuid,
           roomToken:           config.room_token,
           uid:                 userId || String(Math.floor(Math.random() * 1_000_000)),
@@ -163,14 +179,26 @@ export const AgoraWhiteboardPanel: React.FC<AgoraWhiteboardPanelProps> = ({
           disableDeviceInputs: !isTeacher,
         });
 
+        if (isCancelled || currentInitId !== roomInstanceIdRef.current) {
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`[Whiteboard] join resolved but stale/cancelled (id: ${currentInitId}), cleaning up...`);
+          }
+          joinedRoom.bindHtmlElement(null);
+          joinedRoom.disconnect();
+          return;
+        }
+
+        room = joinedRoom;
         roomRef.current = room;
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[Whiteboard] join resolved (id: ${currentInitId}, uuid: ${room.uuid})`);
+        }
 
         if (containerRef.current) {
           if (process.env.NODE_ENV === 'development') {
-            const rect = containerRef.current.getBoundingClientRect();
-            console.log('[Whiteboard] container rect:', rect);
+            console.log(`[Whiteboard] bindHtmlElement (id: ${currentInitId})`);
           }
-
           room.bindHtmlElement(containerRef.current);
 
           // Set the initial tool / color / size immediately after binding
@@ -183,19 +211,31 @@ export const AgoraWhiteboardPanel: React.FC<AgoraWhiteboardPanelProps> = ({
           }
         }
       } catch (err) {
-        console.error('[Whiteboard] Failed to initialize Agora whiteboard', err);
+        if (!isCancelled) {
+          console.error(`[Whiteboard] Failed to initialize Agora whiteboard (id: ${currentInitId})`, err);
+        }
       }
     }
 
     initWhiteboard();
 
     return () => {
+      isCancelled = true;
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[Whiteboard] cleanup (id: ${currentInitId})`);
+      }
       if (room) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[Whiteboard] disconnect (id: ${currentInitId}, uuid: ${room.uuid})`);
+        }
+        room.bindHtmlElement(null);
         room.disconnect();
       }
-      roomRef.current = null;
+      if (roomRef.current === room) {
+        roomRef.current = null;
+      }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config, isTeacher, userId]);
 
   // Ensure the SDK sees the *latest* selected tool at gesture start.
@@ -228,16 +268,20 @@ export const AgoraWhiteboardPanel: React.FC<AgoraWhiteboardPanelProps> = ({
     };
   }, [isTeacher]);
 
-  // ── Loading ───────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full bg-slate-900 rounded-[2.5rem] border border-white/5">
+      <div
+        className={
+          variant === 'stage'
+            ? 'flex items-center justify-center h-full bg-white transition-colors duration-500'
+            : 'flex items-center justify-center h-full bg-slate-900 rounded-[2.5rem] border border-white/5 transition-colors duration-500'
+        }
+      >
         <Loader2 className="animate-spin text-blue-600" size={32} />
       </div>
     );
   }
 
-  // ── Fallback / error ──────────────────────────────────────────────────────
   if (errorCode || !config) {
     if (
       errorCode === 'AGORA_DISABLED' ||
@@ -245,29 +289,55 @@ export const AgoraWhiteboardPanel: React.FC<AgoraWhiteboardPanelProps> = ({
       errorCode === 'WHITEBOARD_UNAVAILABLE'
     ) {
       return (
-        <div className="h-full flex flex-col rounded-[2.5rem] overflow-hidden border border-white/5 shadow-2xl">
-          <div className="px-6 py-3 bg-slate-900 border-b border-white/5">
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">
-              Agora whiteboard unavailable — using fallback
-            </p>
-          </div>
+        <div
+          className={
+            variant === 'stage'
+              ? 'h-full flex flex-col'
+              : 'h-full flex flex-col rounded-[2.5rem] overflow-hidden border border-white/5 shadow-2xl'
+          }
+        >
+          {variant !== 'stage' && (
+            <div className="px-6 py-3 bg-slate-900 border-b border-white/5">
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">
+                Agora whiteboard unavailable — using fallback
+              </p>
+            </div>
+          )}
           <div className="flex-1 min-h-0">
-            <WhiteboardPanel liveClassId={liveClassId} isTeacher={isTeacher} />
+            <WhiteboardPanel
+              liveClassId={liveClassId}
+              isTeacher={isTeacher}
+              variant={variant}
+            />
           </div>
         </div>
       );
     }
 
     return (
-      <div className="flex items-center justify-center h-full bg-slate-900 rounded-[2.5rem] border border-white/5">
-        <p className="text-xs font-black text-white/30 uppercase tracking-[0.2em]">Whiteboard unavailable</p>
+      <div
+        className={
+          variant === 'stage'
+            ? 'flex items-center justify-center h-full bg-white'
+            : 'flex items-center justify-center h-full bg-slate-900 rounded-[2.5rem] border border-white/5'
+        }
+      >
+        <p className="text-xs font-black text-white/30 uppercase tracking-[0.2em]">
+          Whiteboard unavailable
+        </p>
       </div>
     );
   }
 
   // ── Main render ───────────────────────────────────────────────────────────
   return (
-    <div className="flex-1 w-full h-full flex flex-col rounded-[2.5rem] overflow-hidden border border-white/5 shadow-2xl bg-white">
+    <div
+      className={
+        variant === 'stage'
+          ? 'flex-1 w-full h-full flex flex-col bg-white overflow-hidden'
+          : 'flex-1 w-full h-full flex flex-col rounded-[2.5rem] overflow-hidden border border-white/5 shadow-2xl bg-white'
+      }
+    >
 
       {/* Teacher toolbar — rendered OUTSIDE and above the canvas div */}
       {isTeacher && (
