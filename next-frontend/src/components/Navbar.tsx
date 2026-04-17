@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Menu, X, User, LogOut, LayoutDashboard, Search, Loader2, Bell } from 'lucide-react';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
-import ReactCountryFlag from "react-country-flag"
+
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { useNotifications } from '@/context/NotificationsContext';
@@ -141,13 +141,19 @@ const CountryDropdown = () => {
 
     return (
         <div
-            className="relative group lg:mr-2"
+            className="relative group"
             onMouseEnter={() => setIsOpen(true)}
             onMouseLeave={() => setIsOpen(false)}
         >
             <button className="flex items-center gap-1.5 px-2 py-2 text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors focus:outline-none rounded-xl hover:bg-slate-50">
                 <span className="hidden sm:inline-block text-xs font-semibold">{selectedCountry.name}</span>
-                <span className="text-lg leading-none"><ReactCountryFlag countryCode={selectedCountry.code} /></span>
+                <span className="flex items-center">
+                    <img
+                        src={`https://flagcdn.com/${selectedCountry.code.toLowerCase()}.svg`}
+                        alt={selectedCountry.name}
+                        className="w-5 h-3.5 object-cover rounded-[1px] shadow-sm"
+                    />
+                </span>
                 <ChevronDown size={14} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
             <AnimatePresence>
@@ -172,7 +178,13 @@ const CountryDropdown = () => {
                                 `}
                             >
                                 <span className="text-xs font-semibold">{country.name}</span>
-                                <span className="text-lg"><ReactCountryFlag countryCode={country.code} /></span>
+                                <span className="flex items-center">
+                                    <img
+                                        src={`https://flagcdn.com/${country.code.toLowerCase()}.svg`}
+                                        alt={country.name}
+                                        className="w-5 h-3.5 object-cover rounded-[1px] shadow-sm"
+                                    />
+                                </span>
                             </button>
                         ))}
                     </motion.div>
@@ -353,11 +365,6 @@ const Navbar = () => {
         { label: 'Learning Roadmaps', path: '/roadmaps' }
     ];
 
-    const careerItems = [
-        { label: 'Career Support', path: '/career-support' },
-        { label: 'Student Success Stories', path: '/student-stories' },
-        { label: 'FAQ', path: '/faq' }
-    ];
 
     const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
@@ -481,27 +488,26 @@ const Navbar = () => {
 
     return (
         <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-slate-100">
-            <nav className="flex items-center justify-between px-6 lg:px-12 h-20 relative w-full lg:max-w-[1400px] lg:mx-auto">
+            <nav className="flex items-center justify-between gap-4 px-6 lg:px-12 h-20 relative w-full lg:max-w-[1400px] lg:mx-auto">
                 {/* Logo */}
-                <div className="flex items-center w-28 sm:w-32 lg:w-48 relative h-full shrink-0">
+                <div className="flex items-center w-36 sm:w-40 lg:w-48 relative h-full shrink-0">
                     <Link href="/" className="absolute left-0 top-1/2 -translate-y-1/2 py-2">
-                        <Image src="/assets/logo.PNG" alt="Nexvera Hub" width={200} height={100} className="h-12 sm:h-16 lg:h-24 w-auto object-contain drop-shadow-sm" />
+                        <Image src="/assets/logo.PNG" alt="Nexvera Hub" width={200} height={100} className="h-16 sm:h-20 lg:h-24 w-auto object-contain drop-shadow-sm transition-all" />
                     </Link>
                 </div>
 
                 {/* Desktop Menu - moved to central area but with better spacing */}
-                <div className="hidden lg:flex items-center gap-6 text-slate-600 font-medium text-[14px] shrink-0">
+                <div className="hidden lg:flex items-center ml-16 gap-7 text-slate-600 font-medium text-[14px] shrink-0">
                     <Link href="/" className={pathname === "/" ? "text-blue-600 font-semibold" : "hover:text-blue-600 transition-colors"}>Home</Link>
                     <NavDropdown title="About" items={aboutItems} />
                     <Link href="/courses" className={pathname === "/courses" ? "text-blue-600 font-semibold" : "hover:text-blue-600 transition-colors"}>Courses</Link>
                     <Link href="/tuition" className={pathname?.startsWith("/tuition") ? "text-blue-600 font-semibold" : "hover:text-blue-600 transition-colors"}>Tuition</Link>
                     <NavDropdown title="Resources" items={resourceItems} />
-                    <NavDropdown title="Career" items={careerItems} />
                     <Link href="/contact" className={pathname === "/contact" ? "text-blue-600 font-semibold" : "hover:text-blue-600 transition-colors"}>Contact</Link>
                 </div>
 
                 {/* Search Bar - Center Right */}
-                <div className="hidden lg:block flex-1 max-w-md mx-6 relative">
+                <div className="hidden lg:block flex-1 max-w-md mx-4 relative">
                     <form onSubmit={handleSearchSubmit} className="relative group">
                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors">
                             <Search size={18} />
@@ -529,10 +535,10 @@ const Navbar = () => {
                 </div>
 
                 {/* Right side: Auth + Hamburger */}
-                <div className="flex items-center gap-3 lg:gap-4 shrink-0">
+                <div className="flex items-center gap-4 shrink-0">
                     <CountryDropdown />
                     {!isAuthenticated ? (
-                        <div className="flex items-center gap-2 lg:gap-4">
+                        <div className="flex items-center gap-2 lg:gap-3">
                             <Link href="/login" className="hidden xl:block text-slate-700 font-semibold px-4 py-2 text-sm hover:text-blue-600 transition-colors cursor-pointer outline-none">Log In</Link>
                             <Link href="/register" className="hidden sm:block bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-bold px-6 py-2.5 rounded-full text-sm transition-all shadow-lg shadow-blue-200 cursor-pointer outline-none text-center">
                                 Sign Up
@@ -561,56 +567,56 @@ const Navbar = () => {
                                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                                     className="flex items-center gap-2 p-1 pl-3 rounded-full border border-slate-200 hover:border-blue-200 transition-all hover:bg-blue-50/50"
                                 >
-                                <span className="text-sm font-bold text-slate-700 hidden sm:block">{user?.name?.split(' ')[0]}</span>
-                                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
-                                    {user?.name?.[0].toUpperCase()}
-                                </div>
-                            </button>
+                                    <span className="text-sm font-bold text-slate-700 hidden sm:block">{user?.name?.split(' ')[0]}</span>
+                                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
+                                        {user?.name?.[0].toUpperCase()}
+                                    </div>
+                                </button>
 
-                            <AnimatePresence>
-                                {isUserMenuOpen && (
-                                    <>
-                                        <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)}></div>
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                            className="absolute right-0 mt-3 w-56 bg-white border border-slate-100 rounded-2xl shadow-2xl z-50 p-2"
-                                        >
-                                            <div className="px-4 py-3 border-b border-slate-50 mb-2">
-                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Signed in as</p>
-                                                <p className="text-sm font-bold text-slate-900 truncate">{user?.email}</p>
-                                            </div>
-
-                                            <Link
-                                                href={user?.role === 'admin' ? '/admin/courses' : user?.role === 'teacher' ? '/teacher/dashboard' : '/dashboard'}
-                                                className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-all"
-                                                onClick={() => setIsUserMenuOpen(false)}
+                                <AnimatePresence>
+                                    {isUserMenuOpen && (
+                                        <>
+                                            <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)}></div>
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                className="absolute right-0 mt-3 w-56 bg-white border border-slate-100 rounded-2xl shadow-2xl z-50 p-2"
                                             >
-                                                <LayoutDashboard size={18} />
-                                                {user?.role === 'admin' ? 'Admin Catalog' : 'Dashboard'}
-                                            </Link>
+                                                <div className="px-4 py-3 border-b border-slate-50 mb-2">
+                                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Signed in as</p>
+                                                    <p className="text-sm font-bold text-slate-900 truncate">{user?.email}</p>
+                                                </div>
 
-                                            <Link
-                                                href="/profile"
-                                                className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-all"
-                                                onClick={() => setIsUserMenuOpen(false)}
-                                            >
-                                                <User size={18} />
-                                                Profile
-                                            </Link>
+                                                <Link
+                                                    href={user?.role === 'admin' ? '/admin/courses' : user?.role === 'teacher' ? '/teacher/dashboard' : '/dashboard'}
+                                                    className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-all"
+                                                    onClick={() => setIsUserMenuOpen(false)}
+                                                >
+                                                    <LayoutDashboard size={18} />
+                                                    {user?.role === 'admin' ? 'Admin Catalog' : 'Dashboard'}
+                                                </Link>
 
-                                            <button
-                                                onClick={() => { logout(); setIsUserMenuOpen(false); }}
-                                                className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-all text-left"
-                                            >
-                                                <LogOut size={18} />
-                                                Logout
-                                            </button>
-                                        </motion.div>
-                                    </>
-                                )}
-                            </AnimatePresence>
+                                                <Link
+                                                    href="/profile"
+                                                    className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-all"
+                                                    onClick={() => setIsUserMenuOpen(false)}
+                                                >
+                                                    <User size={18} />
+                                                    Profile
+                                                </Link>
+
+                                                <button
+                                                    onClick={() => { logout(); setIsUserMenuOpen(false); }}
+                                                    className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-all text-left"
+                                                >
+                                                    <LogOut size={18} />
+                                                    Logout
+                                                </button>
+                                            </motion.div>
+                                        </>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         </div>
                     )}
@@ -690,7 +696,6 @@ const Navbar = () => {
                             </Link>
 
                             <MobileNavDropdown title="Resources" items={resourceItems} closeMenu={closeMobileMenu} />
-                            <MobileNavDropdown title="Career" items={careerItems} closeMenu={closeMobileMenu} />
 
                             <Link
                                 href="/contact"

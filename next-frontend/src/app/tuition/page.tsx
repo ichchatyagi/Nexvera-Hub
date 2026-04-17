@@ -82,7 +82,7 @@ function TuitionCatalog() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const q = searchTerm.trim();
-    
+
     // Update URL param
     const params = new URLSearchParams(searchParams.toString());
     if (q) {
@@ -91,7 +91,7 @@ function TuitionCatalog() {
       params.delete('search');
     }
     router.push(`/tuition?${params.toString()}`);
-    
+
     fetchClasses();
   };
 

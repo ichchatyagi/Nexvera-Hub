@@ -46,6 +46,10 @@ export const adminNotificationTemplate = (data: any) => `
                 <div class="value">${data.phone}</div>
             </div>
             <div class="field">
+                <div class="label">Inquiry For</div>
+                <div class="value">${data.inquiryFor || 'General Inquiry'}</div>
+            </div>
+            <div class="field">
                 <div class="label">Message</div>
                 <div class="value">${data.message || 'No message provided'}</div>
             </div>
