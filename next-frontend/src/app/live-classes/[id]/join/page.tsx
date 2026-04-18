@@ -38,6 +38,7 @@ const AgoraWhiteboardPanel = dynamic(
   { ssr: false },
 );
 import { io } from 'socket.io-client';
+import { getSocketUrl } from '@/utils/socket';
 import { getCookie } from 'cookies-next';
 import { ConfirmationModal } from '@/components/ConfirmationModal';
 import { useLiveClassLayout } from '@/hooks/useLiveClassLayout';
@@ -122,7 +123,8 @@ const JoinLiveClass = () => {
 
       // Lifecycle Socket
       const token = getCookie('access_token');
-      const socket = io(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'}/ws/live-classes`, {
+      const apiUrl = getSocketUrl('/ws/live-classes');
+      const socket = io(apiUrl, {
         query: { token, liveClassId: id },
         withCredentials: true,
       });

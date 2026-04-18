@@ -715,13 +715,15 @@ export class LiveClassesService implements OnModuleInit {
 
     // If student, check course enrollment
     if (requesterRole === UserRole.STUDENT) {
-      const isEnrolled = await this.enrollmentsService.isActiveCourseEnrollment(
-        lc.course_id.toString(),
+      const isEnrolled = await this.enrollmentsService.hasAccess(
         studentId,
+        lc.course_id.toString(),
+        lc.product_type,
+        lc.subject_id?.toString(),
       );
       if (!isEnrolled) {
         throw new ForbiddenException(
-          'You must be enrolled in this course to register for its live sessions.',
+          `You must be enrolled in this ${lc.product_type} to register for its live sessions.`,
         );
       }
     }
@@ -819,13 +821,15 @@ export class LiveClassesService implements OnModuleInit {
           'You are not allowed to join this session.',
         );
       }
-      const isEnrolled = await this.enrollmentsService.isActiveCourseEnrollment(
-        lc.course_id.toString(),
+      const isEnrolled = await this.enrollmentsService.hasAccess(
         userId,
+        lc.course_id.toString(),
+        lc.product_type,
+        lc.subject_id?.toString(),
       );
       if (!isEnrolled) {
         throw new ForbiddenException(
-          'You must be enrolled in this course to join its live sessions.',
+          `You must be enrolled in this ${lc.product_type} to join its live sessions.`,
         );
       }
     }
@@ -1210,14 +1214,12 @@ export class LiveClassesService implements OnModuleInit {
     };
 
     if (role === UserRole.STUDENT) {
-      const courseIds =
-        await this.enrollmentsService.listActiveCourseIdsForStudent(userId);
-      if (courseIds.length === 0) {
+      const accessFilters =
+        await this.enrollmentsService.getStudentAccessFilters(userId);
+      if (accessFilters.length === 0) {
         return { success: true, data: [] };
       }
-      baseFilter.course_id = {
-        $in: courseIds.map((id) => new Types.ObjectId(id)),
-      };
+      baseFilter.$or = accessFilters;
     }
 
     const data = await this.liveClassModel

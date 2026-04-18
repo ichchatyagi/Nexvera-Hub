@@ -102,6 +102,8 @@ const mockVideosService = {
 const mockEnrollmentsService = {
   isActiveCourseEnrollment: jest.fn(),
   listActiveCourseIdsForStudent: jest.fn(),
+  getStudentAccessFilters: jest.fn(),
+  hasAccess: jest.fn(),
 };
 
 const mockNotificationsService = {
@@ -364,7 +366,7 @@ describe('LiveClassesService', () => {
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
       });
-      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
+      mockEnrollmentsService.hasAccess.mockResolvedValue(true);
 
       const result = await service.register(
         mockLc._id.toString(),
@@ -382,7 +384,7 @@ describe('LiveClassesService', () => {
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
       });
-      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(false);
+      mockEnrollmentsService.hasAccess.mockResolvedValue(false);
 
       await expect(
         service.register(mockLc._id.toString(), STUDENT_ID, UserRole.STUDENT),
@@ -396,7 +398,7 @@ describe('LiveClassesService', () => {
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
       });
-      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
+      mockEnrollmentsService.hasAccess.mockResolvedValue(true);
 
       const result = await service.register(
         mockLc._id.toString(),
@@ -417,7 +419,7 @@ describe('LiveClassesService', () => {
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
       });
-      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
+      mockEnrollmentsService.hasAccess.mockResolvedValue(true);
 
       await expect(
         service.register(mockLc._id.toString(), STUDENT_ID, UserRole.STUDENT),
@@ -429,7 +431,7 @@ describe('LiveClassesService', () => {
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
       });
-      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
+      mockEnrollmentsService.hasAccess.mockResolvedValue(true);
 
       await expect(
         service.register(mockLc._id.toString(), STUDENT_ID, UserRole.STUDENT),
@@ -458,7 +460,7 @@ describe('LiveClassesService', () => {
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
       });
-      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
+      mockEnrollmentsService.hasAccess.mockResolvedValue(true);
 
       const result = await service.join(
         mockLc._id.toString(),
@@ -479,7 +481,7 @@ describe('LiveClassesService', () => {
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
       });
-      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(false);
+      mockEnrollmentsService.hasAccess.mockResolvedValue(false);
 
       await expect(
         service.join(mockLc._id.toString(), STUDENT_ID, UserRole.STUDENT),
@@ -491,7 +493,7 @@ describe('LiveClassesService', () => {
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
       });
-      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
+      mockEnrollmentsService.hasAccess.mockResolvedValue(true);
 
       const result = await service.join(
         mockLc._id.toString(),
@@ -541,7 +543,7 @@ describe('LiveClassesService', () => {
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
       });
-      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
+      mockEnrollmentsService.hasAccess.mockResolvedValue(true);
 
       const result = await service.join(
         mockLc._id.toString(),
@@ -557,7 +559,7 @@ describe('LiveClassesService', () => {
         mockLiveClassModel.findById.mockReturnValue({
           exec: jest.fn().mockResolvedValue(mockLc),
         });
-        mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
+        mockEnrollmentsService.hasAccess.mockResolvedValue(true);
 
         await expect(
           service.join(mockLc._id.toString(), STUDENT_ID, UserRole.STUDENT),
@@ -570,7 +572,7 @@ describe('LiveClassesService', () => {
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
       });
-      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
+      mockEnrollmentsService.hasAccess.mockResolvedValue(true);
 
       // Override config to simulate missing credentials
       const moduleNoAgora: TestingModule = await Test.createTestingModule({
@@ -973,7 +975,7 @@ describe('LiveClassesService', () => {
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
       });
-      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
+      mockEnrollmentsService.hasAccess.mockResolvedValue(true);
 
       const result = await service.getRecordingPlayback(
         mockLc._id.toString(),
@@ -983,8 +985,8 @@ describe('LiveClassesService', () => {
 
       expect(result.success).toBe(true);
       expect(
-        mockEnrollmentsService.isActiveCourseEnrollment,
-      ).toHaveBeenCalledWith(mockLc.course_id.toString(), STUDENT_ID);
+        mockEnrollmentsService.hasAccess,
+      ).toHaveBeenCalledWith(STUDENT_ID, mockLc.course_id.toString(), 'course', undefined);
       expect(mockVideosService.getPlaybackMetadata).toHaveBeenCalledWith(
         videoId.toString(),
         { id: STUDENT_ID, role: UserRole.STUDENT },
@@ -998,7 +1000,7 @@ describe('LiveClassesService', () => {
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
       });
-      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(false);
+      mockEnrollmentsService.hasAccess.mockResolvedValue(false);
 
       await expect(
         service.getRecordingPlayback(
@@ -1105,7 +1107,7 @@ describe('LiveClassesService', () => {
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
       });
-      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
+      mockEnrollmentsService.hasAccess.mockResolvedValue(true);
 
       // Mock Token Generation
       mockedAxios.post.mockResolvedValueOnce({ data: 'reader-token' });
@@ -1117,8 +1119,8 @@ describe('LiveClassesService', () => {
       );
 
       expect(
-        mockEnrollmentsService.isActiveCourseEnrollment,
-      ).toHaveBeenCalledWith(mockLc.course_id.toString(), STUDENT_ID);
+        mockEnrollmentsService.hasAccess,
+      ).toHaveBeenCalledWith(STUDENT_ID, mockLc.course_id.toString(), 'course', undefined);
       expect(mockedAxios.post).toHaveBeenCalledTimes(1);
       expect(mockedAxios.post).toHaveBeenCalledWith(
         'https://api.netless.link/v5/tokens/rooms/existing-room-uuid',
@@ -1143,7 +1145,7 @@ describe('LiveClassesService', () => {
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
       });
-      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(false);
+      mockEnrollmentsService.hasAccess.mockResolvedValue(false);
 
       await expect(
         service.getWhiteboardToken(
@@ -1234,14 +1236,12 @@ describe('LiveClassesService', () => {
       exec: jest.fn().mockResolvedValue(data),
     });
 
-    it('filters by enrolled course_ids for a student', async () => {
+    it('filters by enrolled access filters for a student', async () => {
       const courseId1 = new Types.ObjectId();
-      const courseId2 = new Types.ObjectId();
       const mockLc = makeMockLiveClass({ course_id: courseId1 });
 
-      mockEnrollmentsService.listActiveCourseIdsForStudent.mockResolvedValue([
-        courseId1.toString(),
-        courseId2.toString(),
+      mockEnrollmentsService.getStudentAccessFilters.mockResolvedValue([
+        { course_id: courseId1 },
       ]);
       mockLiveClassModel.find.mockReturnValue(buildFindChain([mockLc]));
 
@@ -1250,20 +1250,19 @@ describe('LiveClassesService', () => {
       expect(result.success).toBe(true);
       expect(result.data).toHaveLength(1);
 
-      // Verify the query included course_id and the base status filters
+      // Verify the query included $or with the filters
       const findArg = mockLiveClassModel.find.mock.calls[0][0];
-      expect(findArg.course_id).toBeDefined();
-      expect(findArg.course_id.$in).toHaveLength(2);
-      expect(findArg.status).toBeDefined();
-      expect(findArg.scheduled_end).toBeDefined();
+      expect(findArg.$or).toBeDefined();
+      expect(findArg.$or).toHaveLength(1);
+      expect(findArg.$or[0].course_id).toEqual(courseId1);
 
       expect(
-        mockEnrollmentsService.listActiveCourseIdsForStudent,
+        mockEnrollmentsService.getStudentAccessFilters,
       ).toHaveBeenCalledWith(STUDENT_ID);
     });
 
     it('returns empty array immediately when student has no active enrollments', async () => {
-      mockEnrollmentsService.listActiveCourseIdsForStudent.mockResolvedValue([]);
+      mockEnrollmentsService.getStudentAccessFilters.mockResolvedValue([]);
 
       const result = await service.findAllForUser(STUDENT_ID, UserRole.STUDENT);
 

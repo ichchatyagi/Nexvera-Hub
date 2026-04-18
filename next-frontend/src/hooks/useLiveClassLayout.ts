@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { getSocketUrl } from '@/utils/socket';
 import { getCookie } from 'cookies-next';
 
 export type LayoutMode = 'WHITEBOARD_FOCUS' | 'VIDEO_FOCUS' | 'SPLIT' | 'CUSTOM';
@@ -50,9 +51,7 @@ export function useLiveClassLayout(params: {
     const token =
       getCookie('access_token') ||
       (typeof window !== 'undefined' ? localStorage.getItem('access_token') : null);
-    const apiUrl = `${
-      process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
-    }/ws/live-classes`;
+    const apiUrl = getSocketUrl('/ws/live-classes');
 
     const socket = io(apiUrl, {
       query: { token, liveClassId },

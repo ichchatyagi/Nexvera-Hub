@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { getSocketUrl } from '@/utils/socket';
 import { useAuth } from './AuthContext';
 import { notificationsService, Notification } from '@/services/notifications.service';
 
@@ -74,10 +75,9 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     // Do not connect socket without a valid token — avoids auth errors on the WS handshake.
     if (!token) return;
 
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
-    const wsBase = apiBase.replace(/\/api\/v\d+\/?$/, '');
+    const apiUrl = getSocketUrl('/ws/notifications');
     
-    const socket = io(`${wsBase}/ws/notifications`, {
+    const socket = io(apiUrl, {
       query: { token },
       withCredentials: true,
       transports: ['websocket', 'polling']

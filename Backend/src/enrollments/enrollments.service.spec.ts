@@ -232,8 +232,7 @@ describe('EnrollmentsService', () => {
       expect(mockEnrollmentModel.find).toHaveBeenCalledWith(
         expect.objectContaining({
           student_id: 's1',
-          product_type: 'course',
-          status: 'active',
+          $or: expect.any(Array),
         }),
       );
 
@@ -253,6 +252,61 @@ describe('EnrollmentsService', () => {
 
       const result = await service.listActiveCourseIdsForStudent('s-no-courses');
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('getStudentAccessFilters', () => {
+    it('resolves both courses and tuitions into granular query filter segments', async () => {
+      const courseId = new Types.ObjectId();
+      const tuitionId = new Types.ObjectId();
+      const subjectId = new Types.ObjectId();
+
+      mockEnrollmentModel.find = jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([
+          {
+            product_type: 'course',
+            course_id: courseId,
+          },
+          {
+            product_type: 'tuition',
+            course_id: tuitionId,
+            access_scope: 'subject',
+            tuition_subject_id: subjectId,
+          },
+        ]),
+      });
+
+      const filters = await service.getStudentAccessFilters('s1');
+
+      expect(filters).toHaveLength(2);
+      expect(filters).toContainEqual({ course_id: courseId });
+      expect(filters).toContainEqual({
+        course_id: tuitionId,
+        subject_id: subjectId,
+      });
+    });
+
+    it('handles class-level tuition access as a full course_id filter', async () => {
+      const tuitionId = new Types.ObjectId();
+
+      mockEnrollmentModel.find = jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([
+          {
+            product_type: 'tuition',
+            course_id: tuitionId,
+            access_scope: 'class',
+          },
+        ]),
+      });
+
+      const filters = await service.getStudentAccessFilters('s1');
+
+      expect(filters).toHaveLength(1);
+      expect(filters[0]).toEqual({ course_id: tuitionId });
     });
   });
 });

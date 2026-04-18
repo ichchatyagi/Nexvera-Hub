@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { getSocketUrl } from '@/utils/socket';
 import { getCookie } from 'cookies-next';
 import { 
   Eraser, 
@@ -74,7 +75,8 @@ export const WhiteboardPanel: React.FC<WhiteboardPanelProps> = ({
 
   useEffect(() => {
     const token = getCookie('access_token');
-    const socket = io(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'}/ws/live-classes`, {
+    const apiUrl = getSocketUrl('/ws/live-classes');
+    const socket = io(apiUrl, {
       query: { token, liveClassId },
       withCredentials: true,
     });
