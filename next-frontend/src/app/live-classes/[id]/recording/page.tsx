@@ -14,6 +14,7 @@ const LiveClassRecordingPage = () => {
   const [playbackData, setPlaybackData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorTitle, setErrorTitle] = useState<string>('Recording unavailable');
 
   useEffect(() => {
     const fetchPlayback = async () => {
@@ -35,6 +36,11 @@ const LiveClassRecordingPage = () => {
         }
 
         if (payload?.success === false && payload?.error) {
+          if (payload.error?.code === 'RECORDING_DISABLED_FOR_TUITION') {
+            setErrorTitle('Recording unavailable');
+            setErrorMessage('Recording is disabled for tuition live classes.');
+            return;
+          }
           setErrorMessage(payload.error?.message || 'Recording not available yet.');
           return;
         }
@@ -84,6 +90,9 @@ const LiveClassRecordingPage = () => {
         >
           <ChevronLeft size={20} /> Back
         </button>
+        <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-4">
+          {errorTitle}
+        </h2>
         <p className="text-white/60 text-lg font-medium text-center max-w-md">
           {errorMessage}
         </p>

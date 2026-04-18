@@ -60,6 +60,14 @@ const JoinLiveClass = () => {
   const [isVideoFullscreen, setIsVideoFullscreen] = useState(false);
   const videoContainerRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
+  const socketRef = useRef<any>(null);
+
+  // PROMPT 3/4: Tuition Speaking State
+  const [speakStatus, setSpeakStatus] = useState<'idle' | 'requested' | 'approved'>('idle');
+  const [pendingRequests, setPendingRequests] = useState<Array<{userId: string; userName: string; requestedAt: string}>>([]);
+  const [activeSpeakers, setActiveSpeakers] = useState<string[]>([]);
+  const [speakerNames, setSpeakerNames] = useState<Record<string, string>>({});
+  const isTuition = tokenData?.product_type === 'tuition';
 
   // Map backend role to Agora role string
   const getAgoraRole = (role: number): 'host' | 'audience' => {
@@ -95,7 +103,11 @@ const JoinLiveClass = () => {
     leave,
     toggleMic,
     toggleCamera,
+    renewToken,
+    enableLocalAudio,
+    disableLocalAudio,
     localVideoTrack,
+    localAudioTrack,
   } = useAgoraClassroom(agoraOptions);
 
   const layout = useLiveClassLayout({
@@ -117,8 +129,13 @@ const JoinLiveClass = () => {
 
       socket.on('class:ended', () => {
         setClassStatus('ended');
+        setPendingRequests([]);
+        setActiveSpeakers([]);
         if (!isClassOwner) {
-          toast.success('Session ended. You can watch the recording if available.');
+          const msg = isTuition 
+            ? 'Session ended.' 
+            : 'Session ended. You can watch the recording if available.';
+          toast.success(msg);
         }
       });
 
@@ -129,8 +146,56 @@ const JoinLiveClass = () => {
         }
       });
 
+      // PROMPT 4/6: Audio Speaking Listeners
+      socket.on('audio:request', (payload: { userId: string; userName: string; requestedAt: string }) => {
+        if (isClassOwner) {
+          setSpeakerNames(prev => ({ ...prev, [payload.userId]: payload.userName }));
+          setPendingRequests(prev => {
+            const exists = prev.find(r => r.userId === payload.userId);
+            if (exists) return prev;
+            return [...prev, payload];
+          });
+          toast(`${payload.userName} requested to speak`, { icon: '🎙️' });
+        }
+      });
+
+      socket.on('audio:request:ack', () => {
+        setSpeakStatus('requested');
+        toast.success('Request sent to instructor');
+      });
+
+      socket.on('audio:speakers', (payload: { speakers: string[] }) => {
+        setActiveSpeakers(payload.speakers);
+        if (isClassOwner) {
+          setPendingRequests(prev => prev.filter(req => !payload.speakers.includes(req.userId)));
+        }
+      });
+
+      socket.on('audio:approved', async (payload: { userId: string; rtc_token: string }) => {
+        if (payload.userId === user?.id) {
+          await renewToken(payload.rtc_token);
+          await enableLocalAudio();
+          setSpeakStatus('approved');
+          setIsMicOn(false); // Default to muted after approval
+          toast.success('Instructor approved your audio request. You are now a speaker!', { duration: 5000 });
+        }
+      });
+
+      socket.on('audio:revoked', async (payload: { userId: string; rtc_token: string }) => {
+        if (payload.userId === user?.id) {
+          await renewToken(payload.rtc_token);
+          await disableLocalAudio();
+          setSpeakStatus('idle');
+          setIsMicOn(false);
+          toast.error('Your speaking permission has been revoked');
+        }
+      });
+
+      socketRef.current = socket;
+
       return () => {
         socket.disconnect();
+        socketRef.current = null;
       };
     }
   }, [id, isAuthenticated, isClassOwner]);
@@ -344,13 +409,15 @@ const JoinLiveClass = () => {
                     </h2>
                     <p className="text-white/40 text-lg leading-relaxed mb-10 font-medium max-w-sm mx-auto">
                       {classStatus === 'ended' 
-                        ? "This session has concluded. You can now access the recording if it has finished processing."
+                        ? (isTuition 
+                            ? "This session has concluded." 
+                            : "This session has concluded. You can now access the recording if it has finished processing.")
                         : (!isClassOwner && classStatus === 'scheduled' 
                             ? "Waiting for instructor to start the class. Once live, you'll be connected automatically."
                             : "Your session is authorized. Activate your media devices to proceed.")}
                     </p>
                     
-                    {classStatus === 'ended' && !isClassOwner ? (
+                    {classStatus === 'ended' && !isClassOwner && !isTuition ? (
                       <div className="flex flex-col items-center gap-4">
                         <button 
                           onClick={() => router.push(`/live-classes/${id}/recording`)}
@@ -359,7 +426,7 @@ const JoinLiveClass = () => {
                           Watch Recording
                         </button>
                         <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">
-                          If it's still processing, try again in a few minutes.
+                          If it&apos;s still processing, try again in a few minutes.
                         </p>
                       </div>
                     ) : isClassOwner && classStatus === 'scheduled' ? (
@@ -406,21 +473,42 @@ const JoinLiveClass = () => {
 
                   {/* Controls Layer */}
                   <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-6 p-4 bg-black/40 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 shadow-2xl z-[100]">
+                    {/* PROMPT 4: Student Request to Speak Button */}
+                    {!isClassOwner && isTuition && joined && classStatus === 'live' && (
+                      <button
+                        disabled={speakStatus !== 'idle'}
+                        onClick={() => socketRef.current?.emit('audio:request')}
+                        className={`px-6 py-4 rounded-2xl flex items-center gap-3 transition-all ${
+                          speakStatus === 'idle' 
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-500/20' 
+                            : speakStatus === 'requested'
+                            ? 'bg-white/10 text-white/40 cursor-not-allowed'
+                            : 'bg-green-600 text-white cursor-not-allowed'
+                        }`}
+                      >
+                        <Mic size={20} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">
+                          {speakStatus === 'idle' ? 'Request to Speak' : speakStatus === 'requested' ? 'Request Sent' : 'Speaking Approved'}
+                        </span>
+                      </button>
+                    )}
+
+                    {(isClassOwner || speakStatus === 'approved') && (
+                      <button
+                        onClick={handleToggleMic}
+                        className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${isMicOn ? 'bg-white/10 text-white' : 'bg-red-600 text-white'}`}
+                      >
+                        {isMicOn ? <Mic size={24} /> : <MicOff size={24} />}
+                      </button>
+                    )}
+                    
                     {isClassOwner && (
-                      <>
-                        <button
-                          onClick={handleToggleMic}
-                          className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${isMicOn ? 'bg-white/10 text-white' : 'bg-red-600 text-white'}`}
-                        >
-                          {isMicOn ? <Mic size={24} /> : <MicOff size={24} />}
-                        </button>
-                        <button
-                          onClick={handleToggleCam}
-                          className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${isCamOn ? 'bg-white/10 text-white' : 'bg-red-600 text-white'}`}
-                        >
-                          {isCamOn ? <Camera size={24} /> : <CameraOff size={24} />}
-                        </button>
-                      </>
+                      <button
+                        onClick={handleToggleCam}
+                        className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${isCamOn ? 'bg-white/10 text-white' : 'bg-red-600 text-white'}`}
+                      >
+                        {isCamOn ? <Camera size={24} /> : <CameraOff size={24} />}
+                      </button>
                     )}
 
                     <button
@@ -435,7 +523,15 @@ const JoinLiveClass = () => {
                     <div className="absolute top-6 right-8 flex items-center gap-2 px-4 py-2 bg-black/40 border border-white/10 rounded-full z-[100]">
                       <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                       <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">
-                        Live stream &middot; Watch-only
+                        Live stream &middot; {
+                          !isTuition 
+                            ? 'Watch-only' 
+                            : speakStatus === 'approved' 
+                              ? 'Approved to speak' 
+                              : speakStatus === 'requested' 
+                                ? 'Request sent' 
+                                : 'Listening'
+                        }
                       </span>
                     </div>
                   )}
@@ -467,6 +563,71 @@ const JoinLiveClass = () => {
 
          {isSidebarOpen && (
            <div className="w-[400px] shrink-0 bg-slate-900 border-l border-white/5 flex flex-col overflow-hidden">
+              {/* PROMPT 4: Teacher Speaking Controls */}
+              {isClassOwner && isTuition && classStatus === 'live' && (
+                <div className="p-6 border-b border-white/5 bg-black/20">
+                   <div className="flex items-center justify-between mb-4">
+                     <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em]">Speaker Management</h3>
+                     {activeSpeakers.length > 0 && (
+                       <button 
+                         onClick={() => socketRef.current?.emit('audio:mute_all')}
+                         className="text-[9px] font-black text-red-500/60 hover:text-red-500 uppercase tracking-widest transition-colors"
+                       >
+                         Mute All
+                       </button>
+                     )}
+                   </div>
+                   
+                   {pendingRequests.length > 0 && (
+                     <div className="mb-6">
+                       <p className="text-[9px] font-black text-white/20 uppercase tracking-widest mb-3">Pending Hand-raises ({pendingRequests.length})</p>
+                       <div className="space-y-2">
+                         {pendingRequests.map(req => (
+                           <div key={req.userId} className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-xl">
+                             <span className="text-xs font-bold text-white uppercase tracking-tight truncate max-w-[150px]">{req.userName}</span>
+                             <button 
+                               onClick={() => {
+                                 socketRef.current?.emit('audio:approve', { userId: req.userId });
+                                 setPendingRequests(prev => prev.filter(r => r.userId !== req.userId));
+                               }}
+                               className="px-3 py-1.5 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-blue-700 transition-all"
+                             >
+                               Approve
+                             </button>
+                           </div>
+                         ))}
+                       </div>
+                     </div>
+                   )}
+
+                   <div>
+                     <p className="text-[9px] font-black text-white/20 uppercase tracking-widest mb-3">Active Speakers ({activeSpeakers.length}/4)</p>
+                     {activeSpeakers.length === 0 ? (
+                       <p className="text-[10px] font-medium text-white/10 uppercase tracking-widest italic py-2">No active student speakers</p>
+                     ) : (
+                       <div className="space-y-2">
+                         {activeSpeakers.map(uid => (
+                           <div key={uid} className="flex items-center justify-between p-3 bg-white/5 border border-blue-500/20 rounded-xl">
+                             <div className="flex items-center gap-2">
+                               <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                               <span className="text-xs font-bold text-white uppercase tracking-tight">
+                                 {speakerNames[uid] || `User ${uid.slice(-4)}`}
+                               </span>
+                             </div>
+                             <button 
+                               onClick={() => socketRef.current?.emit('audio:revoke', { userId: uid })}
+                               className="px-3 py-1.5 bg-red-600/10 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-red-600 hover:text-white transition-all border border-red-600/20"
+                             >
+                               Revoke
+                             </button>
+                           </div>
+                         ))}
+                       </div>
+                     )}
+                   </div>
+                </div>
+              )}
+
               {tokenData?.features?.chat_enabled && classStatus !== 'ended' ? (
                 <ChatPanel liveClassId={id as string} />
               ) : (

@@ -56,10 +56,10 @@ const TeacherDashboard = () => {
 
       // Fetch teacher's live classes
       const liveRes = await api.get('/live-classes/mine');
-      // Keep upcoming/live classes OR completed classes that have a recording
+      // Keep upcoming/live classes OR completed classes that have a recording (except tuition)
       setLiveClasses(liveRes.data?.filter((l: any) => 
         (l.status !== 'ended' && l.status !== 'cancelled') || 
-        (l.status === 'ended' && l.recording?.video_id)
+        (l.status === 'ended' && l.recording?.video_id && l.product_type !== 'tuition')
       ) || []);
 
       // Fetch teacher's assigned tuition subjects
@@ -316,13 +316,19 @@ const TeacherDashboard = () => {
                           </span>
                        </div>
                          {item.status === 'ended' ? (
-                           <Link 
-                             href={`/live-classes/${item._id || item.id}/recording`}
-                             className="flex items-center justify-between w-full p-4 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-2xl transition-all group/btn"
-                           >
-                             <span className="text-[10px] font-black uppercase tracking-widest">View Recording</span>
-                             <Play size={12} fill="currentColor" className="group-hover/btn:scale-125 transition-transform" />
-                           </Link>
+                           item.product_type !== 'tuition' ? (
+                             <Link 
+                               href={`/live-classes/${item._id || item.id}/recording`}
+                               className="flex items-center justify-between w-full p-4 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-2xl transition-all group/btn"
+                             >
+                               <span className="text-[10px] font-black uppercase tracking-widest">View Recording</span>
+                               <Play size={12} fill="currentColor" className="group-hover/btn:scale-125 transition-transform" />
+                             </Link>
+                           ) : (
+                             <div className="flex items-center justify-between w-full p-4 bg-slate-50 text-slate-400 rounded-2xl">
+                               <span className="text-[10px] font-black uppercase tracking-widest">Session Concluded</span>
+                             </div>
+                           )
                          ) : (
                            <Link 
                              href={`/live-classes/${item._id || item.id}/join`}

@@ -225,6 +225,19 @@ export class LiveClass {
   @Prop({ type: LiveClassFeatures, default: () => ({}) })
   features: LiveClassFeatures;
 
+  /**
+   * Type of product this live class is part of.
+   * 'course'  → general curriculum (default)
+   * 'tuition' → weekly subject-based session
+   */
+  @Prop({
+    type: String,
+    enum: ['course', 'tuition'],
+    default: 'course',
+    index: true,
+  })
+  product_type: 'course' | 'tuition';
+
   // Injected by timestamps option:
   created_at?: Date;
   updated_at?: Date;

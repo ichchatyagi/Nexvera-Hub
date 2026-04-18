@@ -25,6 +25,7 @@ import { VideosService } from '../videos/videos.service';
 import { EnrollmentsService } from '../enrollments/enrollments.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/schemas/notification.schema';
+import { Course, CourseDocument } from '../courses/schemas/course.schema';
 
 // ─── Agora token shape ────────────────────────────────────────────────────────
 
@@ -35,6 +36,8 @@ export enum AgoraRole {
   /** Student attendee – receives streams only. Agora RtcRole.SUBSCRIBER = 2 */
   SUBSCRIBER = 2,
 }
+
+export type RtcAccessRole = 'publisher' | 'subscriber';
 
 /** Response returned by the join endpoint. */
 export interface JoinClassResponse {
@@ -52,6 +55,7 @@ export interface JoinClassResponse {
   title: string;
   scheduled_start: Date;
   status: LiveClassStatus;
+  product_type: 'course' | 'tuition';
   features: {
     chat_enabled: boolean;
     qa_enabled: boolean;
@@ -69,6 +73,8 @@ export class LiveClassesService implements OnModuleInit {
   constructor(
     @InjectModel(LiveClass.name)
     private readonly liveClassModel: Model<LiveClassDocument>,
+    @InjectModel(Course.name)
+    private readonly courseModel: Model<CourseDocument>,
     private readonly appConfig: AppConfigService,
     private readonly videosService: VideosService,
     private readonly enrollmentsService: EnrollmentsService,
@@ -213,10 +219,25 @@ export class LiveClassesService implements OnModuleInit {
       throw new BadRequestException('A valid course_id is required');
     }
 
+    const course = await this.courseModel.findById(dto.course_id).exec();
+    if (!course) {
+      throw new NotFoundException(`Course not found: ${dto.course_id}`);
+    }
+
+    // Validation: tuition MUST have a subject_id
+    if (course.product_type === 'tuition') {
+      if (!dto.subject_id || !Types.ObjectId.isValid(dto.subject_id)) {
+        throw new BadRequestException(
+          'A valid subject_id is required for tuition live classes.',
+        );
+      }
+    }
+
     const channelName = `nexvera-${randomUUID()}`;
 
     const liveClass = await this.liveClassModel.create({
       course_id: new Types.ObjectId(dto.course_id),
+      product_type: course.product_type as 'course' | 'tuition',
       subject_id:
         dto.subject_id && Types.ObjectId.isValid(dto.subject_id)
           ? new Types.ObjectId(dto.subject_id)
@@ -241,7 +262,8 @@ export class LiveClassesService implements OnModuleInit {
         whiteboard_enabled: dto.features?.whiteboard_enabled ?? false,
       },
       recording: {
-        enabled: dto.recording?.enabled ?? false,
+        // PROMPT 2: Hard-disable recording for tuition
+        enabled: course.product_type === 'tuition' ? false : (dto.recording?.enabled ?? false),
         video_id: null,
         status: 'pending',
       },
@@ -331,6 +353,11 @@ export class LiveClassesService implements OnModuleInit {
       lc.recording = { ...lc.recording, ...dto.recording } as any;
     }
 
+    // PROMPT 2: Force recording off for tuition on update
+    if (lc.product_type === 'tuition') {
+      lc.recording.enabled = false;
+    }
+
     await lc.save();
     this.logger.log(
       `Live class "${id}" updated by requester "${requesterId}".`,
@@ -405,7 +432,8 @@ export class LiveClassesService implements OnModuleInit {
     lc.actual_start = new Date();
 
     // ── Agora Cloud Recording ───────────────────────────────────────────────
-    if (lc.recording?.enabled) {
+    // PROMPT 2: Block recording for tuition
+    if (lc.recording?.enabled && lc.product_type !== 'tuition') {
       try {
         const recordingUid = '999'; // Reserved UID for recording bot
         const resourceId = await this.acquireRecording(
@@ -417,8 +445,7 @@ export class LiveClassesService implements OnModuleInit {
         const recordingToken = this.generateAgoraToken(
           lc.agora.channel_name,
           recordingUid,
-          AgoraRole.PUBLISHER, // Needs publisher to subscribe to all streams in mixed mode?
-          // Actually Agora docs say it needs to join with a token if token is enabled.
+          AgoraRole.PUBLISHER,
         );
 
         const sid = await this.startRecording(
@@ -430,18 +457,16 @@ export class LiveClassesService implements OnModuleInit {
 
         lc.recording.resource_id = resourceId;
         lc.recording.sid = sid;
-        lc.recording.status = 'processing'; // It's recording, but status 'processing' implies lifecycle
-        // Wait, 'processing' enum was for the VOD pipeline later.
-        // For now, let's keep it as is or maybe add 'recording' state if needed.
-        // The plan says: "available  → Video is ready for playback".
-        // Let's stick to the schema enum for now.
+        lc.recording.status = 'processing';
       } catch (err) {
         this.logger.error(
           `Failed to start Agora recording for class ${id}: ${err.message}`,
         );
-        // Per plan: "If recording call fails, keep class live but set lc.recording.enabled = false"
         lc.recording.enabled = false;
       }
+    } else if (lc.product_type === 'tuition' && lc.recording?.enabled) {
+      // PROMPT 2: Defense-in-depth: if tuition and enabled was somehow true, force off
+      lc.recording.enabled = false;
     }
 
     await lc.save();
@@ -510,7 +535,13 @@ export class LiveClassesService implements OnModuleInit {
     lc.actual_end = new Date();
 
     // ── Agora Cloud Recording Stop ──────────────────────────────────────────
-    if (lc.recording?.enabled && lc.recording.resource_id && lc.recording.sid) {
+    // PROMPT 2: Block stop recording for tuition
+    if (
+      lc.recording?.enabled &&
+      lc.recording.resource_id &&
+      lc.recording.sid &&
+      lc.product_type !== 'tuition'
+    ) {
       try {
         const stopResponse = await this.stopRecording(
           lc.recording.resource_id,
@@ -735,6 +766,33 @@ export class LiveClassesService implements OnModuleInit {
   }
 
   /**
+   * Generates a new Agora RTC token for an existing live class with a specific role.
+   * Used for role-switching (e.g. promoting a student to speaker in tuition).
+   */
+  async issueRtcTokenForLiveClass(
+    liveClassId: string,
+    userId: string,
+    accessRole: RtcAccessRole,
+  ): Promise<{ rtc_token: string; agora_uid: number; role: AgoraRole }> {
+    const lc = await this.findById(liveClassId);
+
+    const roleEnum =
+      accessRole === 'publisher' ? AgoraRole.PUBLISHER : AgoraRole.SUBSCRIBER;
+
+    const rtcToken = this.generateAgoraToken(
+      lc.agora.channel_name,
+      userId,
+      roleEnum,
+    );
+
+    return {
+      rtc_token: rtcToken,
+      agora_uid: this.deriveAgoraUid(userId),
+      role: roleEnum,
+    };
+  }
+
+  /**
    * Issues an Agora RTC token allowing the user to join the live class.
    * Records the student in attended_students on first join.
    *
@@ -813,6 +871,7 @@ export class LiveClassesService implements OnModuleInit {
       title: lc.title,
       scheduled_start: lc.scheduled_start,
       status: lc.status,
+      product_type: lc.product_type,
       features: {
         chat_enabled: lc.features?.chat_enabled ?? false,
         qa_enabled: lc.features?.qa_enabled ?? false,
@@ -1108,6 +1167,16 @@ export class LiveClassesService implements OnModuleInit {
       if (!ok) {
         throw new ForbiddenException('You are not enrolled in this course.');
       }
+    }
+
+    if (lc.product_type === 'tuition') {
+      return {
+        success: false,
+        error: {
+          code: 'RECORDING_DISABLED_FOR_TUITION',
+          message: 'Recording is disabled for tuition live classes.',
+        },
+      } as any;
     }
 
     if (!lc.recording?.video_id) {
