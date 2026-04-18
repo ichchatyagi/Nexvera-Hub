@@ -127,11 +127,12 @@ export class LiveClassesGateway
 
       // Security check: Student must be enrolled
       if (data.userRole === UserRole.STUDENT) {
-        const isEnrolled =
-          await this.enrollmentsService.isActiveCourseEnrollment(
-            lc.course_id.toString(),
-            data.userId,
-          );
+        const isEnrolled = await this.enrollmentsService.hasAccess(
+          data.userId,
+          lc.course_id.toString(),
+          lc.product_type,
+          lc.subject_id?.toString(),
+        );
         if (!isEnrolled) {
           client.emit('error', 'NOT_ENROLLED');
           client.disconnect(true);
@@ -203,9 +204,11 @@ export class LiveClassesGateway
 
     // Secondary security check
     if (data.userRole === UserRole.STUDENT) {
-      const isEnrolled = await this.enrollmentsService.isActiveCourseEnrollment(
-        lc.course_id.toString(),
+      const isEnrolled = await this.enrollmentsService.hasAccess(
         data.userId,
+        lc.course_id.toString(),
+        lc.product_type,
+        lc.subject_id?.toString(),
       );
       if (!isEnrolled) {
         client.emit('error', 'NOT_ENROLLED');
@@ -435,9 +438,11 @@ export class LiveClassesGateway
         return;
       }
 
-      const isEnrolled = await this.enrollmentsService.isActiveCourseEnrollment(
-        lc.course_id.toString(),
+      const isEnrolled = await this.enrollmentsService.hasAccess(
         data.userId,
+        lc.course_id.toString(),
+        lc.product_type,
+        lc.subject_id?.toString(),
       );
       if (!isEnrolled) {
         client.emit('error', 'NOT_ENROLLED');

@@ -1083,13 +1083,15 @@ export class LiveClassesService implements OnModuleInit {
     }
 
     if (!isOwner && !isAdmin && requesterRole === UserRole.STUDENT) {
-      const isEnrolled = await this.enrollmentsService.isActiveCourseEnrollment(
-        lc.course_id.toString(),
+      const isEnrolled = await this.enrollmentsService.hasAccess(
         requesterId,
+        lc.course_id.toString(),
+        lc.product_type,
+        lc.subject_id?.toString(),
       );
       if (!isEnrolled) {
         throw new ForbiddenException(
-          'You must be enrolled in this course to access the whiteboard.',
+          `You must be enrolled in this ${lc.product_type} to access the whiteboard.`,
         );
       }
     }
@@ -1164,12 +1166,14 @@ export class LiveClassesService implements OnModuleInit {
           'You are not allowed to access this recording.',
         );
       }
-      const ok = await this.enrollmentsService.isActiveCourseEnrollment(
-        lc.course_id.toString(),
+      const ok = await this.enrollmentsService.hasAccess(
         requesterId,
+        lc.course_id.toString(),
+        lc.product_type,
+        lc.subject_id?.toString(),
       );
       if (!ok) {
-        throw new ForbiddenException('You are not enrolled in this course.');
+        throw new ForbiddenException(`You are not enrolled in this ${lc.product_type}.`);
       }
     }
 
