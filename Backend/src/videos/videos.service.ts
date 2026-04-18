@@ -702,4 +702,20 @@ export class VideosService {
 
     return video;
   }
+
+  /**
+   * Updates the public_preview flag for a video.
+   * This is called when a lesson's preview status changes.
+   */
+  async setPublicPreview(videoId: string, value: boolean) {
+    if (!Types.ObjectId.isValid(videoId)) {
+      throw new NotFoundException('Invalid video ID');
+    }
+    const video = await this.videoModel.findById(videoId).exec();
+    if (!video) throw new NotFoundException('Video not found');
+
+    video.public_preview = value;
+    await video.save();
+    return { success: true };
+  }
 }

@@ -58,14 +58,25 @@ const LessonPlayer = () => {
       const lesson = await lessonsService.getLesson(lessonId as string);
 
       if (lesson.content?.video_id) {
-        const playbackData = await videosService.getPlaybackData(lesson.content.video_id);
-        setPlaybackData({ ...lesson, ...playbackData });
+        try {
+          const playbackData = await videosService.getPlaybackData(lesson.content.video_id);
+          setPlaybackData({ ...lesson, ...playbackData });
+        } catch (vErr) {
+          console.error("Failed to fetch playback data", vErr);
+          setPlaybackData(lesson);
+          // If video playback fails specifically, it might be a public_preview sync issue
+          toast.error("Video authorization failed. Enrollment may be required.");
+        }
       } else {
         setPlaybackData(lesson);
       }
-    } catch (error) {
-      toast.error('Failed to load lesson content');
+    } catch (error: any) {
+      const isForbidden = error.response?.status === 403 || error.response?.status === 401;
+      toast.error(isForbidden ? 'Enrollment required for this lesson' : 'Failed to load lesson content');
       console.error(error);
+      if (isForbidden) {
+        router.push(`/courses/${slug}`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -76,14 +87,20 @@ const LessonPlayer = () => {
       const curriculumData = await coursesService.getCurriculum(slug as string);
       setCurriculum(curriculumData || []);
 
-      // Get course ID from local cached course or from the first lesson if needed
-      // Actually coursesService.getCourse(slug) is better to get the ID
       const course = await coursesService.getCourse(slug as string);
-      const enr = await enrollmentsService.getProgress(course._id || course.id);
-      setEnrollment(enr);
-      setCompletedLessons(enr.progress?.completed_lessons || []);
+      
+      // Only fetch progress if authenticated and possibly enrolled
+      try {
+        const enr = await enrollmentsService.getProgress(course._id || course.id);
+        setEnrollment(enr);
+        setCompletedLessons(enr.progress?.completed_lessons || []);
+      } catch (e) {
+        // Not enrolled or not logged in, ignore progress silently
+        setEnrollment(null);
+        setCompletedLessons([]);
+      }
     } catch (error) {
-      console.error('Failed to fetch curriculum or progress', error);
+      console.error('Failed to fetch curriculum', error);
     }
   };
 
@@ -180,10 +197,12 @@ const LessonPlayer = () => {
           </div>
         </div>
         <div className="flex items-center gap-6">
-           <div className="flex items-center gap-2 text-xs font-bold">
-             <History size={16} />
-             <span>Progress Saved</span>
-           </div>
+           {enrollment && (
+             <div className="flex items-center gap-2 text-xs font-bold">
+               <History size={16} />
+               <span>Progress Saved</span>
+             </div>
+           )}
            
            <button 
              onClick={() => setIsAiOpen(true)}
@@ -223,9 +242,12 @@ const LessonPlayer = () => {
                   </p>
                   <button 
                     onClick={handleMarkComplete}
-                    className="px-12 py-5 bg-white text-slate-950 font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-blue-50 transition-all active:scale-95 shadow-2xl shadow-blue-500/10"
+                    disabled={!enrollment}
+                    className={`px-12 py-5 font-black uppercase tracking-widest text-[10px] rounded-2xl transition-all active:scale-95 shadow-2xl shadow-blue-500/10 ${
+                      !enrollment ? 'bg-slate-800 text-white/20 cursor-not-allowed' : 'bg-white text-slate-950 hover:bg-blue-50'
+                    }`}
                   >
-                     {completedLessons.includes(lessonId as string) ? 'Module Completed' : 'Mark Module Complete'}
+                     {!enrollment ? 'Enroll to track progress' : (completedLessons.includes(lessonId as string) ? 'Module Completed' : 'Mark Module Complete')}
                   </button>
                </div>
              )}
@@ -235,17 +257,20 @@ const LessonPlayer = () => {
             <div className="max-w-4xl mx-auto">
               <div className="flex items-center justify-between mb-8">
                  <h1 className="text-3xl font-black uppercase tracking-tighter">{playbackData?.title}</h1>
-                 <button 
-                   onClick={handleMarkComplete}
-                   className={`flex items-center gap-2 px-6 py-3 rounded-xl border border-white/10 font-bold text-xs uppercase tracking-widest transition-all ${
-                     completedLessons.includes(lessonId as string) 
-                     ? 'bg-blue-600/20 text-blue-400' 
-                     : 'bg-white/5 hover:bg-white/10 text-white/60'
-                   }`}
-                 >
-                    <CheckCircle2 size={16} className={completedLessons.includes(lessonId as string) ? "text-blue-400" : "text-white/20"} />
-                    {completedLessons.includes(lessonId as string) ? 'Completed' : 'Mark Complete'}
-                 </button>
+                  <button 
+                    onClick={handleMarkComplete}
+                    disabled={!enrollment}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-xl border border-white/10 font-bold text-xs uppercase tracking-widest transition-all ${
+                      !enrollment 
+                      ? 'bg-white/5 text-white/10 cursor-not-allowed'
+                      : (completedLessons.includes(lessonId as string) 
+                         ? 'bg-blue-600/20 text-blue-400' 
+                         : 'bg-white/5 hover:bg-white/10 text-white/60')
+                    }`}
+                  >
+                     <CheckCircle2 size={16} className={completedLessons.includes(lessonId as string) ? "text-blue-400" : "text-white/20"} />
+                     {completedLessons.includes(lessonId as string) ? 'Completed' : 'Mark Complete'}
+                  </button>
               </div>
               <p className="text-white/60 text-lg font-medium leading-relaxed max-w-3xl">
                 {playbackData?.description || "Master these concepts as we dive deeper into our curriculum."}

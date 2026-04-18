@@ -12,6 +12,7 @@ import { TeacherTuitionService } from './teacher-tuition.service';
 import { TeacherTuitionController } from './teacher-tuition.controller';
 import { LessonsController } from './lessons.controller';
 import { EnrollmentsModule } from '../enrollments/enrollments.module';
+import { VideosModule } from '../videos/videos.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { EnrollmentsModule } from '../enrollments/enrollments.module';
       { name: Review.name, schema: ReviewSchema },
     ]),
     EnrollmentsModule,
+    VideosModule,
   ],
   providers: [CoursesService, AdminTuitionService, TeacherTuitionService],
   controllers: [

@@ -9,6 +9,7 @@ import { validate } from 'class-validator';
 import { CreateCourseDto, ProductType, TuitionMetaDto } from './dto/course.dto';
 import { EnrollmentsService } from '../enrollments/enrollments.service';
 import { UserRole } from '../users/entities/user.entity';
+import { VideosService } from '../videos/videos.service';
 
 const mockCourseModel = {
   find: jest.fn(),
@@ -29,6 +30,10 @@ const mockEnrollmentsService = {
   isActiveCourseEnrollment: jest.fn(),
 };
 
+const mockVideosService = {
+  setPublicPreview: jest.fn().mockResolvedValue({ success: true }),
+};
+
 describe('CoursesService', () => {
   let service: CoursesService;
 
@@ -47,6 +52,10 @@ describe('CoursesService', () => {
         {
           provide: EnrollmentsService,
           useValue: mockEnrollmentsService,
+        },
+        {
+          provide: VideosService,
+          useValue: mockVideosService,
         },
       ],
     }).compile();
@@ -133,7 +142,7 @@ describe('CoursesService', () => {
     it('should query for regular courses only (excluding tuition)', async () => {
       const slug = 'some-slug';
       mockCourseModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue({ _id: '1', slug }),
+        exec: jest.fn().mockResolvedValue({ _id: '1', slug, status: 'published' }),
       });
 
       const result = await service.findBySlug(slug);
@@ -153,6 +162,84 @@ describe('CoursesService', () => {
       await expect(service.findBySlug('missing-slug')).rejects.toThrow(
         NotFoundException,
       );
+    });
+
+    it('should allow admin to see draft course', async () => {
+      const slug = 'draft-slug';
+      mockCourseModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({ _id: '1', slug, status: 'draft', lead_instructor_id: 't1' }),
+      });
+
+      const result = await service.findBySlug(slug, 'admin-1', UserRole.ADMIN);
+      expect(result.success).toBe(true);
+    });
+
+    it('should allow owner to see draft course', async () => {
+      const slug = 'draft-slug';
+      mockCourseModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({ _id: '1', slug, status: 'draft', lead_instructor_id: 't1' }),
+      });
+
+      const result = await service.findBySlug(slug, 't1', UserRole.TEACHER);
+      expect(result.success).toBe(true);
+    });
+
+    it('should throw NotFoundException for student/unauth on draft course', async () => {
+      const slug = 'draft-slug';
+      mockCourseModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({ _id: '1', slug, status: 'draft', lead_instructor_id: 't1' }),
+      });
+
+      await expect(service.findBySlug(slug, 's1', UserRole.STUDENT)).rejects.toThrow(NotFoundException);
+      await expect(service.findBySlug(slug, null, null)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('getCurriculum', () => {
+    it('should return curriculum for published course', async () => {
+      const courseId = new Types.ObjectId().toString();
+      mockCourseModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({ 
+          _id: courseId, 
+          status: 'published',
+          curriculum: [{ title: 'Section 1' }] 
+        }),
+      });
+
+      const result = await service.getCurriculum(courseId);
+      expect(result.success).toBe(true);
+      expect(result.data).toHaveLength(1);
+    });
+
+    it('should hide draft curriculum from public/students', async () => {
+      const courseId = new Types.ObjectId().toString();
+      mockCourseModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({ 
+          _id: courseId, 
+          status: 'draft',
+          lead_instructor_id: 't1'
+        }),
+      });
+
+      await expect(service.getCurriculum(courseId, null, null)).rejects.toThrow(NotFoundException);
+      await expect(service.getCurriculum(courseId, 's1', UserRole.STUDENT)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should allow admin/owner to see draft curriculum', async () => {
+      const courseId = new Types.ObjectId().toString();
+      mockCourseModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({ 
+          _id: courseId, 
+          status: 'draft',
+          lead_instructor_id: 't1',
+          curriculum: []
+        }),
+      });
+
+      const res1 = await service.getCurriculum(courseId, 'admin-1', UserRole.ADMIN);
+      const res2 = await service.getCurriculum(courseId, 't1', UserRole.TEACHER);
+      expect(res1.success).toBe(true);
+      expect(res2.success).toBe(true);
     });
   });
 
@@ -244,10 +331,29 @@ describe('CoursesService', () => {
       const result = await service.findTuitionClasses({});
       expect(result.success).toBe(true);
       expect(result.data).toEqual(mockResult);
-      expect(mockCourseModel.find).toHaveBeenCalledWith({
-        product_type: 'tuition',
-        status: 'published',
+      expect(mockCourseModel.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          product_type: 'tuition',
+          status: 'published',
+        }),
+      );
+    });
+
+    it('findTuitionClasses with status=all and no admin role still forces published', async () => {
+      mockCourseModel.find.mockReturnValue({
+        skip: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([]),
       });
+      mockCourseModel.countDocuments.mockResolvedValue(0);
+
+      await service.findTuitionClasses({ status: 'all' }, null, null);
+      
+      expect(mockCourseModel.find).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'published' }),
+      );
     });
 
     it('findTuitionClassBySlug should return class without syllabus', async () => {
@@ -298,8 +404,41 @@ describe('CoursesService', () => {
       expect(mockCourseModel.find).toHaveBeenCalledWith(
         expect.objectContaining({
           $text: { $search: 'nest' },
+          status: 'published',
         }),
       );
+    });
+
+    it('findAll with status=all for admin removes status filter', async () => {
+      mockCourseModel.find.mockReturnValue({
+        skip: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([]),
+      });
+      mockCourseModel.countDocuments.mockResolvedValue(0);
+
+      await service.findAll({ status: 'all' }, 'admin-1', UserRole.ADMIN);
+      
+      const filters = mockCourseModel.find.mock.calls[0][0];
+      expect(filters.status).toBeUndefined();
+    });
+
+    it('findAll with status=all for unauth forces published filter', async () => {
+      mockCourseModel.find.mockReturnValue({
+        skip: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([]),
+      });
+      mockCourseModel.countDocuments.mockResolvedValue(0);
+
+      await service.findAll({ status: 'all' });
+      
+      const filters = mockCourseModel.find.mock.calls[0][0];
+      expect(filters.status).toBe('published');
     });
 
     it('should ignore search when length < 2', async () => {
@@ -394,6 +533,97 @@ describe('CoursesService', () => {
       expect(metaError).toBeDefined();
       expect(metaError?.children?.[0].property).toBe('class_level');
       expect(metaError?.children?.[0].constraints?.min).toBeDefined();
+    });
+  });
+
+  describe('findLessonById', () => {
+    const lessonId = new Types.ObjectId().toString();
+    const mockLesson = { lesson_id: lessonId, title: 'Lesson 1', is_preview: false };
+    const mockCourse = {
+      _id: new Types.ObjectId().toString(),
+      status: 'published',
+      lead_instructor_id: 't1',
+      curriculum: [
+        {
+          lessons: [mockLesson],
+        },
+      ],
+    };
+
+    it('allows anyone to see a preview lesson in a published course', async () => {
+      const previewLesson = { ...mockLesson, is_preview: true };
+      const previewCourse = {
+        ...mockCourse,
+        curriculum: [{ lessons: [previewLesson] }],
+      };
+      mockCourseModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(previewCourse),
+      });
+
+      const result = await service.findLessonById(lessonId, null, null);
+      expect(result.success).toBe(true);
+      expect(result.data.lesson_id.toString()).toBe(lessonId);
+    });
+
+    it('throws ForbiddenException for unauth user on non-preview lesson', async () => {
+      mockCourseModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockCourse),
+      });
+
+      await expect(service.findLessonById(lessonId, null, null)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('allows enrolled student to see non-preview lesson', async () => {
+      mockCourseModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockCourse),
+      });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
+
+      const result = await service.findLessonById(lessonId, 's1', UserRole.STUDENT);
+      expect(result.success).toBe(true);
+    });
+
+    it('throws ForbiddenException for non-enrolled student on non-preview lesson', async () => {
+      mockCourseModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockCourse),
+      });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(false);
+
+      await expect(
+        service.findLessonById(lessonId, 's1', UserRole.STUDENT),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('allows admin to see any lesson', async () => {
+      mockCourseModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockCourse),
+      });
+
+      const result = await service.findLessonById(lessonId, 'admin-1', UserRole.ADMIN);
+      expect(result.success).toBe(true);
+    });
+
+    it('allows instructor to see their own unpublished course lessons', async () => {
+      const unpublishedCourse = { ...mockCourse, status: 'draft' };
+      mockCourseModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(unpublishedCourse),
+      });
+
+      const result = await service.findLessonById(lessonId, 't1', UserRole.TEACHER);
+      expect(result.success).toBe(true);
+    });
+
+    it('throws ForbiddenException for student trying to see unpublished course lessons', async () => {
+      const unpublishedCourse = { ...mockCourse, status: 'draft' };
+      mockCourseModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(unpublishedCourse),
+      });
+
+      await expect(
+        service.findLessonById(lessonId, 's1', UserRole.STUDENT),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 });

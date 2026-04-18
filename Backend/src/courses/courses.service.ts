@@ -21,6 +21,7 @@ import {
 } from './dto/curriculum.dto';
 import { UserRole } from '../users/entities/user.entity';
 import { EnrollmentsService } from '../enrollments/enrollments.service';
+import { VideosService } from '../videos/videos.service';
 
 @Injectable()
 export class CoursesService {
@@ -28,9 +29,14 @@ export class CoursesService {
     @InjectModel(Course.name) private courseModel: Model<CourseDocument>,
     @InjectModel(Review.name) private reviewModel: Model<ReviewDocument>,
     private readonly enrollmentsService: EnrollmentsService,
+    private readonly videosService: VideosService,
   ) {}
 
-  async findAll(query: any = {}) {
+  async findAll(
+    query: any = {},
+    requesterId: string | null = null,
+    requesterRole: UserRole | null = null,
+  ) {
     const filters: any = {};
     if (query.category) filters['category.main'] = query.category;
     if (query.level) filters.level = query.level;
@@ -41,11 +47,19 @@ export class CoursesService {
     } else {
       filters.product_type = { $ne: 'tuition' }; // Keep existing behavior for regular courses
     }
-    // Default to published courses for the public listing.
-    if (query.status === 'all') {
-      // Don't filter by status to show all (draft, published, etc.)
+
+    // Role-based status filtering
+    const isAdmin = requesterRole === UserRole.ADMIN;
+    if (!isAdmin) {
+      // Force published always for non-admins
+      filters.status = 'published';
     } else {
-      filters.status = query.status ?? 'published';
+      // Admin can use status=all to bypass status filter
+      if (query.status === 'all') {
+        // No status filter
+      } else {
+        filters.status = query.status ?? 'published';
+      }
     }
 
     // Pagination
@@ -117,7 +131,11 @@ export class CoursesService {
     };
   }
 
-  async findBySlug(slug: string) {
+  async findBySlug(
+    slug: string,
+    requesterId: string | null = null,
+    requesterRole: UserRole | null = null,
+  ) {
     let course = await this.courseModel
       .findOne({ slug, product_type: { $ne: 'tuition' } })
       .exec();
@@ -133,32 +151,64 @@ export class CoursesService {
     }
 
     if (!course) throw new NotFoundException('Course not found');
+
+    // Access control for non-published courses
+    if (course.status !== 'published') {
+      const isAdmin = requesterRole === UserRole.ADMIN;
+      const isOwner = course.lead_instructor_id === requesterId;
+      if (!isAdmin && !isOwner) {
+        throw new NotFoundException('Course not found');
+      }
+    }
+
     return { success: true, data: course };
   }
 
-  async getCurriculum(idOrSlug: string) {
+  async getCurriculum(
+    idOrSlug: string,
+    requesterId: string | null = null,
+    requesterRole: UserRole | null = null,
+  ) {
     const isId = Types.ObjectId.isValid(idOrSlug);
     const query = isId
       ? { _id: new Types.ObjectId(idOrSlug) }
       : { slug: idOrSlug };
 
-    const course = await this.courseModel
-      .findOne(query)
-      .select('curriculum')
-      .exec();
+    const course = await this.courseModel.findOne(query).exec();
+
     if (!course) throw new NotFoundException('Course not found');
+
+    // Access control for non-published courses
+    if (course.status !== 'published') {
+      const isAdmin = requesterRole === UserRole.ADMIN;
+      const isOwner = course.lead_instructor_id === requesterId;
+      if (!isAdmin && !isOwner) {
+        throw new NotFoundException('Course not found');
+      }
+    }
+
     return { success: true, data: course.curriculum };
   }
 
   // ── Tuition Methods ──────────────────────────────────────────────────
 
-  async findTuitionClasses(query: any = {}) {
+  async findTuitionClasses(
+    query: any = {},
+    requesterId: string | null = null,
+    requesterRole: UserRole | null = null,
+  ) {
     const filters: any = { product_type: 'tuition' };
 
-    if (query.status === 'all') {
-      // Don't filter by status
+    // Role-based status filtering
+    const isAdmin = requesterRole === UserRole.ADMIN;
+    if (!isAdmin) {
+      filters.status = 'published';
     } else {
-      filters.status = query.status ?? 'published';
+      if (query.status === 'all') {
+        // No filter
+      } else {
+        filters.status = query.status ?? 'published';
+      }
     }
 
     if (query.class_level) {
@@ -492,6 +542,20 @@ export class CoursesService {
 
     course.curriculum[sectionIndex].lessons.push(newLesson as any);
     await course.save();
+
+    // Sync preview status to Video document if applicable
+    if (newLesson.type === 'video' && newLesson.content.video_id) {
+      try {
+        await this.videosService.setPublicPreview(
+          newLesson.content.video_id.toString(),
+          newLesson.is_preview === true,
+        );
+      } catch (err) {
+        // Log but don't fail the lesson creation
+        console.error(`Failed to sync public_preview for video ${newLesson.content.video_id}: ${err.message}`);
+      }
+    }
+
     return { success: true, data: newLesson };
   }
 
@@ -553,6 +617,18 @@ export class CoursesService {
 
     course.curriculum[sectionIndex].lessons[lessonIndex] = lesson;
     await course.save();
+
+    // Sync preview status to Video document if applicable
+    if (lesson.type === 'video' && lesson.content?.video_id) {
+      try {
+        await this.videosService.setPublicPreview(
+          lesson.content.video_id.toString(),
+          lesson.is_preview === true,
+        );
+      } catch (err) {
+        console.error(`Failed to sync public_preview for video ${lesson.content.video_id}: ${err.message}`);
+      }
+    }
 
     return { success: true, data: lesson };
   }
@@ -645,12 +721,14 @@ export class CoursesService {
     return { success: true, data: review };
   }
 
-  async findLessonById(lessonId: string) {
+  async findLessonById(
+    lessonId: string,
+    requesterId: string | null = null,
+    requesterRole: UserRole | null = null,
+  ) {
     if (!Types.ObjectId.isValid(lessonId))
       throw new NotFoundException('Invalid Lesson ID');
 
-    // Search through all courses for this specific lesson_id
-    // This is necessary because lessons are embedded in curriculum sections.
     const course = await this.courseModel
       .findOne({
         'curriculum.lessons.lesson_id': new Types.ObjectId(lessonId),
@@ -660,13 +738,50 @@ export class CoursesService {
     if (!course) throw new NotFoundException('Lesson not found');
 
     // Extract the lesson object
+    let lesson: any = null;
     for (const section of course.curriculum) {
-      const lesson = section.lessons.find(
-        (l) => l.lesson_id.toString() === lessonId,
-      );
-      if (lesson) return { success: true, data: lesson };
+      lesson = section.lessons.find((l) => l.lesson_id.toString() === lessonId);
+      if (lesson) break;
     }
 
-    throw new NotFoundException('Lesson not found in curriculum');
+    if (!lesson) throw new NotFoundException('Lesson not found in curriculum');
+
+    // Access control
+    const isOwner = course.lead_instructor_id === requesterId;
+    const isAdmin = requesterRole === UserRole.ADMIN;
+
+    // 1. If course is not published, only owner/admin can see lessons
+    if (course.status !== 'published') {
+      if (!isOwner && !isAdmin) {
+        throw new ForbiddenException(
+          'This course is not yet published. Only the instructor can access its content.',
+        );
+      }
+      return { success: true, data: lesson };
+    }
+
+    // 2. Public preview bypass (only for published courses)
+    if (lesson.is_preview === true) {
+      return { success: true, data: lesson };
+    }
+
+    // 3. Paid content gate
+    if (isAdmin || isOwner) {
+      return { success: true, data: lesson };
+    }
+
+    if (requesterRole === UserRole.STUDENT && requesterId) {
+      const isEnrolled = await this.enrollmentsService.isActiveCourseEnrollment(
+        course._id.toString(),
+        requesterId,
+      );
+      if (isEnrolled) {
+        return { success: true, data: lesson };
+      }
+    }
+
+    throw new ForbiddenException(
+      'Enrollment required to access this lesson content.',
+    );
   }
 }
