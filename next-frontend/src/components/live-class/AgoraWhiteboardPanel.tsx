@@ -172,17 +172,15 @@ export const AgoraWhiteboardPanel: React.FC<AgoraWhiteboardPanelProps> = ({
     async function initWhiteboard() {
       try {
         const joinedRoom = await sdk.joinRoom({
-          uuid:                config.room_uuid,
-          roomToken:           config.room_token,
-          uid:                 userId || String(Math.floor(Math.random() * 1_000_000)),
-          isWritable:          isTeacher,
+          uuid: config.room_uuid,
+          roomToken: config.room_token,
+          uid: userId || String(Math.floor(Math.random() * 1000000)),
+          isWritable: isTeacher,
+          disableCameraTransform: !isTeacher,
           disableDeviceInputs: !isTeacher,
         });
 
         if (isCancelled || currentInitId !== roomInstanceIdRef.current) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`[Whiteboard] join resolved but stale/cancelled (id: ${currentInitId}), cleaning up...`);
-          }
           joinedRoom.bindHtmlElement(null);
           joinedRoom.disconnect();
           return;
@@ -191,23 +189,19 @@ export const AgoraWhiteboardPanel: React.FC<AgoraWhiteboardPanelProps> = ({
         room = joinedRoom;
         roomRef.current = room;
 
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`[Whiteboard] join resolved (id: ${currentInitId}, uuid: ${room.uuid})`);
-        }
-
         if (containerRef.current) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`[Whiteboard] bindHtmlElement (id: ${currentInitId})`);
-          }
           room.bindHtmlElement(containerRef.current);
 
-          // Set the initial tool / color / size immediately after binding
+          // Sync view mode: Teacher broadcasts, students follow
           if (isTeacher) {
+            room.setViewMode('broadcaster');
             room.setMemberState({
               currentApplianceName: toolRef.current,
-              strokeColor:          hexToRgb(colorRef.current),
-              strokeWidth:          strokeWRef.current,
+              strokeColor: hexToRgb(colorRef.current),
+              strokeWidth: strokeWRef.current,
             });
+          } else {
+            room.setViewMode('follower');
           }
         }
       } catch (err) {

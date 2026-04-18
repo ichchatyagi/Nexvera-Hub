@@ -62,6 +62,11 @@ const JoinLiveClass = () => {
   const videoContainerRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
   const socketRef = useRef<any>(null);
+  const isClassOwnerRef = useRef(isClassOwner);
+
+  useEffect(() => {
+    isClassOwnerRef.current = isClassOwner;
+  }, [isClassOwner]);
 
   // PROMPT 3/4: Tuition Speaking State
   const [speakStatus, setSpeakStatus] = useState<'idle' | 'requested' | 'approved'>('idle');
@@ -122,7 +127,7 @@ const JoinLiveClass = () => {
       fetchToken();
 
       // Lifecycle Socket
-      const token = getCookie('access_token');
+      const token = getCookie('access_token') || localStorage.getItem('access_token');
       const apiUrl = getSocketUrl('/ws/live-classes');
       const socket = io(apiUrl, {
         query: { token, liveClassId: id },
@@ -133,7 +138,7 @@ const JoinLiveClass = () => {
         setClassStatus('ended');
         setPendingRequests([]);
         setActiveSpeakers([]);
-        if (!isClassOwner) {
+        if (!isClassOwnerRef.current) {
           const msg = isTuition 
             ? 'Session ended.' 
             : 'Session ended. You can watch the recording if available.';
@@ -141,8 +146,13 @@ const JoinLiveClass = () => {
         }
       });
 
+      socket.on('error', (err) => {
+        console.error('Socket lifecycle error:', err);
+        toast.error(`Socket error: ${err}`);
+      });
+
       socket.on('class:started', () => {
-        if (!isClassOwner) {
+        if (!isClassOwnerRef.current) {
           setClassStatus('live');
           toast.success('Broadcast has started! Click Enter Live Hub to join.');
         }
@@ -150,7 +160,8 @@ const JoinLiveClass = () => {
 
       // PROMPT 4/6: Audio Speaking Listeners
       socket.on('audio:request', (payload: { userId: string; userName: string; requestedAt: string }) => {
-        if (isClassOwner) {
+        console.log('Received audio:request event', payload, 'isClassOwner:', isClassOwnerRef.current);
+        if (isClassOwnerRef.current) {
           setSpeakerNames(prev => ({ ...prev, [payload.userId]: payload.userName }));
           setPendingRequests(prev => {
             const exists = prev.find(r => r.userId === payload.userId);
@@ -479,7 +490,10 @@ const JoinLiveClass = () => {
                     {!isClassOwner && isTuition && joined && classStatus === 'live' && (
                       <button
                         disabled={speakStatus !== 'idle'}
-                        onClick={() => socketRef.current?.emit('audio:request')}
+                        onClick={() => {
+                          console.log('Emitting audio:request');
+                          socketRef.current?.emit('audio:request');
+                        }}
                         className={`px-6 py-4 rounded-2xl flex items-center gap-3 transition-all ${
                           speakStatus === 'idle' 
                             ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-500/20' 

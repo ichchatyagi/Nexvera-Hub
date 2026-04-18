@@ -227,22 +227,23 @@ export class EnrollmentsService {
     classId: string,
     subjectId: string,
   ) {
-    if (
-      !Types.ObjectId.isValid(classId) ||
-      !Types.ObjectId.isValid(subjectId)
-    ) {
+    if (!Types.ObjectId.isValid(classId)) {
       return false;
     }
 
     const enrollments = await this.enrollmentModel
       .find({
         student_id: studentId,
-        tuition_class_id: new Types.ObjectId(classId),
+        $or: [
+          { course_id: new Types.ObjectId(classId) },
+          { tuition_class_id: new Types.ObjectId(classId) },
+        ],
         product_type: 'tuition',
         subscription_status: 'active',
       })
       .exec();
 
+    console.log(`[TuitionAccess] student:${studentId} class:${classId} subject:${subjectId} found:${enrollments.length}`);
     const now = new Date();
 
     for (const en of enrollments) {

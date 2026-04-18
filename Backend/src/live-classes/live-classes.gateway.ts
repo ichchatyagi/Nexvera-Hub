@@ -7,6 +7,7 @@ import {
   ConnectedSocket,
   MessageBody,
 } from '@nestjs/websockets';
+import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -68,6 +69,8 @@ export class LiveClassesGateway
 {
   @WebSocketServer()
   server: Server;
+
+  private readonly logger = new Logger(LiveClassesGateway.name);
 
   constructor(
     @InjectModel(LiveClass.name)
@@ -426,11 +429,14 @@ export class LiveClassesGateway
 
   @SubscribeMessage('audio:request')
   async handleAudioRequest(@ConnectedSocket() client: Socket) {
+    this.logger.debug(`[GATEWAY] Received audio:request from socket ${client.id}`);
     const data = client.data as LiveClassClientData | undefined;
     if (!data) return;
 
     try {
+      this.logger.debug(`Audio request from ${data.userId} for class ${data.liveClassId}`);
       const lc = await this.liveClassesService.findById(data.liveClassId);
+      this.logger.debug(`Class ${lc._id} product_type: ${lc.product_type}`);
       this.assertTuitionLive(lc);
 
       if (data.userRole !== UserRole.STUDENT) {
@@ -444,6 +450,7 @@ export class LiveClassesGateway
         lc.product_type,
         lc.subject_id?.toString(),
       );
+      this.logger.debug(`User ${data.userId} hasAccess result: ${isEnrolled}`);
       if (!isEnrolled) {
         client.emit('error', 'NOT_ENROLLED');
         client.disconnect(true);
