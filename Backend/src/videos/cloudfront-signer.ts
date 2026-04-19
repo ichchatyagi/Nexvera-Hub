@@ -10,9 +10,9 @@ const logger = new Logger('CloudFrontSigner');
  * Throws InternalServerErrorException if misconfigured in production.
  */
 export function signCloudFrontUrl(
-  url: string,
+  url: string | null | undefined,
   configService: AppConfigService,
-): string {
+): any {
   if (!url) return url;
   
   // If signing is explicitly disabled via config, return as is

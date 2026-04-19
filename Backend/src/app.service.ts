@@ -42,7 +42,7 @@ export class AppService {
     }
 
     try {
-      if (this.mongoConnection.readyState === 1) {
+      if (this.mongoConnection.readyState === 1 && this.mongoConnection.db) {
         // Use ping command for active check
         await this.mongoConnection.db.admin().ping();
         status.mongodb = 'up';

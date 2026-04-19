@@ -10,6 +10,26 @@ jobs:
   backend:
     name: Backend CI
     runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: runner
+      POSTGRES_PASSWORD: runner-password
+      POSTGRES_DB: nexvera_test
+      MONGODB_URI: mongodb://localhost:27017/nexvera_test
+      JWT_SECRET: ci-test-secret-never-use-in-prod
+      RAZORPAY_KEY_ID: rzp_test_dummy
+      RAZORPAY_KEY_SECRET: rzp_test_secret_dummy
+      RAZORPAY_WEBHOOK_SECRET: rzp_webhook_secret_dummy
+      EMAIL_USER: ci@nexvera.com
+      EMAIL_PASS: ci-password
+      SENDER_EMAIL: noreply@nexvera.com
+      SENDER_PASS: sender-password
+      RECIPIENT_EMAIL: admin@nexvera.com
+      VIDEO_PROCESSING_WEBHOOK_SECRET: worker-secret-dummy
+      REDIS_REQUIRED: false
+      CLOUDFRONT_SIGNED_URLS_ENABLED: false
     steps:
       - uses: actions/checkout@v4
       
