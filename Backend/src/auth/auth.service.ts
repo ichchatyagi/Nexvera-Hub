@@ -286,15 +286,15 @@ export class AuthService {
   async verifyOtp(dto: VerifyOtpDto) {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user || !user.resetOtp || !user.resetOtpExpiresAt) {
-      throw new UnauthorizedException('Invalid or expired OTP');
+      throw new UnauthorizedException('Invalid or expired code');
     }
 
     if (new Date() > user.resetOtpExpiresAt) {
-      throw new UnauthorizedException('OTP has expired');
+      throw new UnauthorizedException('Invalid or expired code');
     }
 
     if (user.resetOtp.toUpperCase() !== dto.otp.toUpperCase()) {
-      throw new UnauthorizedException('Invalid OTP');
+      throw new UnauthorizedException('Invalid or expired code');
     }
 
     return {
@@ -306,15 +306,15 @@ export class AuthService {
   async resetPassword(dto: ResetPasswordDto) {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user || !user.resetOtp || !user.resetOtpExpiresAt) {
-      throw new UnauthorizedException('Invalid or expired OTP');
+      throw new UnauthorizedException('Invalid or expired code');
     }
 
     if (new Date() > user.resetOtpExpiresAt) {
-      throw new UnauthorizedException('OTP has expired');
+      throw new UnauthorizedException('Invalid or expired code');
     }
 
     if (user.resetOtp.toUpperCase() !== dto.otp.toUpperCase()) {
-      throw new UnauthorizedException('Invalid OTP');
+      throw new UnauthorizedException('Invalid or expired code');
     }
 
     const passwordHash = await bcrypt.hash(dto.newPassword, 10);
@@ -334,15 +334,15 @@ export class AuthService {
       !user.verificationOtp ||
       !user.verificationOtpExpiresAt
     ) {
-      throw new UnauthorizedException('Invalid verification request');
+      throw new UnauthorizedException('Invalid or expired code');
     }
 
     if (new Date() > user.verificationOtpExpiresAt) {
-      throw new UnauthorizedException('Verification code has expired');
+      throw new UnauthorizedException('Invalid or expired code');
     }
 
     if (user.verificationOtp.toUpperCase() !== dto.otp.toUpperCase()) {
-      throw new UnauthorizedException('Invalid verification code');
+      throw new UnauthorizedException('Invalid or expired code');
     }
 
     const updatedUser = await this.usersService.activateUser(user.id);

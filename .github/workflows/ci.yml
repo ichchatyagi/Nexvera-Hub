@@ -17,7 +17,8 @@ jobs:
       POSTGRES_USER: runner
       POSTGRES_PASSWORD: runner-password
       POSTGRES_DB: nexvera_test
-      MONGODB_URI: mongodb://localhost:27017/nexvera_test
+      # Use 127.0.0.1 for explicit local binding in CI
+      MONGODB_URI: mongodb://127.0.0.1:27017/nexvera_test
       JWT_SECRET: ci-test-secret-never-use-in-prod
       RAZORPAY_KEY_ID: rzp_test_dummy
       RAZORPAY_KEY_SECRET: rzp_test_secret_dummy
@@ -30,8 +31,44 @@ jobs:
       VIDEO_PROCESSING_WEBHOOK_SECRET: worker-secret-dummy
       REDIS_REQUIRED: false
       CLOUDFRONT_SIGNED_URLS_ENABLED: false
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: runner
+          POSTGRES_PASSWORD: runner-password
+          POSTGRES_DB: nexvera_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U runner -d nexvera_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "echo 'db.runCommand({ping:1})' | mongosh --quiet"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
+
+      - name: Wait for services
+        run: |
+          until docker exec ${{ job.services.postgres.id }} pg_isready -U runner -d nexvera_test; do
+            echo "Waiting for Postgres..."
+            sleep 2
+          done
+          until docker exec ${{ job.services.mongodb.id }} mongosh --quiet --eval "db.runCommand({ ping: 1 })"; do
+            echo "Waiting for MongoDB..."
+            sleep 2
+          done
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -71,6 +108,6 @@ jobs:
         working-directory: next-frontend
         
       - name: Build
-        # NEXT_DISABLE_TURBOPACK=1 to avoid issues in CI environments
-        run: NEXT_DISABLE_TURBOPACK=1 npm run build
+        # Enforce Webpack build for determinism in CI
+        run: npx next build --webpack
         working-directory: next-frontend

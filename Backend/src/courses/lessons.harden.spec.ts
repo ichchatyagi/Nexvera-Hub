@@ -9,6 +9,7 @@ import { VideosService } from '../videos/videos.service';
 import { UserRole } from '../users/entities/user.entity';
 import { Types } from 'mongoose';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { CacheService } from '../cache/cache.service';
 
 describe('Lessons Hardening (Gating & Previews)', () => {
   let service: CoursesService;
@@ -51,6 +52,10 @@ describe('Lessons Hardening (Gating & Previews)', () => {
     mockVideosService = {
       findById: jest.fn().mockResolvedValue({ _id: videoId, public_preview: false }),
     };
+    const mockCacheService = {
+      getOrSetJson: jest.fn().mockImplementation((ns, key, ttl, loader) => loader()),
+      bumpNamespace: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -59,6 +64,7 @@ describe('Lessons Hardening (Gating & Previews)', () => {
         { provide: getModelToken(Review.name), useValue: {} },
         { provide: EnrollmentsService, useValue: mockEnrollmentsService },
         { provide: VideosService, useValue: mockVideosService },
+        { provide: CacheService, useValue: mockCacheService },
       ],
     }).compile();
 

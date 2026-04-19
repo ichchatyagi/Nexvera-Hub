@@ -278,8 +278,22 @@ export class AppConfigService {
   }
 
   get cloudfrontSignedUrlsEnabled(): boolean {
-    return (
-      this.configService.get<boolean>('CLOUDFRONT_SIGNED_URLS_ENABLED') || false
-    );
+    return this.configService.get<boolean>('CLOUDFRONT_SIGNED_URLS_ENABLED') ?? false;
+  }
+
+  get cacheEnabled(): boolean {
+    return this.configService.get<boolean>('CACHE_ENABLED') ?? false;
+  }
+
+  get cacheDefaultTtl(): number {
+    return this.configService.get<number>('CACHE_DEFAULT_TTL_SECONDS') ?? 60;
+  }
+
+  get videoUploadsEnabled(): boolean {
+    return this.configService.get<boolean>('VIDEO_UPLOADS_ENABLED') ?? false;
+  }
+
+  get videoProcessingQueueEnabled(): boolean {
+    return this.configService.get<boolean>('VIDEO_PROCESSING_QUEUE_ENABLED') ?? false;
   }
 }

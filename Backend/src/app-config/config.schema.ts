@@ -107,4 +107,21 @@ export const configValidationSchema = Joi.object({
     otherwise: Joi.optional(),
   }),
   CLOUDFRONT_SIGNED_URL_TTL_SECONDS: Joi.number().default(600),
+  // Cache configuration
+  CACHE_ENABLED: Joi.boolean()
+    .when('NODE_ENV', { is: 'production', then: Joi.boolean().default(true) })
+    .when('NODE_ENV', { is: 'test', then: Joi.boolean().default(false) })
+    .default(false),
+  CACHE_DEFAULT_TTL_SECONDS: Joi.number().default(60),
+
+  VIDEO_UPLOADS_ENABLED: Joi.boolean().when('NODE_ENV', {
+    is: 'production',
+    then: Joi.boolean().default(true),
+    otherwise: Joi.boolean().default(false),
+  }),
+  VIDEO_PROCESSING_QUEUE_ENABLED: Joi.boolean().when('NODE_ENV', {
+    is: 'production',
+    then: Joi.boolean().default(true),
+    otherwise: Joi.boolean().default(false),
+  }),
 });

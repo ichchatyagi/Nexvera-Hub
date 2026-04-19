@@ -5,6 +5,7 @@ import {
   Logger,
   InternalServerErrorException,
   BadRequestException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -92,16 +93,22 @@ export class VideosService {
    * Initiates a video upload by:
    *   1. Generating an S3 object key using the video's future Mongo _id.
    *   2. Creating a Video document with status = 'pending'.
-   *   3. Returning a stubbed presigned PUT URL (real AWS SDK call goes here).
+   *   3. Returning a real presigned PUT URL for direct client upload.
    *
    * @see IMPLEMENTATION_PLAN_PART3.md §7 – "Step 1: Upload"
-   * Real integration: replace `buildStubPresignedUrl` with AWS SDK v3
-   * `@aws-sdk/s3-request-presigner` → `getSignedUrl(s3Client, new PutObjectCommand(...))`
    */
   async initiateUpload(
     teacherId: string,
     dto: InitiateUploadDto,
   ): Promise<InitiateUploadResult> {
+    if (!this.appConfig.videoUploadsEnabled) {
+      throw new ServiceUnavailableException({
+        success: false,
+        error: { code: 'VIDEO_PIPELINE_DISABLED' },
+        message: 'Video uploads are temporarily disabled',
+      });
+    }
+
     const videoId = new Types.ObjectId();
     const s3Key = this.buildOriginalKey(videoId.toString(), dto.filename);
 
@@ -211,6 +218,14 @@ export class VideosService {
     id: string,
     requesterId: string,
   ): Promise<{ success: boolean; data: VideoDocument; message?: string }> {
+    if (!this.appConfig.videoProcessingQueueEnabled) {
+      throw new ServiceUnavailableException({
+        success: false,
+        error: { code: 'VIDEO_PIPELINE_DISABLED' },
+        message: 'Video processing is temporarily disabled',
+      });
+    }
+
     if (!Types.ObjectId.isValid(id))
       throw new NotFoundException('Invalid video ID');
 

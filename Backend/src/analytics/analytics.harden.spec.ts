@@ -7,6 +7,7 @@ import { Course } from '../courses/schemas/course.schema';
 import { Enrollment } from '../enrollments/schemas/enrollment.schema';
 import { Transaction, TransactionStatus } from '../payments/entities/transaction.entity';
 import { LiveClass, LiveClassStatus } from '../live-classes/schemas/live-class.schema';
+import { CacheService } from '../cache/cache.service';
 
 describe('AnalyticsService Hardening', () => {
   let service: AnalyticsService;
@@ -44,6 +45,10 @@ describe('AnalyticsService Hardening', () => {
       }),
     };
 
+    const mockCacheService = {
+      getOrSetJson: jest.fn().mockImplementation((ns, key, ttl, loader) => loader()),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AnalyticsService,
@@ -52,6 +57,7 @@ describe('AnalyticsService Hardening', () => {
         { provide: getModelToken(Enrollment.name), useValue: mockEnrollmentModel },
         { provide: getRepositoryToken(Transaction), useValue: mockTransactionRepository },
         { provide: getModelToken(LiveClass.name), useValue: mockLiveClassModel },
+        { provide: CacheService, useValue: mockCacheService },
       ],
     }).compile();
 

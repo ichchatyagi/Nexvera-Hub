@@ -104,6 +104,8 @@ const mockConfigService = {
   cloudfrontKeyPairId: 'test-key',
   cloudfrontPrivateKeyBase64: 'test-pk',
   cloudfrontSignedUrlTtlSeconds: 600,
+  videoUploadsEnabled: true,
+  videoProcessingQueueEnabled: true,
 };
 
 const mockQueueService = {
@@ -166,6 +168,41 @@ describe('VideosService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('Feature Gating', () => {
+    it('initiateUpload throws ServiceUnavailableException when uploads are disabled', async () => {
+      (mockConfigService as any).videoUploadsEnabled = false;
+      const dto = {
+        course_id: new Types.ObjectId().toString(),
+        filename: 'test.mp4',
+        mime_type: 'video/mp4',
+        size_bytes: 100,
+      };
+
+      try {
+        await service.initiateUpload(TEACHER_ID, dto as any);
+        throw new Error('Did not throw');
+      } catch (err: any) {
+        expect(err.status).toBe(503);
+        expect(err.getResponse().error.code).toBe('VIDEO_PIPELINE_DISABLED');
+      } finally {
+        (mockConfigService as any).videoUploadsEnabled = true;
+      }
+    });
+
+    it('triggerProcessing throws ServiceUnavailableException when queue is disabled', async () => {
+      (mockConfigService as any).videoProcessingQueueEnabled = false;
+      try {
+        await service.triggerProcessing(new Types.ObjectId().toString(), TEACHER_ID);
+        throw new Error('Did not throw');
+      } catch (err: any) {
+        expect(err.status).toBe(503);
+        expect(err.getResponse().error.code).toBe('VIDEO_PIPELINE_DISABLED');
+      } finally {
+        (mockConfigService as any).videoProcessingQueueEnabled = true;
+      }
+    });
   });
 
   // ── initiateUpload ──────────────────────────────────────────────────────────

@@ -19,6 +19,8 @@ import {
   LiveClassStatus,
 } from '../live-classes/schemas/live-class.schema';
 
+import { CacheService } from '../cache/cache.service';
+
 @Injectable()
 export class AnalyticsService {
   constructor(
@@ -32,9 +34,19 @@ export class AnalyticsService {
     private readonly transactionRepository: Repository<Transaction>,
     @InjectModel(LiveClass.name)
     private readonly liveClassModel: Model<LiveClassDocument>,
+    private readonly cacheService: CacheService,
   ) {}
 
   async getOverview() {
+    return this.cacheService.getOrSetJson(
+      'admin-analytics',
+      'overview',
+      60,
+      () => this.getOverviewImplementation(),
+    );
+  }
+
+  private async getOverviewImplementation() {
     try {
       const now = new Date();
       // Use UTC for consistent date boundaries regardless of server timezone

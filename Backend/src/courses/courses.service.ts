@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
+import { CacheService } from '../cache/cache.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Course, CourseDocument } from './schemas/course.schema';
@@ -30,9 +31,44 @@ export class CoursesService {
     @InjectModel(Review.name) private reviewModel: Model<ReviewDocument>,
     private readonly enrollmentsService: EnrollmentsService,
     private readonly videosService: VideosService,
+    private readonly cacheService: CacheService,
   ) {}
 
+  private buildFindAllCacheKey(query: any): string {
+    const parts = [
+      `cat:${query.category || ''}`,
+      `lvl:${query.level || ''}`,
+      `prc:${query.price_type || ''}`,
+      `prod:${query.product_type || ''}`,
+      `q:${query.search?.trim().slice(0, 64) || ''}`,
+      `p:${query.page || 1}`,
+      `lim:${query.limit || 10}`,
+    ];
+    return parts.join('|');
+  }
+
   async findAll(
+    query: any = {},
+    requesterId: string | null = null,
+    requesterRole: UserRole | null = null,
+  ) {
+    const isAdmin = requesterRole === UserRole.ADMIN;
+
+    // Cache only public (non-admin) listing
+    if (!isAdmin && query.status !== 'all') {
+      const cacheKey = this.buildFindAllCacheKey(query);
+      return this.cacheService.getOrSetJson(
+        'courses',
+        cacheKey,
+        60,
+        () => this.findAllImplementation(query, requesterId, requesterRole),
+      );
+    }
+
+    return this.findAllImplementation(query, requesterId, requesterRole);
+  }
+
+  private async findAllImplementation(
     query: any = {},
     requesterId: string | null = null,
     requesterRole: UserRole | null = null,
@@ -323,6 +359,7 @@ export class CoursesService {
       ...createDto,
       status: 'draft',
     } as any);
+    await this.cacheService.bumpNamespace('courses');
     return { success: true, data: created };
   }
 
@@ -334,6 +371,7 @@ export class CoursesService {
     Object.assign(course, updateDto);
     await course.save();
 
+    await this.cacheService.bumpNamespace('courses');
     return { success: true, data: course };
   }
 
@@ -343,6 +381,7 @@ export class CoursesService {
     if (!course) throw new NotFoundException('Course not found');
 
     await this.courseModel.findByIdAndDelete(id).exec();
+    await this.cacheService.bumpNamespace('courses');
     return { success: true, data: { deleted: true } };
   }
 
@@ -360,6 +399,7 @@ export class CoursesService {
       course.published_at = new Date();
     }
     await course.save();
+    await this.cacheService.bumpNamespace('courses');
     return { success: true, data: course };
   }
 
@@ -419,6 +459,7 @@ export class CoursesService {
     }
 
     await course.save();
+    await this.cacheService.bumpNamespace('courses');
     return { success: true, data: course };
   }
 
@@ -436,6 +477,7 @@ export class CoursesService {
     }
 
     await course.save();
+    await this.cacheService.bumpNamespace('courses');
     return { success: true, data: course };
   }
 
@@ -462,6 +504,7 @@ export class CoursesService {
 
     course.curriculum.push(newSection);
     await course.save();
+    await this.cacheService.bumpNamespace('courses');
     return { success: true, data: newSection };
   }
 
@@ -488,6 +531,7 @@ export class CoursesService {
       course.curriculum[sectionIndex].order = dto.order;
 
     await course.save();
+    await this.cacheService.bumpNamespace('courses');
     return { success: true, data: course.curriculum[sectionIndex] };
   }
 
@@ -555,7 +599,7 @@ export class CoursesService {
         console.error(`Failed to sync public_preview for video ${newLesson.content.video_id}: ${err.message}`);
       }
     }
-
+    await this.cacheService.bumpNamespace('courses');
     return { success: true, data: newLesson };
   }
 
@@ -630,6 +674,7 @@ export class CoursesService {
       }
     }
 
+    await this.cacheService.bumpNamespace('courses');
     return { success: true, data: lesson };
   }
 

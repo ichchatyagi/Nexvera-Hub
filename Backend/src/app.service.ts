@@ -54,10 +54,25 @@ export class AppService {
     const redisStatus = await this.redisHealth.isHealthy();
     status.redis = redisStatus.status;
 
+    // Video Pipeline Readiness
+    let videoStatus: 'up' | 'down' = 'up';
+    if (this.appConfigService.videoUploadsEnabled) {
+      if (!this.appConfigService.awsS3VideoBucket || !this.appConfigService.awsRegion) {
+        videoStatus = 'down';
+      }
+    }
+    if (this.appConfigService.videoProcessingQueueEnabled) {
+      if (!this.appConfigService.awsSqsQueueUrl) {
+        videoStatus = 'down';
+      }
+    }
+    status.video_pipeline = videoStatus;
+
     const allUp =
       status.postgres === 'up' &&
       status.mongodb === 'up' &&
-      (redisStatus.status === 'up' || !redisStatus.required);
+      (redisStatus.status === 'up' || !redisStatus.required) &&
+      status.video_pipeline === 'up';
 
     if (!allUp) {
       throw new ServiceUnavailableException({
