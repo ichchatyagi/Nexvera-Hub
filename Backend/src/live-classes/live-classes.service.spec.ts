@@ -13,6 +13,7 @@ import { UserRole } from '../users/entities/user.entity';
 import { EnrollmentsService } from '../enrollments/enrollments.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/schemas/notification.schema';
+import { UsersService } from '../users/users.service';
 
 import { LiveClass, LiveClassStatus } from './schemas/live-class.schema';
 import { Course } from '../courses/schemas/course.schema';
@@ -150,6 +151,10 @@ describe('LiveClassesService', () => {
         {
           provide: NotificationsService,
           useValue: mockNotificationsService,
+        },
+        {
+          provide: UsersService,
+          useValue: { getStudentIds: jest.fn().mockResolvedValue([]) },
         },
       ],
     }).compile();
@@ -618,6 +623,10 @@ describe('LiveClassesService', () => {
           {
             provide: NotificationsService,
             useValue: mockNotificationsService,
+          },
+          {
+            provide: UsersService,
+            useValue: { getStudentIds: jest.fn().mockResolvedValue([]) },
           },
         ],
       }).compile();

@@ -5,6 +5,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
 import { LiveClassesService } from './live-classes.service';
 import { LiveClassStatus } from './schemas/live-class.schema';
+import { AdminAttendanceReportDto } from './dto/admin-attendance.dto';
 
 @Controller('admin/live-classes')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -27,6 +28,12 @@ export class AdminLiveClassesController {
       fromDate,
       toDate,
     });
+    return { success: true, data };
+  }
+
+  @Get('attendance/report')
+  async getAttendanceReport(@Query() filters: AdminAttendanceReportDto) {
+    const data = await this.liveClassesService.adminAttendanceReport(filters);
     return { success: true, data };
   }
 

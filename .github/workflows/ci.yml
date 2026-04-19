@@ -82,8 +82,7 @@ jobs:
         working-directory: Backend
         
       - name: Run tests
-        # Using --no-watchman as per environment requirements
-        run: npm test -- --no-watchman
+        run: npm run test:ci
         working-directory: Backend
         
       - name: Build

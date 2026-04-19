@@ -26,6 +26,8 @@ import { EnrollmentsService } from '../enrollments/enrollments.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/schemas/notification.schema';
 import { Course, CourseDocument } from '../courses/schemas/course.schema';
+import { AdminAttendanceReportDto } from './dto/admin-attendance.dto';
+import { UsersService } from '../users/users.service';
 
 // ─── Agora token shape ────────────────────────────────────────────────────────
 
@@ -79,6 +81,7 @@ export class LiveClassesService implements OnModuleInit {
     private readonly videosService: VideosService,
     private readonly enrollmentsService: EnrollmentsService,
     private readonly notificationsService: NotificationsService,
+    private readonly usersService: UsersService,
   ) {}
 
   onModuleInit() {
@@ -1277,6 +1280,84 @@ export class LiveClassesService implements OnModuleInit {
     const lc = await this.liveClassModel.findById(id).exec();
     if (!lc) throw new NotFoundException('Live class not found');
     return lc;
+  }
+
+  async adminAttendanceReport(filters: AdminAttendanceReportDto) {
+    const toDate = filters.toDate ? new Date(filters.toDate) : new Date();
+    const fromDate = filters.fromDate
+      ? new Date(filters.fromDate)
+      : new Date(toDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const query: any = {
+      scheduled_start: { $gte: fromDate, $lte: toDate },
+      status: { $in: [LiveClassStatus.ENDED, LiveClassStatus.LIVE] },
+    };
+
+    if (filters.courseId && Types.ObjectId.isValid(filters.courseId)) {
+      query.course_id = new Types.ObjectId(filters.courseId);
+    }
+    if (filters.teacherId) {
+      query.teacher_id = filters.teacherId;
+    }
+
+    const classes = await this.liveClassModel.find(query).lean().exec();
+
+    // Union all unique user IDs to check roles in batch
+    const allUserIds = new Set<string>();
+    for (const lc of classes) {
+      (lc.registered_students || []).forEach((id) => allUserIds.add(id));
+      (lc.attended_students || []).forEach((id) => allUserIds.add(id));
+    }
+
+    // Get strictly student IDs
+    const studentIdsList = await this.usersService.getStudentIds(
+      Array.from(allUserIds),
+    );
+    const studentIdsSet = new Set(studentIdsList);
+
+    const totals = {
+      total_classes: classes.length,
+      total_registered: 0,
+      total_attended: 0,
+      avg_attendance_rate: 0,
+    };
+
+    const dailyBuckets: Record<
+      string,
+      { classes: number; registered: number; attended: number }
+    > = {};
+
+    for (const lc of classes) {
+      // Semantics: strictly count only those who are confirmed students in DB
+      const registered = (lc.registered_students || []).filter((id) =>
+        studentIdsSet.has(id),
+      ).length;
+      const attended = (lc.attended_students || []).filter((id) =>
+        studentIdsSet.has(id),
+      ).length;
+
+      totals.total_registered += registered;
+      totals.total_attended += attended;
+
+      const day = new Date(lc.scheduled_start).toISOString().split('T')[0];
+      if (!dailyBuckets[day]) {
+        dailyBuckets[day] = { classes: 0, registered: 0, attended: 0 };
+      }
+      dailyBuckets[day].classes++;
+      dailyBuckets[day].registered += registered;
+      dailyBuckets[day].attended += attended;
+    }
+
+    if (totals.total_registered > 0) {
+      totals.avg_attendance_rate =
+        (totals.total_attended / totals.total_registered) * 100;
+    }
+
+    const by_day = Object.entries(dailyBuckets)
+      .map(([day_utc, data]) => ({ day_utc, ...data }))
+      .sort((a, b) => a.day_utc.localeCompare(b.day_utc));
+
+    return { totals, by_day };
   }
 
   // ─── Helpers ──────────────────────────────────────────────────────────────

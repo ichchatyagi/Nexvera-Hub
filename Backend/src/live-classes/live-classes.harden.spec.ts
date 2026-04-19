@@ -11,6 +11,7 @@ import { AppConfigService } from '../app-config/app-config.service';
 import { VideosService } from '../videos/videos.service';
 import { EnrollmentsService } from '../enrollments/enrollments.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { UsersService } from '../users/users.service';
 import { UserRole } from '../users/entities/user.entity';
 
 describe('LiveClassesService Hardening', () => {
@@ -46,6 +47,7 @@ describe('LiveClassesService Hardening', () => {
         { provide: EnrollmentsService, useValue: mockEnrollmentsService },
         { provide: NotificationsService, useValue: { createNotification: jest.fn().mockResolvedValue({}) } },
         { provide: JwtService, useValue: {} },
+        { provide: UsersService, useValue: { getStudentIds: jest.fn().mockResolvedValue([]) } },
       ],
     }).compile();
 
