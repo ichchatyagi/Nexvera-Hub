@@ -56,6 +56,18 @@ export class PaymentsService implements OnModuleInit {
       );
     }
 
+    // Check if player is already actively enrolled
+    const isAlreadyEnrolled = await this.enrollmentsService.hasAccess(
+      userId,
+      courseId,
+      dto.product_type as any || course.product_type,
+      dto.subjectId,
+    );
+
+    if (isAlreadyEnrolled) {
+      throw new BadRequestException('You are already enrolled in this course/subject');
+    }
+
     let price = course.pricing?.price || 0;
     let currency = course.pricing?.currency || 'INR';
 
@@ -125,7 +137,7 @@ export class PaymentsService implements OnModuleInit {
       },
     });
 
-    // Save pending transaction
+    // Save pending transaction with major units (e.g. 999.00)
     const transaction = this.transactionRepository.create({
       userId,
       courseId,
@@ -133,15 +145,18 @@ export class PaymentsService implements OnModuleInit {
       currency: currency,
       status: TransactionStatus.PENDING,
       razorpayOrderId: order.id,
-      stripePaymentId: order.id, // Legacy compatibility
       metadata: {
         type: 'course_purchase',
         courseTitle: course.title,
         gateway: 'razorpay',
+        orderId: order.id,
+        user_id: userId,
         product_type: dto.product_type || course.product_type,
         billing_mode: dto.billing_mode,
         access_scope: dto.access_scope,
         subjectId: dto.subjectId,
+        orig_price: price, // major unit
+        orig_currency: currency,
       },
     });
 
@@ -216,14 +231,15 @@ export class PaymentsService implements OnModuleInit {
       };
     }
 
-    // Update transaction
+    // Update transaction - preserve all metadata, add confirmation details
     transaction.status = TransactionStatus.COMPLETED;
     transaction.razorpayPaymentId = razorpay_payment_id;
     transaction.razorpaySignature = razorpay_signature;
     transaction.metadata = {
-      ...transaction.metadata,
+      ...(transaction.metadata || {}),
       gateway: 'razorpay',
       razorpayPaymentId: razorpay_payment_id,
+      verifiedAt: new Date().toISOString(),
     };
 
     await this.transactionRepository.save(transaction);

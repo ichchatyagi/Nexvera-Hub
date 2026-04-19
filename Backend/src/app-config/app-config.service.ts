@@ -9,6 +9,10 @@ export class AppConfigService {
     return this.configService.get<string>('NODE_ENV') || 'development';
   }
 
+  get isProduction(): boolean {
+    return this.environment === 'production';
+  }
+
   get port(): number {
     return this.configService.get<number>('PORT') || 5000;
   }
@@ -228,5 +232,14 @@ export class AppConfigService {
 
   get agoraWhiteboardRegion(): string {
     return this.configService.get<string>('AGORA_WHITEBOARD_REGION') || 'cn-hz';
+  }
+
+  // Auth Rate Limiting
+  get authRateLimitMax(): number {
+    return this.configService.get<number>('AUTH_RATE_LIMIT_MAX') || 10;
+  }
+
+  get authRateLimitWindowSeconds(): number {
+    return this.configService.get<number>('AUTH_RATE_LIMIT_WINDOW_SECONDS') || 60;
   }
 }

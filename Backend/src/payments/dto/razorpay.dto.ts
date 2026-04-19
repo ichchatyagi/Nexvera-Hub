@@ -1,7 +1,10 @@
-import { IsNotEmpty, IsString, IsOptional, IsIn } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsIn, IsMongoId } from 'class-validator';
 
 export class CreateOrderDto {
-  @IsString()
+  /**
+   * MongoDB ID of the target course or tuition class.
+   */
+  @IsMongoId()
   @IsNotEmpty()
   courseId: string;
 
@@ -20,13 +23,16 @@ export class CreateOrderDto {
   @IsIn(['monthly', 'bundle'])
   billing_mode?: string;
 
-  @IsString()
+  /**
+   * Required for tuition 'subject' scope.
+   */
+  @IsMongoId()
   @IsOptional()
   subjectId?: string;
 }
 
 export class VerifyRazorpayDto {
-  @IsString()
+  @IsMongoId()
   @IsNotEmpty()
   courseId: string;
 

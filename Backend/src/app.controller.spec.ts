@@ -1,30 +1,73 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AppConfigModule } from './app-config/app-config.module';
+import { ServiceUnavailableException } from '@nestjs/common';
 
-describe('AppController', () => {
-  let appController: AppController;
+describe('AppController (Health & Readiness)', () => {
+  let controller: AppController;
+  let service: AppService;
+
+  const mockAppService = {
+    getHealth: jest.fn().mockReturnValue({ status: 'ok' }),
+    checkReadiness: jest.fn().mockResolvedValue({ postgres: 'up', mongodb: 'up' }),
+    getInfo: jest.fn().mockReturnValue({ version: '1.0.0' }),
+  };
 
   beforeEach(async () => {
-    const app: TestingModule = await Test.createTestingModule({
-      imports: [AppConfigModule],
+    const module: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
-      providers: [AppService],
+      providers: [
+        {
+          provide: AppService,
+          useValue: mockAppService,
+        },
+      ],
     }).compile();
 
-    appController = app.get<AppController>(AppController);
+    controller = module.get<AppController>(AppController);
+    service = module.get<AppService>(AppService);
   });
 
-  describe('root', () => {
-    it('should return health status', () => {
-      expect(appController.getHealth()).toBeDefined();
-      expect(appController.getHealth().status).toBe('ok');
+  describe('GET /health', () => {
+    it('returns 200 and success:true', () => {
+      const result = controller.getHealth();
+      expect(result.success).toBe(true);
+      expect(result.data.status).toBe('ok');
+    });
+  });
+
+  describe('GET /health/ready', () => {
+    it('returns 200 when both Postgres and Mongo pings succeed', async () => {
+      mockAppService.checkReadiness.mockResolvedValueOnce({ postgres: 'up', mongodb: 'up' });
+      
+      const result = await controller.getReadiness();
+      expect(result.success).toBe(true);
+      expect(result.data.postgres).toBe('up');
+      expect(result.data.mongodb).toBe('up');
     });
 
-    it('should return app info', () => {
-      expect(appController.getInfo()).toBeDefined();
-      expect(appController.getInfo().name).toBe('Nexvera Hub API');
+    it('throws 503 when Postgres ping fails', async () => {
+      mockAppService.checkReadiness.mockRejectedValueOnce(
+        new ServiceUnavailableException({ 
+          success: false, 
+          data: { postgres: 'down', mongodb: 'up' }, 
+          error: 'db down' 
+        })
+      );
+      
+      await expect(controller.getReadiness()).rejects.toThrow(ServiceUnavailableException);
+    });
+
+    it('throws 503 when Mongo ping fails', async () => {
+      mockAppService.checkReadiness.mockRejectedValueOnce(
+        new ServiceUnavailableException({ 
+          success: false, 
+          data: { postgres: 'up', mongodb: 'down' }, 
+          error: 'db down' 
+        })
+      );
+      
+      await expect(controller.getReadiness()).rejects.toThrow(ServiceUnavailableException);
     });
   });
 });

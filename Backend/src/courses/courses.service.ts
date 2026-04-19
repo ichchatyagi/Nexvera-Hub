@@ -757,17 +757,30 @@ export class CoursesService {
           'This course is not yet published. Only the instructor can access its content.',
         );
       }
-      return { success: true, data: lesson };
+      return { success: true, data: { ...lesson, course_id: course._id } };
     }
 
-    // 2. Public preview bypass (only for published courses)
+    // 2. Public preview bypass (lesson flag)
     if (lesson.is_preview === true) {
-      return { success: true, data: lesson };
+      return { success: true, data: { ...lesson, course_id: course._id } };
     }
 
-    // 3. Paid content gate
+    // 3. Fallback: check if the video itself is public_preview (Option A fallback)
+    if (lesson.type === 'video' && lesson.content?.video_id) {
+      try {
+        const video = await this.videosService.findById(lesson.content.video_id.toString());
+        if (video.public_preview) {
+          return { success: true, data: { ...lesson, course_id: course._id } };
+        }
+      } catch (err) {
+        // Log but don't fail lesson fetch if video lookup fails
+        console.warn(`Could not verify video public_preview for lesson ${lessonId}: ${err.message}`);
+      }
+    }
+
+    // 4. Paid content gate
     if (isAdmin || isOwner) {
-      return { success: true, data: lesson };
+      return { success: true, data: { ...lesson, course_id: course._id } };
     }
 
     if (requesterRole === UserRole.STUDENT && requesterId) {
@@ -776,7 +789,7 @@ export class CoursesService {
         requesterId,
       );
       if (isEnrolled) {
-        return { success: true, data: lesson };
+        return { success: true, data: { ...lesson, course_id: course._id } };
       }
     }
 

@@ -58,22 +58,25 @@ const LessonPlayer = () => {
       const lesson = await lessonsService.getLesson(lessonId as string);
 
       if (lesson.content?.video_id) {
-        try {
-          const playbackData = await videosService.getPlaybackData(lesson.content.video_id);
-          setPlaybackData({ ...lesson, ...playbackData });
-        } catch (vErr) {
-          console.error("Failed to fetch playback data", vErr);
+        const playbackResponse = await videosService.getPlaybackData(lesson.content.video_id);
+        
+        if (playbackResponse.success) {
+          // Both are plain objects now
+          setPlaybackData({ ...lesson, ...playbackResponse.data });
+        } else if (playbackResponse.error?.code === 'VIDEO_NOT_READY') {
+          setPlaybackData({ ...lesson, videoStatus: playbackResponse.error.status || 'processing' });
+          toast('This video is still processing and will be available shortly.', { icon: '⏳' });
+        } else {
           setPlaybackData(lesson);
-          // If video playback fails specifically, it might be a public_preview sync issue
-          toast.error("Video authorization failed. Enrollment may be required.");
+          toast.error(playbackResponse.error?.message || 'Failed to initialize video playback');
         }
       } else {
         setPlaybackData(lesson);
       }
     } catch (error: any) {
+      console.error("Failed to load lesson content", error);
       const isForbidden = error.response?.status === 403 || error.response?.status === 401;
       toast.error(isForbidden ? 'Enrollment required for this lesson' : 'Failed to load lesson content');
-      console.error(error);
       if (isForbidden) {
         router.push(`/courses/${slug}`);
       }
@@ -225,12 +228,27 @@ const LessonPlayer = () => {
         <div className="flex-1 relative flex flex-col bg-black">
           <div className="flex-1 flex items-center justify-center relative group">
              {playbackData?.video_id ? (
-               <video 
-                 ref={videoRef} 
-                 className="w-full h-full object-contain"
-                 controls 
-                 playsInline
-               />
+               playbackData.videoStatus ? (
+                <div className="flex flex-col items-center justify-center text-center p-20 bg-slate-900/50 backdrop-blur-3xl rounded-[3rem] border border-white/10">
+                  <div className="relative mb-8">
+                    <Loader2 className="animate-spin text-blue-500" size={64} />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                       <Play size={20} className="text-white/20 translate-x-0.5" />
+                    </div>
+                  </div>
+                  <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-2">Processing Module</h3>
+                  <p className="text-white/40 text-[10px] font-black uppercase tracking-[0.3em] max-w-[300px] leading-relaxed">
+                    Our servers are currently optimizing this content for your playback device. Status: {playbackData.videoStatus}
+                  </p>
+                </div>
+               ) : (
+                <video 
+                  ref={videoRef} 
+                  className="w-full h-full object-contain"
+                  controls 
+                  playsInline
+                />
+               )
              ) : (
                <div className="text-center p-20 max-w-2xl bg-white/5 rounded-[3rem] border border-white/10 backdrop-blur-3xl">
                   <div className="w-20 h-20 bg-blue-600/20 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-8">

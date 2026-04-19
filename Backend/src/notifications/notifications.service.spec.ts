@@ -66,6 +66,30 @@ describe('NotificationsService', () => {
       });
       expect(mockGateway.emitToUser).toHaveBeenCalledWith('u1', 'notification:new', expect.any(Object));
     });
+
+    it('should not throw if gateway emission fails', async () => {
+      const input = {
+        user_id: 'u1',
+        type: NotificationType.PAYMENT_CONFIRMED,
+        title: 'Title',
+        body: 'Body',
+      };
+      
+      const mockCreated = {
+        toObject: jest.fn().mockReturnValue({ _id: 'n1', ...input, read_at: null }),
+      };
+      mockNotificationModel.create.mockResolvedValue(mockCreated);
+      mockGateway.emitToUser.mockImplementation(() => {
+        throw new Error('Websocket Failure');
+      });
+
+      const result = await service.createNotification(input);
+
+      expect(result._id).toBe('n1');
+      expect(mockNotificationModel.create).toHaveBeenCalled();
+      // Should have tried to emit
+      expect(mockGateway.emitToUser).toHaveBeenCalled();
+    });
   });
 
   describe('listForUser', () => {

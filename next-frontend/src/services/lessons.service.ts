@@ -14,6 +14,7 @@ export interface Lesson {
     quiz_id?: string;
     resource_url?: string;
   };
+  course_id?: string;
 }
 
 export const lessonsService = {

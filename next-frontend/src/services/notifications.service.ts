@@ -20,7 +20,7 @@ export interface Notification {
 
 export const notificationsService = {
   async listMy(params?: { unread?: boolean; page?: number; limit?: number }) {
-    const resp = await api.get('/notifications/my', { params });
+    const resp = await api.get('/notifications', { params });
     // api unwraps { success, data, meta }
     return { data: resp.data, meta: (resp as any).meta };
   },

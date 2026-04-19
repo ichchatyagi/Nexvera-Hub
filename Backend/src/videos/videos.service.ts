@@ -209,7 +209,7 @@ export class VideosService {
   async triggerProcessing(
     id: string,
     requesterId: string,
-  ): Promise<{ success: boolean; data: VideoDocument }> {
+  ): Promise<{ success: boolean; data: VideoDocument; message?: string }> {
     if (!Types.ObjectId.isValid(id))
       throw new NotFoundException('Invalid video ID');
 
@@ -222,14 +222,27 @@ export class VideosService {
     }
 
     video.processed.status = 'processing';
+    video.processed.error = null; // Clear any previous errors
     await video.save();
 
     // ── Publish to SQS ──────────────────────────────────────────────────────
-    await this.queueService.publishJob({
+    const queued = await this.queueService.publishJob({
       videoId: video._id.toString(),
       s3Key: video.original.key,
       source: 'upload',
     });
+
+    if (!queued) {
+      this.logger.warn(
+        `Job for video ${id} was not queued. Verify SQS configuration.`,
+      );
+      return {
+        success: true,
+        data: video,
+        message:
+          'Video status updated, but processing job could not be queued (SQS not configured or error).',
+      };
+    }
 
     return { success: true, data: video };
   }
@@ -276,8 +289,11 @@ export class VideosService {
     // ── Handle Failure ───────────────────────────────────────────────────────
     if (payload.status === 'failed') {
       video.processed.status = 'failed';
+      video.processed.error = payload.error || 'Processing failed at worker';
       await video.save();
-      this.logger.error(`Video ${id} processing marked as FAILED by worker.`);
+      this.logger.error(
+        `Video ${id} processing marked as FAILED by worker. Error: ${video.processed.error}`,
+      );
 
       // Update LiveClass only if it's not already 'available'
       if (video.source === 'live_recording' && video.live_class_id) {
@@ -326,6 +342,7 @@ export class VideosService {
     ];
 
     video.processed.status = 'completed';
+    video.processed.error = null;
     video.processed.manifest_url = this.cdnUrl(hlsManifestKey);
     video.processed.qualities = qualities.map((q) => ({
       resolution: q.resolution,
@@ -498,47 +515,33 @@ export class VideosService {
   ) {
     const video = await this.findById(id);
 
-    // ── Public preview fast-path (unauthenticated) ───────────────────────────
-    if (!requester) {
-      if (!video.public_preview) {
-        throw new ForbiddenException(
-          'Authentication required to access playback',
-        );
-      }
-      // Preview is valid – still respect processing state
-      if (video.processed.status !== 'completed') {
-        return {
-          success: false,
-          error: {
-            code: 'VIDEO_NOT_READY',
-            message: 'Video is not yet available for playback',
-            status: video.processed.status,
-          },
-        };
-      }
-      return this.buildPlayerPayload(video);
-    }
-
     // ── Authorization Logic ──────────────────────────────────────────────────
     let isAuthorized = false;
 
-    if (requester.role === UserRole.ADMIN) {
+    if (video.public_preview) {
       isAuthorized = true;
-    } else if (requester.role === UserRole.TEACHER) {
-      isAuthorized = video.teacher_id === requester.id;
-    } else if (requester.role === UserRole.STUDENT) {
-      isAuthorized = await this.enrollmentsService.isActiveCourseEnrollment(
-        video.course_id.toString(),
-        requester.id,
-      );
+    } else if (requester) {
+      if (requester.role === UserRole.ADMIN) {
+        isAuthorized = true;
+      } else if (requester.role === UserRole.TEACHER) {
+        isAuthorized = video.teacher_id === requester.id;
+      } else if (requester.role === UserRole.STUDENT) {
+        isAuthorized = await this.enrollmentsService.isActiveCourseEnrollment(
+          video.course_id.toString(),
+          requester.id,
+        );
+      }
     }
 
     if (!isAuthorized) {
       throw new ForbiddenException(
-        'You do not have permission to view this video. Enrollment required.',
+        requester
+          ? 'You do not have permission to view this video. Enrollment required.'
+          : 'Authentication required to access playback',
       );
     }
 
+    // ── Status Check ─────────────────────────────────────────────────────────
     if (video.processed.status !== 'completed') {
       return {
         success: false,

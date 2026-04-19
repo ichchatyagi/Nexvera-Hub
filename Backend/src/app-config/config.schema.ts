@@ -57,7 +57,7 @@ export const configValidationSchema = Joi.object({
   AWS_ACCESS_KEY: Joi.string().optional(),
   AWS_SECRET_KEY: Joi.string().optional(),
   AWS_SQS_VIDEO_QUEUE_URL: Joi.string().optional(),
-  VIDEO_PROCESSING_WEBHOOK_SECRET: Joi.string().optional(),
+  VIDEO_PROCESSING_WEBHOOK_SECRET: Joi.string().required(),
 
   // Agora Cloud Recording & Tokens
   AGORA_CUSTOMER_ID: Joi.string().optional(),

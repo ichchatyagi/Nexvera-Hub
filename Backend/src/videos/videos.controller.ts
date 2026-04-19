@@ -161,6 +161,11 @@ export class VideosController {
   @Roles(UserRole.ADMIN)
   @Post(':id/simulate-processing')
   simulateProcessing(@Param('id') id: string) {
+    if (this.appConfig.isProduction) {
+      throw new ForbiddenException(
+        'Dev-only helper endpoints are disabled in production.',
+      );
+    }
     return this.videosService.simulateProcessing(id);
   }
 

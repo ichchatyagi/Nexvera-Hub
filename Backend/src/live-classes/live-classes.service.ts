@@ -205,6 +205,7 @@ export class LiveClassesService implements OnModuleInit {
   async create(
     teacherId: string,
     dto: CreateLiveClassDto,
+    isAdmin = false,
   ): Promise<LiveClassDocument> {
     const start = new Date(dto.scheduled_start);
     const end = new Date(dto.scheduled_end);
@@ -222,6 +223,17 @@ export class LiveClassesService implements OnModuleInit {
     const course = await this.courseModel.findById(dto.course_id).exec();
     if (!course) {
       throw new NotFoundException(`Course not found: ${dto.course_id}`);
+    }
+
+    // Authorization: Teacher must be lead or assigned to this course (or be an admin)
+    if (!isAdmin) {
+      const isLead = course.lead_instructor_id === teacherId;
+      const isAssigned = course.assigned_instructor_ids?.includes(teacherId);
+      if (!isLead && !isAssigned) {
+        throw new ForbiddenException(
+          'You are not authorized to create live classes for this course.',
+        );
+      }
     }
 
     // Validation: tuition MUST have a subject_id
@@ -425,11 +437,14 @@ export class LiveClassesService implements OnModuleInit {
       );
     }
     if (lc.status === LiveClassStatus.LIVE) {
-      throw new UnprocessableEntityException('Live class is already live.');
+      // Idempotency: if already live, just return it (avoid resetting actual_start)
+      return lc;
     }
 
     lc.status = LiveClassStatus.LIVE;
-    lc.actual_start = new Date();
+    if (!lc.actual_start) {
+      lc.actual_start = new Date();
+    }
 
     // ── Agora Cloud Recording ───────────────────────────────────────────────
     // PROMPT 2: Block recording for tuition
@@ -518,16 +533,18 @@ export class LiveClassesService implements OnModuleInit {
     const lc = await this.findById(id);
     this.assertOwner(lc, requesterId, isAdmin);
 
-    if (
-      lc.status === LiveClassStatus.CANCELLED ||
-      lc.status === LiveClassStatus.ENDED
-    ) {
+    if (lc.status === LiveClassStatus.ENDED) {
+      // Idempotency
+      return lc;
+    }
+
+    if (lc.status !== LiveClassStatus.LIVE) {
       throw new UnprocessableEntityException(
-        `Cannot end a live class that is already "${lc.status}".`,
+        `Only live classes can be ended. Current status: "${lc.status}".`,
       );
     }
 
-    // If the teacher ends without ever starting, fill in actual_start = now
+    // actual_start should already be set, but defense-in-depth:
     if (!lc.actual_start) {
       lc.actual_start = new Date();
     }
@@ -843,9 +860,24 @@ export class LiveClassesService implements OnModuleInit {
       );
     }
 
-    // Record attendance (idempotent – only add once)
-    if (!lc.attended_students.includes(userId)) {
-      lc.attended_students.push(userId);
+    // Access control: ensure students are registered OR there is room to auto-register
+    if (requesterRole === UserRole.STUDENT) {
+      if (!lc.registered_students.includes(userId)) {
+        if (lc.registered_students.length >= lc.max_participants) {
+          throw new UnprocessableEntityException(
+            `Class is at capacity (max ${lc.max_participants}).`,
+          );
+        }
+        // Auto-register (idempotent because of the includes check above)
+        lc.registered_students.push(userId);
+      }
+
+      // Record attendance (Set semantics - idempotent, students only)
+      if (!lc.attended_students.includes(userId)) {
+        lc.attended_students.push(userId);
+      }
+      
+      // Save once after updates to registered/attended
       await lc.save();
     }
 

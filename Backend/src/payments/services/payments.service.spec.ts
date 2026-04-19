@@ -7,7 +7,11 @@ import { Course } from '../../courses/schemas/course.schema';
 import { EnrollmentsService } from '../../enrollments/enrollments.service';
 import { AppConfigService } from '../../app-config/app-config.service';
 import { Types } from 'mongoose';
-import { BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import * as crypto from 'crypto';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { NotificationType } from '../../notifications/schemas/notification.schema';
@@ -29,6 +33,7 @@ const mockCourseModel = {
 
 const mockEnrollmentsService = {
   enroll: jest.fn(),
+  hasAccess: jest.fn().mockResolvedValue(false),
 };
 
 const mockNotificationsService = {
@@ -320,6 +325,58 @@ describe('PaymentsService Tuition Logic', () => {
           billing_mode: 'bundle',
         }),
       );
+    });
+  });
+
+  describe('Amount Units and Precision', () => {
+    it('should convert major units to minor units for Razorpay and store major units in DB', async () => {
+      const courseId = new Types.ObjectId().toString();
+      mockCourseModel.findById.mockResolvedValue({
+        _id: courseId,
+        status: 'published',
+        title: 'High Precision Course',
+        pricing: { price: 999.5, currency: 'INR' },
+      });
+
+      const result = await service.createCourseOrder('u1', { courseId });
+
+      // Razorpay expects paisa (999.5 * 100 = 99950)
+      expect((service as any).razorpay.orders.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: 99950,
+        }),
+      );
+
+      // DB should store rupees (999.5)
+      expect(mockTransactionRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: 999.5,
+        }),
+      );
+
+      expect(result.data.amount).toBe(99950);
+    });
+  });
+
+  describe('Validation', () => {
+    it('should throw BadRequestException if already enrolled', async () => {
+      const courseId = new Types.ObjectId().toString();
+      mockCourseModel.findById.mockResolvedValue({
+        _id: courseId,
+        status: 'published',
+        product_type: 'course',
+      });
+      mockEnrollmentsService.hasAccess.mockResolvedValueOnce(true);
+
+      await expect(
+        service.createCourseOrder('u1', { courseId }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw NotFoundException for invalid mongo courseId in createOrder', async () => {
+      await expect(
+        service.createCourseOrder('u1', { courseId: 'invalid-id' }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

@@ -34,7 +34,7 @@ describe('LiveClassesGateway', () => {
     jwtSecret: 'test-secret',
   };
   const mockEnrollmentsService = {
-    isActiveCourseEnrollment: jest.fn(),
+    hasAccess: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -117,7 +117,7 @@ describe('LiveClassesGateway', () => {
         features: { chat_enabled: false, whiteboard_enabled: false },
         status: 'live',
       });
-      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
+      mockEnrollmentsService.hasAccess.mockResolvedValue(true);
 
       await gateway.handleConnection(mockSocket);
 
@@ -142,7 +142,7 @@ describe('LiveClassesGateway', () => {
         features: { chat_enabled: true },
         status: 'live',
       });
-      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
+      mockEnrollmentsService.hasAccess.mockResolvedValue(true);
 
       await gateway.handleConnection(mockSocket);
 
@@ -166,7 +166,7 @@ describe('LiveClassesGateway', () => {
         features: { chat_enabled: true },
         status: 'live',
       });
-      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(false);
+      mockEnrollmentsService.hasAccess.mockResolvedValue(false);
 
       await gateway.handleConnection(mockSocket);
 
@@ -203,7 +203,7 @@ describe('LiveClassesGateway', () => {
         features: { chat_enabled: true },
         status: 'live',
       });
-      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
+      mockEnrollmentsService.hasAccess.mockResolvedValue(true);
 
       mockMessageModel.create.mockResolvedValue({
         _id: new Types.ObjectId(),
@@ -233,7 +233,7 @@ describe('LiveClassesGateway', () => {
         features: { chat_enabled: true },
         status: 'live',
       });
-      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(false);
+      mockEnrollmentsService.hasAccess.mockResolvedValue(false);
 
       await gateway.handleChatMessage(mockSocket, dto);
 
@@ -327,7 +327,7 @@ describe('LiveClassesGateway', () => {
         status: 'live',
         course_id: new Types.ObjectId(),
       });
-      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(false);
+      mockEnrollmentsService.hasAccess.mockResolvedValue(false);
 
       await gateway.handleAudioRequest(mockSocket);
 
@@ -341,7 +341,7 @@ describe('LiveClassesGateway', () => {
         status: 'live',
         course_id: new Types.ObjectId(),
       });
-      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
+      mockEnrollmentsService.hasAccess.mockResolvedValue(true);
 
       await gateway.handleAudioRequest(mockSocket);
 

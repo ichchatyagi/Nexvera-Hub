@@ -211,7 +211,10 @@ describe('LiveClassesService', () => {
     it('creates a live class and returns the document', async () => {
       const mockLc = makeMockLiveClass();
       mockCourseModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue({ product_type: 'course' }),
+        exec: jest.fn().mockResolvedValue({ 
+          product_type: 'course',
+          lead_instructor_id: TEACHER_ID 
+        }),
       });
       mockLiveClassModel.create.mockResolvedValue(mockLc);
 
@@ -231,7 +234,10 @@ describe('LiveClassesService', () => {
 
     it('requires subject_id for tuition-type courses', async () => {
       mockCourseModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue({ product_type: 'tuition' }),
+        exec: jest.fn().mockResolvedValue({ 
+          product_type: 'tuition',
+          lead_instructor_id: TEACHER_ID
+        }),
       });
 
       // No subject_id provided
@@ -245,7 +251,10 @@ describe('LiveClassesService', () => {
       const mockLc = makeMockLiveClass({ product_type: 'tuition' });
       
       mockCourseModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue({ product_type: 'tuition' }),
+        exec: jest.fn().mockResolvedValue({ 
+          product_type: 'tuition',
+          lead_instructor_id: TEACHER_ID
+        }),
       });
       mockLiveClassModel.create.mockResolvedValue(mockLc);
 
@@ -270,7 +279,11 @@ describe('LiveClassesService', () => {
     it('sets product_type from course and requires subject_id for tuition (Prompt 1)', async () => {
       const courseId = new Types.ObjectId().toString();
       mockCourseModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue({ _id: courseId, product_type: 'tuition' }),
+        exec: jest.fn().mockResolvedValue({ 
+          _id: courseId, 
+          product_type: 'tuition',
+          lead_instructor_id: TEACHER_ID
+        }),
       });
 
       // No subject_id
@@ -291,7 +304,11 @@ describe('LiveClassesService', () => {
     it('forces recording.enabled=false for tuition on create (Prompt 2)', async () => {
       const courseId = new Types.ObjectId().toString();
       mockCourseModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue({ _id: courseId, product_type: 'tuition' }),
+        exec: jest.fn().mockResolvedValue({ 
+          _id: courseId, 
+          product_type: 'tuition',
+          lead_instructor_id: TEACHER_ID
+        }),
       });
       const subjectId = new Types.ObjectId().toString();
       
@@ -768,9 +785,9 @@ describe('LiveClassesService', () => {
         exec: jest.fn().mockResolvedValue(mockLc),
       });
 
-      await expect(
-        service.end(mockLc._id.toString(), TEACHER_ID, false),
-      ).rejects.toThrow(UnprocessableEntityException);
+      const result = await service.end(mockLc._id.toString(), TEACHER_ID, false);
+      expect(result.status).toBe(LiveClassStatus.ENDED);
+      expect(mockLc.save).not.toHaveBeenCalled(); // No changes if already ended
     });
 
     it('tries to stop Agora recording and extracts S3 key from JSON list', async () => {

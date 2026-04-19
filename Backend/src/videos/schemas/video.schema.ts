@@ -83,6 +83,12 @@ export class VideoProcessed {
    */
   @Prop({ type: String, default: null })
   thumbnails_vtt: string | null;
+
+  /**
+   * Detailed error message or code if status = 'failed'.
+   */
+  @Prop({ type: String, default: null })
+  error: string | null;
 }
 
 /** A caption/subtitle track for a specific language. */

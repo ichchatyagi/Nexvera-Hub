@@ -26,6 +26,8 @@ const mockUsersService = {
   findById: jest.fn(),
   setVerificationOtp: jest.fn().mockResolvedValue(undefined),
   bumpRefreshTokenVersion: jest.fn().mockResolvedValue(undefined),
+  activateUser: jest.fn(),
+  updatePassword: jest.fn(),
 };
 
 const mockJwtService = {
@@ -188,6 +190,83 @@ describe('AuthService', () => {
       expect(mockUsersService.bumpRefreshTokenVersion).toHaveBeenCalledWith('uuid-1');
       expect(result.success).toBe(true);
       expect(result.data.message).toBe('Logged out successfully');
+    });
+  });
+
+  describe('googleAuth', () => {
+    it('throws ForbiddenException with safe message when unconfigured', async () => {
+      await expect(service.googleAuth('fake-token')).rejects.toThrow(
+        'Google OAuth not yet configured',
+      );
+    });
+  });
+
+  describe('OTP replay-safety', () => {
+    it('prevents registration OTP reuse by failing on second attempt', async () => {
+      // First call (success)
+      mockUsersService.findByEmail.mockResolvedValueOnce({
+        ...mockUser,
+        status: 'pending',
+        verificationOtp: 'ABCDE',
+        verificationOtpExpiresAt: new Date(Date.now() + 10000),
+      });
+      // Second call (should fail because OTP is cleared)
+      mockUsersService.findByEmail.mockResolvedValueOnce({
+        ...mockUser,
+        status: 'active', // already verified
+        verificationOtp: null,
+        verificationOtpExpiresAt: null,
+      });
+      mockUsersService.activateUser.mockImplementation(async (id) => ({
+        ...mockUser,
+        id,
+        status: 'active',
+        emailVerified: true,
+        verificationOtp: null,
+      }));
+
+      // 1. First attempt succeeds
+      await service.verifyRegistrationOtp({ email: 'test@example.com', otp: 'ABCDE' });
+
+      // 2. Second attempt fails
+      await expect(
+        service.verifyRegistrationOtp({ email: 'test@example.com', otp: 'ABCDE' }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('prevents password reset OTP reuse by failing on second attempt', async () => {
+      // First call setup
+      mockUsersService.findByEmail.mockResolvedValueOnce({
+        ...mockUser,
+        resetOtp: 'RESE1',
+        resetOtpExpiresAt: new Date(Date.now() + 10000),
+      });
+      // Second call setup
+      mockUsersService.findByEmail.mockResolvedValueOnce({
+        ...mockUser,
+        resetOtp: null,
+        resetOtpExpiresAt: null,
+      });
+      mockUsersService.updatePassword.mockResolvedValue({
+        ...mockUser,
+        resetOtp: null,
+      });
+
+      // 1. First reset succeeds
+      await service.resetPassword({
+        email: 'test@example.com',
+        otp: 'RESE1',
+        newPassword: 'new-password-123',
+      });
+
+      // 2. Second reset attempt fails
+      await expect(
+        service.resetPassword({
+          email: 'test@example.com',
+          otp: 'RESE1',
+          newPassword: 'new-password-123',
+        }),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 });

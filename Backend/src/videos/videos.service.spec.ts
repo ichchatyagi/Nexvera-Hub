@@ -73,15 +73,14 @@ const mockLiveClassModel = {
   findByIdAndUpdate: jest.fn(),
   findOneAndUpdate: jest.fn(),
   findById: jest.fn().mockReturnValue({
-    lean: jest.fn().mockReturnValue({
-      exec: jest.fn().mockResolvedValue({
-        _id: new Types.ObjectId(),
-        course_id: new Types.ObjectId(),
-        title: 'Mock Live Class',
-        teacher_id: 't1',
-        registered_students: ['s1', 's2'],
-      }),
+    exec: jest.fn().mockResolvedValue({
+      _id: new Types.ObjectId(),
+      course_id: new Types.ObjectId(),
+      title: 'Mock Live Class',
+      teacher_id: 't1',
+      registered_students: ['s1', 's2'],
     }),
+    lean: jest.fn().mockReturnThis(),
   }),
 };
 
@@ -316,6 +315,23 @@ describe('VideosService', () => {
         service.triggerProcessing(mockVideo._id.toString(), OTHER_TEACHER_ID),
       ).rejects.toThrow(ForbiddenException);
     });
+
+    it('returns success with message when queue is not configured', async () => {
+      const mockVideo = makeMockVideo();
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+      mockQueueService.publishJob.mockResolvedValueOnce(false);
+
+      const result = await service.triggerProcessing(
+        mockVideo._id.toString(),
+        TEACHER_ID,
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('job could not be queued');
+      expect(mockVideo.processed.status).toBe('processing');
+    });
   });
 
   // ── simulateProcessing ──────────────────────────────────────────────────────
@@ -350,6 +366,27 @@ describe('VideosService', () => {
       for (const q of mockVideo.processed.qualities) {
         expect(q.url).toContain('test.cloudfront.net');
       }
+    });
+
+    it('throws ForbiddenException in production mode', async () => {
+      // Temporarily mock environment as production
+      const productionConfig = { ...mockConfigService, environment: 'production' };
+      const prodModule: TestingModule = await Test.createTestingModule({
+        providers: [
+          VideosService,
+          { provide: getModelToken(Video.name), useValue: mockVideoModel },
+          { provide: getModelToken(LiveClass.name), useValue: mockLiveClassModel },
+          { provide: AppConfigService, useValue: productionConfig },
+          { provide: VideoProcessingQueueService, useValue: mockQueueService },
+          { provide: EnrollmentsService, useValue: mockEnrollmentsService },
+          { provide: NotificationsService, useValue: mockNotificationsService },
+        ],
+      }).compile();
+      const prodService = prodModule.get<VideosService>(VideosService);
+
+      await expect(prodService.simulateProcessing('any-id')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -799,6 +836,25 @@ describe('VideosService', () => {
       expect(mockVideo.processed.status).toBe('failed');
       // Should not set manifest_url when failed
       expect(mockVideo.processed.manifest_url).toBeNull();
+      expect(mockVideo.save).toHaveBeenCalled();
+    });
+
+    it('marks video as failed and stores error message when reported', async () => {
+      const mockVideo = makeMockVideo({
+        processed: { status: 'processing' },
+      });
+
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+
+      await service.completeProcessing(mockVideo._id.toString(), {
+        status: 'failed',
+        error: 'Incompatible codec',
+      } as any);
+
+      expect(mockVideo.processed.status).toBe('failed');
+      expect(mockVideo.processed.error).toBe('Incompatible codec');
       expect(mockVideo.save).toHaveBeenCalled();
     });
 
