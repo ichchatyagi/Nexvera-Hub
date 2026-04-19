@@ -348,22 +348,34 @@ export class VideosService {
 
     // ── Sync to LiveClass if it's a recording ────────────────────────────────
     if (video.source === 'live_recording' && video.live_class_id) {
-      await this.liveClassModel.findByIdAndUpdate(video.live_class_id, {
-        'recording.status': 'available',
-        'recording.video_id': video._id,
-      });
-      this.logger.log(
-        `Live class ${video.live_class_id} recording marked as AVAILABLE.`,
-      );
+      const liveClass = await this.liveClassModel
+        .findById(video.live_class_id)
+        .exec();
 
-      // ── Notifications ──────────────────────────────────────────────────────
-      try {
-        const liveClass = await this.liveClassModel
-          .findById(video.live_class_id)
-          .lean()
-          .exec();
+      if (liveClass) {
+        // PROMPT 2: Hard-disable for tuition
+        if (liveClass.product_type === 'tuition') {
+          if (liveClass.recording?.enabled) {
+            await this.liveClassModel.findByIdAndUpdate(video.live_class_id, {
+              'recording.enabled': false,
+            });
+          }
+          this.logger.log(
+            `Live class ${video.live_class_id} is tuition. Skipping recording availability sync/notify.`,
+          );
+          return { success: true, data: video };
+        }
 
-        if (liveClass) {
+        await this.liveClassModel.findByIdAndUpdate(video.live_class_id, {
+          'recording.status': 'available',
+          'recording.video_id': video._id,
+        });
+        this.logger.log(
+          `Live class ${video.live_class_id} recording marked as AVAILABLE.`,
+        );
+
+        // ── Notifications ──────────────────────────────────────────────────────
+        try {
           const recipients = new Set([
             liveClass.teacher_id,
             ...(liveClass.registered_students || []),
@@ -384,11 +396,11 @@ export class VideosService {
           });
 
           await Promise.allSettled(notifyPromises);
+        } catch (err) {
+          this.logger.error(
+            `Failed to notify about available recording: ${err.message}`,
+          );
         }
-      } catch (err) {
-        this.logger.error(
-          `Failed to notify about available recording: ${err.message}`,
-        );
       }
     }
 

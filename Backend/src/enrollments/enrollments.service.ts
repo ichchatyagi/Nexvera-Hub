@@ -227,22 +227,23 @@ export class EnrollmentsService {
     classId: string,
     subjectId: string,
   ) {
-    if (
-      !Types.ObjectId.isValid(classId) ||
-      !Types.ObjectId.isValid(subjectId)
-    ) {
+    if (!Types.ObjectId.isValid(classId)) {
       return false;
     }
 
     const enrollments = await this.enrollmentModel
       .find({
         student_id: studentId,
-        tuition_class_id: new Types.ObjectId(classId),
+        $or: [
+          { course_id: new Types.ObjectId(classId) },
+          { tuition_class_id: new Types.ObjectId(classId) },
+        ],
         product_type: 'tuition',
         subscription_status: 'active',
       })
       .exec();
 
+    console.log(`[TuitionAccess] student:${studentId} class:${classId} subject:${subjectId} found:${enrollments.length}`);
     const now = new Date();
 
     for (const en of enrollments) {
@@ -294,12 +295,27 @@ export class EnrollmentsService {
     const enrollments = await this.enrollmentModel
       .find({
         student_id: studentId,
-        product_type: 'course',
-        status: 'active',
         $or: [
-          { access_expires: null },
-          { access_expires: { $exists: false } },
-          { access_expires: { $gte: now } },
+          {
+            product_type: 'course',
+            status: 'active',
+            $or: [
+              { access_expires: null },
+              { access_expires: { $exists: false } },
+              { access_expires: { $gte: now } },
+            ],
+          },
+          {
+            product_type: 'tuition',
+            subscription_status: 'active',
+            $or: [
+              { billing_mode: 'bundle' },
+              {
+                billing_mode: 'monthly',
+                billing_period_end: { $gte: now },
+              },
+            ],
+          },
         ],
       })
       .select('course_id')
@@ -307,5 +323,72 @@ export class EnrollmentsService {
       .exec();
 
     return [...new Set(enrollments.map((e) => e.course_id.toString()))];
+  }
+
+  /**
+   * Returns an array of filter objects representing the student's active access.
+   * Handles both Course (full access) and Tuition (class or subject level access).
+   */
+  async getStudentAccessFilters(studentId: string): Promise<any[]> {
+    const now = new Date();
+    const enrollments = await this.enrollmentModel
+      .find({
+        student_id: studentId,
+        $or: [
+          {
+            product_type: 'course',
+            status: 'active',
+            $or: [
+              { access_expires: null },
+              { access_expires: { $exists: false } },
+              { access_expires: { $gte: now } },
+            ],
+          },
+          {
+            product_type: 'tuition',
+            subscription_status: 'active',
+            $or: [
+              { billing_mode: 'bundle' },
+              {
+                billing_mode: 'monthly',
+                billing_period_end: { $gte: now },
+              },
+            ],
+          },
+        ],
+      })
+      .select('course_id product_type access_scope tuition_subject_id')
+      .lean()
+      .exec();
+
+    const filters: any[] = [];
+    for (const enr of enrollments) {
+      if (enr.product_type === 'course') {
+        filters.push({ course_id: enr.course_id });
+      } else if (enr.product_type === 'tuition') {
+        if (enr.access_scope === 'class') {
+          filters.push({ course_id: enr.course_id });
+        } else if (enr.access_scope === 'subject' && enr.tuition_subject_id) {
+          filters.push({
+            course_id: enr.course_id,
+            subject_id: enr.tuition_subject_id,
+          });
+        }
+      }
+    }
+
+    return filters;
+  }
+
+  async hasAccess(
+    studentId: string,
+    courseId: string,
+    productType: 'course' | 'tuition',
+    subjectId?: string,
+  ): Promise<boolean> {
+    if (productType === 'tuition') {
+      return this.hasTuitionAccess(studentId, courseId, subjectId || '');
+    }
+    return this.isActiveCourseEnrollment(courseId, studentId);
   }
 }

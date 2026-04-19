@@ -204,6 +204,47 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
     return !enabled;
   };
 
+  const renewToken = async (token: string) => {
+    if (!clientRef.current) return;
+    try {
+      await clientRef.current.renewToken(token);
+    } catch (err) {
+      console.error('[Agora] Token renewal failed:', err);
+    }
+  };
+
+  const enableLocalAudio = async () => {
+    if (!clientRef.current || !joined) return;
+    try {
+      if (!localAudioRef.current) {
+        const AgoraRTC = await getAgoraRTC();
+        const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+        localAudioRef.current = audioTrack;
+        setLocalAudioTrack(audioTrack);
+        // Start muted
+        await audioTrack.setEnabled(false);
+        await clientRef.current.publish([audioTrack]);
+      }
+    } catch (err) {
+      console.error('[Agora] Failed to enable local audio:', err);
+    }
+  };
+
+  const disableLocalAudio = async () => {
+    if (!clientRef.current) return;
+    try {
+      if (localAudioRef.current) {
+        await clientRef.current.unpublish([localAudioRef.current]);
+        localAudioRef.current.stop();
+        localAudioRef.current.close();
+        localAudioRef.current = null;
+        setLocalAudioTrack(null);
+      }
+    } catch (err) {
+      console.error('[Agora] Failed to disable local audio:', err);
+    }
+  };
+
   const toggleCamera = async () => {
     if (!localVideoRef.current) return;
     const enabled = localVideoRef.current.enabled;
@@ -218,6 +259,9 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
     leave,
     toggleMic,
     toggleCamera,
+    renewToken,
+    enableLocalAudio,
+    disableLocalAudio,
     localVideoTrack,
     localAudioTrack,
   };

@@ -25,6 +25,7 @@ describe('LiveClassesGateway', () => {
   };
   const mockLiveClassesService = {
     findById: jest.fn(),
+    issueRtcTokenForLiveClass: jest.fn(),
   };
   const mockJwtService = {
     verify: jest.fn(),
@@ -294,6 +295,122 @@ describe('LiveClassesGateway', () => {
           updated_at: expect.any(String),
         }),
       );
+    });
+  });
+
+  describe('Tuition Speaking (Prompt 3)', () => {
+    let mockSocket: any;
+    let mockServer: any;
+
+    beforeEach(() => {
+      mockSocket = {
+        data: {
+          userId: 'student-1',
+          userRole: 'student',
+          userName: 'Test Student',
+          liveClassId: new Types.ObjectId().toString(),
+        },
+        emit: jest.fn(),
+        disconnect: jest.fn(),
+        to: jest.fn().mockReturnThis(),
+      };
+      mockServer = {
+        to: jest.fn().mockReturnThis(),
+        emit: jest.fn(),
+      };
+      gateway.server = mockServer;
+    });
+
+    it('handleAudioRequest: should fail if not enrolled', async () => {
+      mockLiveClassesService.findById.mockResolvedValue({
+        product_type: 'tuition',
+        status: 'live',
+        course_id: new Types.ObjectId(),
+      });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(false);
+
+      await gateway.handleAudioRequest(mockSocket);
+
+      expect(mockSocket.emit).toHaveBeenCalledWith('error', 'NOT_ENROLLED');
+      expect(mockSocket.disconnect).toHaveBeenCalledWith(true);
+    });
+
+    it('handleAudioRequest: should fail if not tuition', async () => {
+      mockLiveClassesService.findById.mockResolvedValue({
+        product_type: 'course',
+        status: 'live',
+        course_id: new Types.ObjectId(),
+      });
+      mockEnrollmentsService.isActiveCourseEnrollment.mockResolvedValue(true);
+
+      await gateway.handleAudioRequest(mockSocket);
+
+      expect(mockSocket.emit).toHaveBeenCalledWith('error', 'NOT_TUITION');
+    });
+
+    it('handleAudioApprove: should approve and mint publisher token', async () => {
+      const liveClassId = mockSocket.data.liveClassId;
+      const studentId = 'student-1';
+      const teacherId = 'teacher-1';
+
+      // Setup teacher socket
+      mockSocket.data.userId = teacherId;
+      mockSocket.data.userRole = 'teacher';
+
+      mockLiveClassesService.findById.mockResolvedValue({
+        product_type: 'tuition',
+        status: 'live',
+        teacher_id: teacherId,
+      });
+
+      // Add to pending
+      gateway['getPendingMap'](liveClassId).set(studentId, {
+        userName: 'Test Student',
+        requestedAt: new Date().toISOString(),
+      });
+
+      mockLiveClassesService.issueRtcTokenForLiveClass.mockResolvedValue({
+        rtc_token: 'pub-token',
+        agora_uid: 12345,
+        role: 1, // PUBLISHER
+      });
+
+      await gateway.handleAudioApprove(mockSocket, { userId: studentId });
+
+      expect(mockLiveClassesService.issueRtcTokenForLiveClass).toHaveBeenCalledWith(
+        liveClassId,
+        studentId,
+        'publisher',
+      );
+      expect(mockServer.emit).toHaveBeenCalledWith('audio:approved', expect.objectContaining({
+        userId: studentId,
+        rtc_token: 'pub-token',
+      }));
+      expect(mockServer.emit).toHaveBeenCalledWith('audio:speakers', {
+        speakers: [studentId],
+      });
+    });
+
+    it('handleAudioApprove: should fail if MAX_ACTIVE_SPEAKERS reached', async () => {
+      const liveClassId = mockSocket.data.liveClassId;
+      mockSocket.data.userRole = 'admin';
+
+      mockLiveClassesService.findById.mockResolvedValue({
+        product_type: 'tuition',
+        status: 'live',
+      });
+
+      // Fill approved speakers
+      const speakers = gateway['getApprovedSet'](liveClassId);
+      for (let i = 0; i < 4; i++) speakers.add(`s${i}`);
+
+      // Add student to pending
+      gateway['getPendingMap'](liveClassId).set('s-new', { userName: 'N', requestedAt: 'T' });
+
+      await gateway.handleAudioApprove(mockSocket, { userId: 's-new' });
+
+      expect(mockSocket.emit).toHaveBeenCalledWith('error', 'MAX_ACTIVE_SPEAKERS_REACHED');
+      expect(speakers.has('s-new')).toBe(false);
     });
   });
 });

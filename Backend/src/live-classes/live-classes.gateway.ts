@@ -7,6 +7,7 @@ import {
   ConnectedSocket,
   MessageBody,
 } from '@nestjs/websockets';
+import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -69,6 +70,8 @@ export class LiveClassesGateway
   @WebSocketServer()
   server: Server;
 
+  private readonly logger = new Logger(LiveClassesGateway.name);
+
   constructor(
     @InjectModel(LiveClass.name)
     private readonly liveClassModel: Model<LiveClass>,
@@ -84,6 +87,14 @@ export class LiveClassesGateway
   // In production, this should use Redis or a persistent store
   private whiteboardHistory: Map<string, any[]> = new Map();
   private layoutState: Map<string, LayoutState> = new Map();
+
+  // PROMPT 3: Tuition speaking state
+  private pendingAudioRequests = new Map<
+    string,
+    Map<string, { userName: string; requestedAt: string }>
+  >();
+  private approvedSpeakers = new Map<string, Set<string>>();
+  private readonly MAX_ACTIVE_SPEAKERS = 4;
 
   async handleConnection(client: Socket) {
     try {
@@ -119,11 +130,12 @@ export class LiveClassesGateway
 
       // Security check: Student must be enrolled
       if (data.userRole === UserRole.STUDENT) {
-        const isEnrolled =
-          await this.enrollmentsService.isActiveCourseEnrollment(
-            lc.course_id.toString(),
-            data.userId,
-          );
+        const isEnrolled = await this.enrollmentsService.hasAccess(
+          data.userId,
+          lc.course_id.toString(),
+          lc.product_type,
+          lc.subject_id?.toString(),
+        );
         if (!isEnrolled) {
           client.emit('error', 'NOT_ENROLLED');
           client.disconnect(true);
@@ -195,9 +207,11 @@ export class LiveClassesGateway
 
     // Secondary security check
     if (data.userRole === UserRole.STUDENT) {
-      const isEnrolled = await this.enrollmentsService.isActiveCourseEnrollment(
-        lc.course_id.toString(),
+      const isEnrolled = await this.enrollmentsService.hasAccess(
         data.userId,
+        lc.course_id.toString(),
+        lc.product_type,
+        lc.subject_id?.toString(),
       );
       if (!isEnrolled) {
         client.emit('error', 'NOT_ENROLLED');
@@ -378,6 +392,219 @@ export class LiveClassesGateway
       nextState.updated_at = new Date().toISOString();
       this.layoutState.set(liveClassId, nextState);
       this.server.to(liveClassId).emit('layout:update', nextState);
+    }
+  }
+
+  // ─── Tuition Speaking (Prompt 3) ──────────────────────────────────────────
+
+  private getPendingMap(liveClassId: string) {
+    if (!this.pendingAudioRequests.has(liveClassId)) {
+      this.pendingAudioRequests.set(liveClassId, new Map());
+    }
+    return this.pendingAudioRequests.get(liveClassId)!;
+  }
+
+  private getApprovedSet(liveClassId: string) {
+    if (!this.approvedSpeakers.has(liveClassId)) {
+      this.approvedSpeakers.set(liveClassId, new Set());
+    }
+    return this.approvedSpeakers.get(liveClassId)!;
+  }
+
+  private assertTuitionLive(lc: any) {
+    if (lc.product_type !== 'tuition') {
+      throw new Error('NOT_TUITION');
+    }
+    if (lc.status !== 'live') {
+      throw new Error('CLASS_NOT_LIVE');
+    }
+  }
+
+  private isHost(data: LiveClassClientData, lc: any) {
+    return (
+      data.userRole === UserRole.ADMIN ||
+      (data.userRole === UserRole.TEACHER && lc.teacher_id === data.userId)
+    );
+  }
+
+  @SubscribeMessage('audio:request')
+  async handleAudioRequest(@ConnectedSocket() client: Socket) {
+    this.logger.debug(`[GATEWAY] Received audio:request from socket ${client.id}`);
+    const data = client.data as LiveClassClientData | undefined;
+    if (!data) return;
+
+    try {
+      this.logger.debug(`Audio request from ${data.userId} for class ${data.liveClassId}`);
+      const lc = await this.liveClassesService.findById(data.liveClassId);
+      this.logger.debug(`Class ${lc._id} product_type: ${lc.product_type}`);
+      this.assertTuitionLive(lc);
+
+      if (data.userRole !== UserRole.STUDENT) {
+        client.emit('error', 'ONLY_STUDENTS_CAN_REQUEST_AUDIO');
+        return;
+      }
+
+      const isEnrolled = await this.enrollmentsService.hasAccess(
+        data.userId,
+        lc.course_id.toString(),
+        lc.product_type,
+        lc.subject_id?.toString(),
+      );
+      this.logger.debug(`User ${data.userId} hasAccess result: ${isEnrolled}`);
+      if (!isEnrolled) {
+        client.emit('error', 'NOT_ENROLLED');
+        client.disconnect(true);
+        return;
+      }
+
+      const requestedAt = new Date().toISOString();
+      this.getPendingMap(data.liveClassId).set(data.userId, {
+        userName: data.userName,
+        requestedAt,
+      });
+
+      // Notify host (and everyone, frontend filters)
+      this.server.to(data.liveClassId).emit('audio:request', {
+        userId: data.userId,
+        userName: data.userName,
+        requestedAt,
+      });
+
+      client.emit('audio:request:ack', { success: true });
+    } catch (err) {
+      client.emit('error', err.message);
+    }
+  }
+
+  @SubscribeMessage('audio:approve')
+  async handleAudioApprove(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { userId: string },
+  ) {
+    const data = client.data as LiveClassClientData | undefined;
+    if (!data || !payload.userId) return;
+
+    try {
+      const lc = await this.liveClassesService.findById(data.liveClassId);
+      if (!this.isHost(data, lc)) {
+        client.emit('error', 'NOT_HOST');
+        return;
+      }
+      this.assertTuitionLive(lc);
+
+      const pending = this.getPendingMap(data.liveClassId);
+      if (!pending.has(payload.userId)) {
+        client.emit('error', 'NO_PENDING_REQUEST');
+        return;
+      }
+
+      const speakers = this.getApprovedSet(data.liveClassId);
+      if (speakers.size >= this.MAX_ACTIVE_SPEAKERS) {
+        client.emit('error', 'MAX_ACTIVE_SPEAKERS_REACHED');
+        return;
+      }
+
+      // Move to approved
+      pending.delete(payload.userId);
+      speakers.add(payload.userId);
+
+      // Issue publisher token
+      const tokenData = await this.liveClassesService.issueRtcTokenForLiveClass(
+        data.liveClassId,
+        payload.userId,
+        'publisher',
+      );
+
+      // Notify the specific student (and room for UI state)
+      this.server.to(data.liveClassId).emit('audio:approved', {
+        userId: payload.userId,
+        ...tokenData,
+      });
+
+      // Broadcast current speaker list
+      this.server.to(data.liveClassId).emit('audio:speakers', {
+        speakers: Array.from(speakers),
+      });
+    } catch (err) {
+      client.emit('error', err.message);
+    }
+  }
+
+  @SubscribeMessage('audio:revoke')
+  async handleAudioRevoke(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { userId: string },
+  ) {
+    const data = client.data as LiveClassClientData | undefined;
+    if (!data || !payload.userId) return;
+
+    try {
+      const lc = await this.liveClassesService.findById(data.liveClassId);
+      if (!this.isHost(data, lc)) {
+        client.emit('error', 'NOT_HOST');
+        return;
+      }
+      this.assertTuitionLive(lc);
+
+      const speakers = this.getApprovedSet(data.liveClassId);
+      if (speakers.has(payload.userId)) {
+        speakers.delete(payload.userId);
+
+        // Issue subscriber token
+        const tokenData =
+          await this.liveClassesService.issueRtcTokenForLiveClass(
+            data.liveClassId,
+            payload.userId,
+            'subscriber',
+          );
+
+        this.server.to(data.liveClassId).emit('audio:revoked', {
+          userId: payload.userId,
+          ...tokenData,
+        });
+
+        this.server.to(data.liveClassId).emit('audio:speakers', {
+          speakers: Array.from(speakers),
+        });
+      }
+    } catch (err) {
+      client.emit('error', err.message);
+    }
+  }
+
+  @SubscribeMessage('audio:mute_all')
+  async handleAudioMuteAll(@ConnectedSocket() client: Socket) {
+    const data = client.data as LiveClassClientData | undefined;
+    if (!data) return;
+
+    try {
+      const lc = await this.liveClassesService.findById(data.liveClassId);
+      if (!this.isHost(data, lc)) {
+        client.emit('error', 'NOT_HOST');
+        return;
+      }
+      this.assertTuitionLive(lc);
+
+      const speakers = this.getApprovedSet(data.liveClassId);
+      const speakerList = Array.from(speakers);
+
+      for (const userId of speakerList) {
+        const tokenData =
+          await this.liveClassesService.issueRtcTokenForLiveClass(
+            data.liveClassId,
+            userId,
+            'subscriber',
+          );
+        this.server.to(data.liveClassId).emit('audio:revoked', {
+          userId,
+          ...tokenData,
+        });
+      }
+
+      speakers.clear();
+      this.server.to(data.liveClassId).emit('audio:speakers', { speakers: [] });
+    } catch (err) {
+      client.emit('error', err.message);
     }
   }
 }

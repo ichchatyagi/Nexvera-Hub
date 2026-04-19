@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { getSocketUrl } from '@/utils/socket';
 import { getCookie } from 'cookies-next';
 
 export interface ChatMessage {
@@ -20,7 +21,7 @@ export const useLiveClassChat = (liveClassId: string) => {
     if (!liveClassId) return;
 
     const token = getCookie('access_token') || localStorage.getItem('access_token');
-    const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'}/ws/live-classes`;
+    const apiUrl = getSocketUrl('/ws/live-classes');
 
     // Initialize socket
     const socket = io(apiUrl, {
