@@ -28,6 +28,8 @@ import { EnrollmentsService } from '../enrollments/enrollments.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/schemas/notification.schema';
 import { signCloudFrontUrl } from './cloudfront-signer';
+import { AlertsService } from '../alerts/alerts.service';
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -65,6 +67,7 @@ export class VideosService {
     private readonly queueService: VideoProcessingQueueService,
     private readonly enrollmentsService: EnrollmentsService,
     private readonly notificationsService: NotificationsService,
+    private readonly alertsService: AlertsService,
   ) {
     this.s3 = new S3Client({
       region: this.appConfig.awsRegion,
@@ -86,6 +89,31 @@ export class VideosService {
     const ext = filename.split('.').pop() || 'mp4';
     return `originals/${videoId}/original.${ext}`;
   }
+
+  /** Appends an event to the video's pipeline_events array without loading the full document. */
+  async appendPipelineEvent(
+    videoId: string | Types.ObjectId,
+    event: { type: string; message?: string; meta?: Record<string, any> },
+  ): Promise<void> {
+    try {
+      await this.videoModel.updateOne(
+        { _id: videoId },
+        {
+          $push: {
+            pipeline_events: {
+              ...event,
+              at: new Date(),
+            },
+          },
+        },
+      );
+    } catch (err: any) {
+      this.logger.error(
+        `Failed to append pipeline event for ${videoId}: ${err.message}`,
+      );
+    }
+  }
+
 
   // ─── Upload initiation ────────────────────────────────────────────────────
 
@@ -134,7 +162,20 @@ export class VideosService {
       `Video ${videoId} created for teacher ${teacherId}. S3 key: ${s3Key}`,
     );
 
+    // ── Record pipeline event ──────────────────────────────────────────────
+    void this.appendPipelineEvent(videoId, {
+      type: 'UPLOAD_INITIATED',
+      message: 'Client requested presigned URL for upload',
+      meta: {
+        s3_key: s3Key,
+        mime_type: dto.mime_type,
+        teacher_id: teacherId,
+        course_id: dto.course_id,
+      },
+    });
+
     return { presigned, video };
+
   }
 
   private async buildPresignedUrl(
@@ -252,6 +293,13 @@ export class VideosService {
       this.logger.warn(
         `Job for video ${id} was not queued. Verify SQS configuration.`,
       );
+      
+      void this.appendPipelineEvent(id, {
+        type: 'PROCESSING_TRIGGERED',
+        message: 'Processing manually triggered (failed to queue)',
+        meta: { queued: false },
+      });
+
       return {
         success: true,
         data: video,
@@ -260,7 +308,14 @@ export class VideosService {
       };
     }
 
+    void this.appendPipelineEvent(id, {
+      type: 'PROCESSING_TRIGGERED',
+      message: 'Processing manually triggered by teacher/admin',
+      meta: { queued: true },
+    });
+
     return { success: true, data: video };
+
   }
 
   /**
@@ -322,8 +377,23 @@ export class VideosService {
         );
       }
 
+      // ── Record pipeline event & Send Alert ─────────────────────────────────
+      void this.appendPipelineEvent(id, {
+        type: 'PROCESSING_FAILED',
+        message: payload.error || 'Worker reported transcode failure',
+        meta: { error: payload.error, base_key: payload.base_key },
+      });
+
+      void this.alertsService.sendAlert('Video processing failed', {
+        videoId: id,
+        error: payload.error,
+        base_key: payload.base_key,
+        environment: this.appConfig.environment,
+      });
+
       return { success: true, data: video };
     }
+
 
     // ── Handle Success ───────────────────────────────────────────────────────
 
@@ -379,7 +449,18 @@ export class VideosService {
 
     await video.save();
 
+    // ── Record pipeline event ──────────────────────────────────────────────
+    void this.appendPipelineEvent(id, {
+      type: 'PROCESSING_COMPLETED',
+      message: 'Video transcoded successfully',
+      meta: {
+        base_key: payload.base_key,
+        duration_seconds: payload.duration_seconds,
+      },
+    });
+
     // ── Sync to LiveClass if it's a recording ────────────────────────────────
+
     if (video.source === 'live_recording' && video.live_class_id) {
       const liveClass = await this.liveClassModel
         .findById(video.live_class_id)

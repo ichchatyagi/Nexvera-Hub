@@ -10,8 +10,12 @@ import {
   HttpStatus,
   Headers,
   ForbiddenException,
+  Req,
 } from '@nestjs/common';
+import * as express from 'express';
+
 import { VideosService } from './videos.service';
+
 import {
   InitiateUploadDto,
   TriggerProcessingDto,
@@ -23,7 +27,9 @@ import { OptionalJwtAuthGuard } from '../common/guards/optional-jwt-auth.guard';
 import { AppConfigService } from '../app-config/app-config.service';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { AlertsService } from '../alerts/alerts.service';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+
 import { UserRole, User } from '../users/entities/user.entity';
 
 @Controller('videos')
@@ -31,7 +37,9 @@ export class VideosController {
   constructor(
     private readonly videosService: VideosService,
     private readonly appConfig: AppConfigService,
+    private readonly alertsService: AlertsService,
   ) {}
+
 
   // ─── Teacher / Admin endpoints ────────────────────────────────────────────
 
@@ -138,10 +146,17 @@ export class VideosController {
     @Param('id') id: string,
     @Headers('x-internal-video-secret') secret: string,
     @Body() dto: CompleteProcessingDto,
+    @Req() request: express.Request,
   ) {
+
     if (!secret || secret !== this.appConfig.videoProcessingWebhookSecret) {
+      void this.alertsService.sendAlert('Invalid video webhook secret', {
+        videoId: id,
+        ip: request.ip,
+      });
       throw new ForbiddenException('Invalid processing webhook secret');
     }
+
 
     await this.videosService.completeProcessing(id, dto);
   }

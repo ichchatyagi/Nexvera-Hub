@@ -12,6 +12,8 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { UserRole } from '../users/entities/user.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/schemas/notification.schema';
+import { AlertsService } from '../alerts/alerts.service';
+
 
 jest.mock('@aws-sdk/s3-request-presigner');
 const mockedGetSignedUrl = getSignedUrl as jest.Mock;
@@ -75,7 +77,9 @@ const mockVideoModel = {
   find: jest.fn(),
   findByIdAndUpdate: jest.fn(),
   findByIdAndDelete: jest.fn(),
+  updateOne: jest.fn().mockResolvedValue({}),
 };
+
 
 const mockLiveClassModel = {
   findByIdAndUpdate: jest.fn(),
@@ -120,6 +124,11 @@ const mockNotificationsService = {
   createNotification: jest.fn(),
 };
 
+const mockAlertsService = {
+  sendAlert: jest.fn().mockResolvedValue(undefined),
+};
+
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('VideosService', () => {
@@ -156,7 +165,12 @@ describe('VideosService', () => {
           provide: NotificationsService,
           useValue: mockNotificationsService,
         },
+        {
+          provide: AlertsService,
+          useValue: mockAlertsService,
+        },
       ],
+
     }).compile();
 
     service = module.get<VideosService>(VideosService);
@@ -243,7 +257,25 @@ describe('VideosService', () => {
 
       // Video document ref
       expect(result.video).toBe(mockVideo);
+
+      // Pipeline event was recorded
+      const createdId = (mockVideoModel.create.mock.calls[0][0] as any)._id;
+      expect(mockVideoModel.updateOne).toHaveBeenCalledWith(
+        { _id: createdId },
+        {
+          $push: {
+            pipeline_events: expect.objectContaining({
+              type: 'UPLOAD_INITIATED',
+              meta: expect.objectContaining({
+                teacher_id: TEACHER_ID,
+                course_id: courseId,
+              }),
+            }),
+          },
+        },
+      );
     });
+
 
     it('uses the correct s3 key pattern: originals/<id>/original.<ext>', async () => {
       const courseId = new Types.ObjectId().toString();
@@ -282,8 +314,13 @@ describe('VideosService', () => {
             provide: NotificationsService,
             useValue: mockNotificationsService,
           },
+          {
+            provide: AlertsService,
+            useValue: mockAlertsService,
+          },
         ],
       }).compile();
+
 
       const badService = badModule.get<VideosService>(VideosService);
 
@@ -352,7 +389,21 @@ describe('VideosService', () => {
         source: 'upload',
       });
       expect(result.success).toBe(true);
+
+      // Pipeline event was recorded
+      expect(mockVideoModel.updateOne).toHaveBeenCalledWith(
+        { _id: mockVideo._id.toString() },
+        {
+          $push: {
+            pipeline_events: expect.objectContaining({
+              type: 'PROCESSING_TRIGGERED',
+              meta: expect.objectContaining({ queued: true }),
+            }),
+          },
+        },
+      );
     });
+
 
     it('throws ForbiddenException when requester is not the owner', async () => {
       const mockVideo = makeMockVideo();
@@ -429,8 +480,10 @@ describe('VideosService', () => {
           { provide: VideoProcessingQueueService, useValue: mockQueueService },
           { provide: EnrollmentsService, useValue: mockEnrollmentsService },
           { provide: NotificationsService, useValue: mockNotificationsService },
+          { provide: AlertsService, useValue: mockAlertsService },
         ],
       }).compile();
+
       const prodService = prodModule.get<VideosService>(VideosService);
 
       await expect(prodService.simulateProcessing('any-id')).rejects.toThrow(
@@ -796,9 +849,65 @@ describe('VideosService', () => {
       expect(mockVideo.original.duration_seconds).toBe(123);
       expect(mockVideo.processed_at).toBeInstanceOf(Date);
       expect(mockVideo.save).toHaveBeenCalled();
+
+
+      // Pipeline event was recorded
+      expect(mockVideoModel.updateOne).toHaveBeenCalledWith(
+        { _id: mockVideo._id.toString() },
+        {
+          $push: {
+            pipeline_events: expect.objectContaining({
+              type: 'PROCESSING_COMPLETED',
+              meta: expect.objectContaining({ base_key: baseKey }),
+            }),
+          },
+        },
+      );
+
       // Not a recording, so no live class update
       expect(mockLiveClassModel.findByIdAndUpdate).not.toHaveBeenCalled();
     });
+
+    it('records PROCESSING_FAILED event and sends alert on failure', async () => {
+      const mockVideo = makeMockVideo({
+        processed: { status: 'processing' },
+      });
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+
+      await service.completeProcessing(mockVideo._id.toString(), {
+        status: 'failed',
+        error: 'Transcode failed',
+        base_key: 'failed/key',
+      } as any);
+
+      expect(mockVideo.processed.status).toBe('failed');
+      expect(mockVideo.processed.error).toBe('Transcode failed');
+
+      // Pipeline event was recorded
+      expect(mockVideoModel.updateOne).toHaveBeenCalledWith(
+        { _id: mockVideo._id.toString() },
+        {
+          $push: {
+            pipeline_events: expect.objectContaining({
+              type: 'PROCESSING_FAILED',
+              meta: expect.objectContaining({ error: 'Transcode failed' }),
+            }),
+          },
+        },
+      );
+
+      // Alert was sent
+      expect(mockAlertsService.sendAlert).toHaveBeenCalledWith(
+        'Video processing failed',
+        expect.objectContaining({
+          videoId: mockVideo._id.toString(),
+          error: 'Transcode failed',
+        }),
+      );
+    });
+
 
     it('is idempotent when receiving duplicate success events', async () => {
       const mockVideo = makeMockVideo({ processed: { status: 'completed' } });

@@ -296,4 +296,12 @@ export class AppConfigService {
   get videoProcessingQueueEnabled(): boolean {
     return this.configService.get<boolean>('VIDEO_PROCESSING_QUEUE_ENABLED') ?? false;
   }
+
+  get alertsEnabled(): boolean {
+    return this.configService.get<boolean>('ALERTS_ENABLED') ?? false;
+  }
+
+  get alertsWebhookUrl(): string {
+    return this.configService.get<string>('ALERTS_WEBHOOK_URL') || '';
+  }
 }

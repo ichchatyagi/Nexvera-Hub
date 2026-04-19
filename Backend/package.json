@@ -42,6 +42,7 @@
     "@nestjs/platform-socket.io": "^11.0.1",
     "@nestjs/typeorm": "^11.0.0",
     "@nestjs/websockets": "^11.0.1",
+    "@nexvera/contracts": "file:../packages/nexvera-contracts",
     "agora-access-token": "^2.0.0",
     "axios": "^1.15.0",
     "bcrypt": "^6.0.0",

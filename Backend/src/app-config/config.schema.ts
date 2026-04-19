@@ -124,4 +124,12 @@ export const configValidationSchema = Joi.object({
     then: Joi.boolean().default(true),
     otherwise: Joi.boolean().default(false),
   }),
+
+  // Alerts / Observability
+  ALERTS_ENABLED: Joi.boolean().when('NODE_ENV', {
+    is: 'production',
+    then: Joi.boolean().default(true),
+    otherwise: Joi.boolean().default(false),
+  }),
+  ALERTS_WEBHOOK_URL: Joi.string().optional(),
 });

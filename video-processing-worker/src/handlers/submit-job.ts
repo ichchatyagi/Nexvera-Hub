@@ -5,11 +5,11 @@ import {
 } from "@aws-sdk/client-mediaconvert";
 import { SQSEvent } from "aws-lambda";
 
-interface VideoProcessingJob {
-  videoId: string;
-  s3Key: string;
-  source: string;
-}
+import {
+  VideoProcessingJob,
+  VIDEO_PROCESSING_JOB_VERSION,
+} from '@nexvera/contracts';
+
 
 const REGION = process.env.AWS_REGION || "us-east-1";
 const BUCKET = process.env.AWS_S3_VIDEO_BUCKET;
@@ -37,7 +37,15 @@ export const handler = async (event: SQSEvent) => {
 
   for (const record of event.Records) {
     const body: VideoProcessingJob = JSON.parse(record.body);
+
+    if (body.version !== VIDEO_PROCESSING_JOB_VERSION) {
+      const errorMsg = `Incompatible job version. Expected ${VIDEO_PROCESSING_JOB_VERSION}, got ${body.version || 'none'}. Body: ${record.body}`;
+      console.error(errorMsg);
+      throw new Error(errorMsg); // This causes SQS to retry (or go to DLQ)
+    }
+
     const { videoId, s3Key } = body;
+
     const baseKey = `videos/${videoId}`;
     const destination = `s3://${BUCKET}/${baseKey}/`;
 
