@@ -420,24 +420,45 @@ const CourseDetail = () => {
                           className="overflow-hidden border-t border-slate-100"
                         >
                           <div className="p-4 space-y-2">
-                              {section.lessons.map((lesson) => (
-                               <div 
-                                 key={lesson.lesson_id}
-                                 className="flex items-center justify-between p-4 rounded-xl hover:bg-blue-50/50 transition-all group"
-                               >
-                                  <div className="flex items-center gap-4">
-                                     <div className={`w-8 h-8 rounded-lg ${isEnrolled ? 'bg-white' : 'bg-slate-50'} shadow-sm flex items-center justify-center text-slate-400`}>
-                                        {isEnrolled ? <Play size={12} className="text-blue-600" /> : <Lock size={12} />}
-                                     </div>
-                                     <span className={`text-sm font-bold tracking-tight ${isEnrolled ? 'text-slate-800' : 'text-slate-400'}`}>
-                                       {lesson.title}
-                                     </span>
-                                  </div>
-                                  <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest px-3">
-                                     {lesson.duration_minutes}m
-                                  </span>
-                               </div>
-                             ))}
+                              {section.lessons.map((lesson) => {
+                                const canAccess = isEnrolled || lesson.is_preview;
+                                const content = (
+                                 <div 
+                                   className={`flex items-center justify-between p-4 rounded-xl transition-all group ${canAccess ? 'hover:bg-blue-50/50 cursor-pointer' : ''}`}
+                                 >
+                                    <div className="flex items-center gap-4">
+                                       <div className={`w-8 h-8 rounded-lg ${canAccess ? 'bg-white' : 'bg-slate-50'} shadow-sm flex items-center justify-center text-slate-400`}>
+                                          {canAccess ? <Play size={12} className="text-blue-600" /> : <Lock size={12} />}
+                                       </div>
+                                       <div className="flex flex-col">
+                                         <span className={`text-sm font-bold tracking-tight ${canAccess ? 'text-slate-800' : 'text-slate-400'}`}>
+                                           {lesson.title}
+                                         </span>
+                                         {lesson.is_preview && !isEnrolled && (
+                                           <span className="text-[8px] font-black text-blue-600 uppercase tracking-widest mt-0.5">Preview Available</span>
+                                         )}
+                                       </div>
+                                    </div>
+                                    <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest px-3">
+                                       {lesson.duration_minutes}m
+                                    </span>
+                                 </div>
+                                );
+
+                                if (canAccess) {
+                                  return (
+                                    <Link 
+                                      key={lesson.lesson_id} 
+                                      href={`/courses/${course.slug}/lessons/${lesson.lesson_id}`}
+                                      className="block"
+                                    >
+                                      {content}
+                                    </Link>
+                                  );
+                                }
+                                
+                                return <div key={lesson.lesson_id}>{content}</div>;
+                              })}
                           </div>
                         </motion.div>
                       )}

@@ -2,14 +2,16 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Mail, Phone, MessageCircle, Clock, Send, Building2, Smartphone, Loader2, ChevronRight } from 'lucide-react';
+import { MapPin, Mail, Phone, MessageCircle, Clock, Send, Building2, Smartphone, Loader2, ChevronRight, Instagram, Facebook, Linkedin, Users } from 'lucide-react';
 import api from '../../lib/api';
+import PhoneInput from '../../components/PhoneInput';
 
 const Contact = () => {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         phone: '',
+        inquiryFor: '',
         message: ''
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -26,7 +28,7 @@ const Contact = () => {
             await api.post('/contact', formData);
 
             alert('Details sent successfully! Please check your email for confirmation.');
-            setFormData({ name: '', email: '', phone: '', message: '' });
+            setFormData({ name: '', email: '', phone: '', inquiryFor: '', message: '' });
         } catch (error) {
             console.error('Email Error:', error);
             alert('Failed to send details. Please try again later.');
@@ -36,8 +38,8 @@ const Contact = () => {
     };
 
     return (
-        <div className="pt-6 lg:pt-12 pb-24 bg-transparent overflow-hidden selection:bg-blue-100 selection:text-blue-900">
-            <div className="container mx-auto px-6 lg:px-12">
+        <div className="pt-6 lg:pt-12 pb-24 bg-transparent overflow-x-hidden selection:bg-blue-100 selection:text-blue-900">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-12">
                 {/* Header Section */}
                 <div className="max-w-4xl mb-12 text-center lg:text-left mx-auto lg:mx-0 flex flex-col items-center lg:items-start">
                     <motion.div
@@ -58,12 +60,12 @@ const Contact = () => {
                 <div className="grid lg:grid-cols-2 gap-12 items-stretch mb-12">
                     {/* Left: Contact Form */}
                     <motion.div
-                        initial={{ opacity: 0, x: -30 }}
-                        whileInView={{ opacity: 1, x: 0 }}
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="relative p-[2px] rounded-[3.5rem] bg-gradient-to-br from-slate-200 via-white to-slate-200 shadow-2xl"
+                        className="relative p-[1px] rounded-3xl sm:rounded-[3.5rem] bg-gradient-to-br from-slate-200 via-white to-slate-200 shadow-2xl"
                     >
-                        <div className="bg-white p-8 lg:p-16 rounded-[3.4rem] relative overflow-hidden h-full">
+                        <div className="bg-white p-4 sm:p-10 lg:p-16 rounded-[1.4rem] sm:rounded-[3.4rem] relative overflow-hidden h-full">
                             <h2 className="text-3xl lg:text-4xl font-black text-slate-950 mb-10 uppercase tracking-tighter">Contact <span className="text-blue-600">Us</span></h2>
                             <form onSubmit={handleSubmit} className="space-y-8">
                                 <div className="space-y-3">
@@ -78,31 +80,42 @@ const Contact = () => {
                                         placeholder="Enter your name..."
                                     />
                                 </div>
-                                <div className="grid md:grid-cols-2 gap-8">
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
-                                        <input
-                                            required
-                                            type="email"
-                                            name="email"
-                                            value={formData.email}
-                                            onChange={handleChange}
-                                            className="w-full px-8 py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 text-sm"
-                                            placeholder="name@nexus.com"
-                                        />
-                                    </div>
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Contact Number</label>
-                                        <input
-                                            required
-                                            type="tel"
-                                            name="phone"
-                                            value={formData.phone}
-                                            onChange={handleChange}
-                                            className="w-full px-8 py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 text-sm"
-                                            placeholder="+91 00000 00000"
-                                        />
-                                    </div>
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
+                                    <input
+                                        required
+                                        type="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        className="w-full px-8 py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 text-sm"
+                                        placeholder="name@email.com"
+                                    />
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Contact Number</label>
+                                    <PhoneInput
+                                        required
+                                        name="phone"
+                                        value={formData.phone}
+                                        onChange={handleChange}
+                                        placeholder="00000 00000"
+                                    />
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Inquiry For</label>
+                                    <select
+                                        required
+                                        name="inquiryFor"
+                                        value={formData.inquiryFor}
+                                        onChange={handleChange}
+                                        className="w-full px-8 py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold appearance-none cursor-pointer text-sm"
+                                    >
+                                        <option value="" disabled>Select an option...</option>
+                                        <option value="enroll_course" className="text-slate-900">Enroll in a course</option>
+                                        <option value="join_instructor" className="text-slate-900">Join as an instructor</option>
+                                        <option value="request_consultation" className="text-slate-900">Request consultation</option>
+                                    </select>
                                 </div>
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Message</label>
@@ -129,10 +142,11 @@ const Contact = () => {
 
                     {/* Right: Quick Connect Box */}
                     <motion.div
-                        initial={{ opacity: 0, x: 30 }}
-                        whileInView={{ opacity: 1, x: 0 }}
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="bg-white p-6 sm:p-10 lg:p-16 rounded-[2.5rem] sm:rounded-[3.5rem] border-2 border-slate-100 shadow-2xl relative overflow-hidden group h-full flex flex-col justify-center"
+                        transition={{ delay: 0.1 }}
+                        className="bg-white p-4 sm:p-10 lg:p-16 rounded-3xl sm:rounded-[3.5rem] border-2 border-slate-100 shadow-2xl relative overflow-hidden group h-full flex flex-col justify-center"
                     >
                         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full -mr-32 -mt-32 blur-3xl group-hover:scale-150 transition-transform duration-1000"></div>
 
@@ -141,23 +155,23 @@ const Contact = () => {
 
                             <div className="space-y-8 sm:space-y-10 flex-grow">
                                 {/* Email Us */}
-                                <div className="flex items-center gap-4 sm:gap-6 group/item">
-                                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-[1.5rem] flex-shrink-0 flex items-center justify-center text-blue-600 shadow-inner group-hover/item:scale-110 group-hover/item:bg-blue-50 transition-all">
-                                        <Mail className="w-5 h-5 sm:w-6 sm:h-6" />
+                                <div className="flex items-center gap-3 sm:gap-6 group/item">
+                                    <div className="w-10 h-10 sm:w-16 sm:h-16 bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] flex-shrink-0 flex items-center justify-center text-blue-600 shadow-inner group-hover/item:scale-110 group-hover/item:bg-blue-50 transition-all">
+                                        <Mail className="w-4 h-4 sm:w-6 sm:h-6" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h4 className="font-black text-slate-400 text-[9px] uppercase tracking-[0.3em] mb-1">Direct Email</h4>
-                                        <p className="text-slate-950 font-black text-sm sm:text-lg tracking-tight hover:text-blue-600 transition-colors cursor-pointer leading-none break-all">contact@nexverahub.com</p>
+                                        <h4 className="font-black text-slate-400 text-[8px] sm:text-[9px] uppercase tracking-[0.3em] mb-1">Direct Email</h4>
+                                        <p className="text-slate-950 font-black text-xs sm:text-lg tracking-tight hover:text-blue-600 transition-colors cursor-pointer leading-none break-all">contact@nexverahub.com</p>
                                     </div>
                                 </div>
 
                                 {/* Global Contact Lines */}
-                                <div className="flex items-start gap-4 sm:gap-6 group/item">
-                                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-[1.5rem] flex-shrink-0 flex items-center justify-center text-cyan-600 shadow-inner group-hover/item:scale-110 group-hover/item:bg-cyan-50 transition-all mt-1">
-                                        <Smartphone className="w-5 h-5 sm:w-6 sm:h-6" />
+                                <div className="flex items-start gap-3 sm:gap-6 group/item">
+                                    <div className="w-10 h-10 sm:w-16 sm:h-16 bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] flex-shrink-0 flex items-center justify-center text-cyan-600 shadow-inner group-hover/item:scale-110 group-hover/item:bg-cyan-50 transition-all mt-1">
+                                        <Smartphone className="w-4 h-4 sm:w-6 sm:h-6" />
                                     </div>
                                     <div className="space-y-4 flex-1 min-w-0">
-                                        <h4 className="font-black text-slate-400 text-[9px] uppercase tracking-[0.3em] mb-2">Global Comms</h4>
+                                        <h4 className="font-black text-slate-400 text-[8px] sm:text-[9px] uppercase tracking-[0.3em] mb-2">Global Comms</h4>
                                         <div>
                                             <p className="font-black text-slate-400 text-[8px] uppercase tracking-widest leading-none mb-1">India / Local Hub</p>
                                             <p className="text-slate-950 font-black text-sm sm:text-base tracking-tight leading-none">+91-9821000921</p>
@@ -174,13 +188,59 @@ const Contact = () => {
                                 </div>
 
                                 {/* Our Timings */}
-                                <div className="flex items-center gap-4 sm:gap-6 group/item">
-                                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-[1.5rem] flex-shrink-0 flex items-center justify-center text-indigo-600 shadow-inner group-hover/item:scale-110 group-hover/item:bg-indigo-50 transition-all">
-                                        <Clock className="w-5 h-5 sm:w-6 sm:h-6" />
+                                <div className="flex items-center gap-3 sm:gap-6 group/item">
+                                    <div className="w-10 h-10 sm:w-16 sm:h-16 bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] flex-shrink-0 flex items-center justify-center text-indigo-600 shadow-inner group-hover/item:scale-110 group-hover/item:bg-indigo-50 transition-all">
+                                        <Clock className="w-4 h-4 sm:w-6 sm:h-6" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h4 className="font-black text-slate-400 text-[9px] uppercase tracking-[0.3em] mb-1">Active Hours</h4>
-                                        <p className="text-slate-950 font-black text-sm sm:text-lg tracking-tight leading-none">Mon - Sat: 9 AM - 6 PM</p>
+                                        <h4 className="font-black text-slate-400 text-[8px] sm:text-[9px] uppercase tracking-[0.3em] mb-1">Active Hours</h4>
+                                        <p className="text-slate-950 font-black text-xs sm:text-lg tracking-tight leading-none">Mon - Fri: 9 AM - 5 PM</p>
+                                    </div>
+                                </div>
+
+                                {/* Social Connect */}
+                                <div className="pt-8 border-t border-slate-50">
+                                    <h4 className="font-black text-slate-400 text-[9px] uppercase tracking-[0.3em] mb-8">Join Our Community</h4>
+                                    <div className="space-y-6">
+                                        {[
+                                            {
+                                                Icon: Linkedin,
+                                                href: "https://www.linkedin.com/company/nexverahub/",
+                                                brandColor: "bg-[#0A66C2]",
+                                                label: "LinkedIn",
+                                                desc: "Professional updates and networking"
+                                            },
+                                            {
+                                                Icon: Instagram,
+                                                href: "https://www.instagram.com/nexverahub",
+                                                brandColor: "bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7]",
+                                                label: "Instagram",
+                                                desc: "Events and student Highlights"
+                                            },
+                                            {
+                                                Icon: Facebook,
+                                                href: "https://www.facebook.com/share/189odEHLZR/?mibextid=wwXIfr",
+                                                brandColor: "bg-[#1877F2]",
+                                                label: "Facebook",
+                                                desc: "Global student community"
+                                            }
+                                        ].map((social, idx) => (
+                                            <a
+                                                key={idx}
+                                                href={social.href}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-3 sm:gap-5 group/social active:scale-95 transition-all w-full"
+                                            >
+                                                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center text-white ${social.brandColor} shadow-lg shadow-blue-500/10 group-hover/social:scale-110 transition-transform flex-shrink-0`}>
+                                                    <social.Icon size={18} className="sm:w-5 sm:h-5" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h5 className="text-sm font-black text-slate-900 leading-tight group-hover/social:text-blue-600 transition-colors uppercase tracking-tight break-words">{social.label}</h5>
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 whitespace-normal break-words">{social.desc}</p>
+                                                </div>
+                                            </a>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
@@ -192,10 +252,10 @@ const Contact = () => {
                 <div className="grid lg:grid-cols-2 gap-12 items-stretch">
                     {/* Left: Official Address Box */}
                     <motion.div
-                        initial={{ opacity: 0, y: 30 }}
+                        initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="bg-white p-10 lg:p-16 rounded-[4rem] border-2 border-slate-100 shadow-2xl relative overflow-hidden group h-full flex flex-col order-2 lg:order-1"
+                        className="bg-white p-8 sm:p-10 lg:p-16 rounded-[2.5rem] sm:rounded-[4rem] border-2 border-slate-100 shadow-2xl relative overflow-hidden group h-full flex flex-col order-2 lg:order-1"
                     >
                         <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-blue-50 rounded-full blur-3xl opacity-50 transition-opacity group-hover:opacity-100"></div>
 
@@ -251,10 +311,10 @@ const Contact = () => {
 
                     {/* Right: Map with Pin Overlay */}
                     <motion.div
-                        initial={{ opacity: 0, y: 30 }}
+                        initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="bg-white p-4 rounded-[4rem] shadow-2xl border border-slate-100 min-h-[350px] md:h-[500px] lg:h-auto overflow-hidden relative order-1 lg:order-2"
+                        className="bg-white p-2 sm:p-4 rounded-[2.5rem] sm:rounded-[4rem] shadow-2xl border border-slate-100 min-h-[300px] md:h-[500px] lg:h-auto overflow-hidden relative order-1 lg:order-2"
                     >
                         <div className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-[120%] z-10 flex flex-col items-center pointer-events-none transition-transform hover:scale-105">
                             {/* The Info Card */}

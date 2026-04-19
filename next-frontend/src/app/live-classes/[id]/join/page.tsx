@@ -83,7 +83,7 @@ const JoinLiveClass = () => {
           appId: tokenData.agora_app_id,
           channelName: tokenData.channel_name,
           token: tokenData.rtc_token,
-          uid: user.id,
+          uid: tokenData.agora_uid,
           role: getAgoraRole(tokenData.role),
         }
       : null;
@@ -152,6 +152,12 @@ const JoinLiveClass = () => {
     try {
       setIsLoading(true);
       const response = await api.post(`/live-classes/${id}/join`);
+
+      // Fail fast if backend is out of sync with new Agora numeric UID protocol
+      if (response.data.agora_uid === undefined || response.data.agora_uid === null) {
+        throw new Error('Server assigned an invalid numeric UID (protocol mismatch)');
+      }
+
       setTokenData(response.data);
       setClassStatus(response.data.status);
       
@@ -160,7 +166,8 @@ const JoinLiveClass = () => {
         setIsClassOwner(true);
       }
     } catch (error) {
-      toast.error('Failed to obtain real-time token');
+      const msg = error instanceof Error ? error.message : 'Failed to obtain real-time token';
+      toast.error(msg);
       console.error(error);
       router.push('/live-classes');
     } finally {

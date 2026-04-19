@@ -10,6 +10,8 @@ import { VideoProcessingQueueService } from '../video-processing-queue/video-pro
 import { EnrollmentsService } from '../enrollments/enrollments.service';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { UserRole } from '../users/entities/user.entity';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/schemas/notification.schema';
 
 jest.mock('@aws-sdk/s3-request-presigner');
 const mockedGetSignedUrl = getSignedUrl as jest.Mock;
@@ -29,6 +31,7 @@ function makeMockVideo(overrides: Partial<any> = {}) {
     teacher_id: TEACHER_ID,
     live_class_id: null,
     source: 'upload',
+    public_preview: false,
     original: {
       key: `originals/${id}/original.mp4`,
       size_bytes: 1_000_000,
@@ -69,6 +72,17 @@ const mockVideoModel = {
 const mockLiveClassModel = {
   findByIdAndUpdate: jest.fn(),
   findOneAndUpdate: jest.fn(),
+  findById: jest.fn().mockReturnValue({
+    lean: jest.fn().mockReturnValue({
+      exec: jest.fn().mockResolvedValue({
+        _id: new Types.ObjectId(),
+        course_id: new Types.ObjectId(),
+        title: 'Mock Live Class',
+        teacher_id: 't1',
+        registered_students: ['s1', 's2'],
+      }),
+    }),
+  }),
 };
 
 /** Minimal AppConfigService stub for unit tests. */
@@ -76,6 +90,9 @@ const mockConfigService = {
   awsS3VideoBucket: 'test-videos-bucket',
   cloudfrontVideoDomain: 'test.cloudfront.net',
   awsRegion: 'us-east-1',
+  environment: 'test',
+  awsAccessKey: '',
+  awsSecretKey: '',
 };
 
 const mockQueueService = {
@@ -84,6 +101,10 @@ const mockQueueService = {
 
 const mockEnrollmentsService = {
   isActiveCourseEnrollment: jest.fn(),
+};
+
+const mockNotificationsService = {
+  createNotification: jest.fn(),
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -117,6 +138,10 @@ describe('VideosService', () => {
         {
           provide: EnrollmentsService,
           useValue: mockEnrollmentsService,
+        },
+        {
+          provide: NotificationsService,
+          useValue: mockNotificationsService,
         },
       ],
     }).compile();
@@ -204,6 +229,10 @@ describe('VideosService', () => {
           {
             provide: VideoProcessingQueueService,
             useValue: mockQueueService,
+          },
+          {
+            provide: NotificationsService,
+            useValue: mockNotificationsService,
           },
         ],
       }).compile();
@@ -443,8 +472,11 @@ describe('VideosService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('denies access for unauthenticated requester', async () => {
-      const mockVideo = makeMockVideo({ processed: { status: 'completed' } });
+    it('denies access for unauthenticated requester on non-preview video', async () => {
+      const mockVideo = makeMockVideo({
+        public_preview: false,
+        processed: { status: 'completed', manifest_url: 'http://hls', qualities: [] },
+      });
       mockVideoModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockVideo),
       });
@@ -452,6 +484,54 @@ describe('VideosService', () => {
       await expect(
         service.getPlaybackMetadata(mockVideo._id.toString(), null),
       ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('allows unauthenticated requester to access a public_preview video', async () => {
+      const mockVideo = makeMockVideo({
+        public_preview: true,
+        processed: {
+          status: 'completed',
+          manifest_url: 'https://cdn.example.com/preview/master.m3u8',
+          qualities: [{ resolution: '360p', bitrate: 400_000, url: 'https://cdn.example.com/360p/index.m3u8' }],
+          thumbnail_url: 'https://cdn.example.com/thumb.jpg',
+          thumbnails_vtt: null,
+        },
+        captions: [],
+      });
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+
+      const result = await service.getPlaybackMetadata(
+        mockVideo._id.toString(),
+        null,
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.data).toBeDefined();
+      expect(result.data!.manifest_url).toBe('https://cdn.example.com/preview/master.m3u8');
+      // Enrollment service must not be called for anonymous preview
+      expect(mockEnrollmentsService.isActiveCourseEnrollment).not.toHaveBeenCalled();
+      // Must not expose raw S3 keys
+      expect(JSON.stringify(result.data)).not.toContain('originals/');
+    });
+
+    it('returns VIDEO_NOT_READY for unauthenticated requester on unprocessed preview video', async () => {
+      const mockVideo = makeMockVideo({
+        public_preview: true,
+        processed: { status: 'processing', manifest_url: null, qualities: [] },
+      });
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+
+      const result = await service.getPlaybackMetadata(
+        mockVideo._id.toString(),
+        null,
+      );
+
+      expect(result.success).toBe(false);
+      expect((result as any).error.code).toBe('VIDEO_NOT_READY');
     });
 
     it('returns player-safe data when processing is completed', async () => {
@@ -678,6 +758,17 @@ describe('VideosService', () => {
           'recording.status': 'available',
           'recording.video_id': mockVideo._id,
         },
+      );
+      
+      expect(mockNotificationsService.createNotification).toHaveBeenCalledTimes(3);
+      expect(mockNotificationsService.createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({ user_id: 't1', type: NotificationType.LIVE_CLASS_RECORDING_AVAILABLE })
+      );
+      expect(mockNotificationsService.createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({ user_id: 's1', type: NotificationType.LIVE_CLASS_RECORDING_AVAILABLE })
+      );
+      expect(mockNotificationsService.createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({ user_id: 's2', type: NotificationType.LIVE_CLASS_RECORDING_AVAILABLE })
       );
     });
 

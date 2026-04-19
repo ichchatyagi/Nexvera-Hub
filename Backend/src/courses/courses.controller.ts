@@ -17,6 +17,7 @@ import {
   AssignInstructorDto,
 } from './dto/course.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../common/guards/optional-jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -29,18 +30,33 @@ export class CoursesController {
   // ── Public ──────────────────────────────────────────────────────────────
 
   @Get()
-  getCourses(@Query() query: any) {
-    return this.coursesService.findAll(query);
+  @UseGuards(OptionalJwtAuthGuard)
+  getCourses(@Query() query: any, @CurrentUser() user?: User) {
+    return this.coursesService.findAll(
+      query,
+      user?.id ?? null,
+      user?.role ?? null,
+    );
   }
 
   @Get(':slug')
-  getCourseBySlug(@Param('slug') slug: string) {
-    return this.coursesService.findBySlug(slug);
+  @UseGuards(OptionalJwtAuthGuard)
+  getCourseBySlug(@Param('slug') slug: string, @CurrentUser() user?: User) {
+    return this.coursesService.findBySlug(
+      slug,
+      user?.id ?? null,
+      user?.role ?? null,
+    );
   }
 
   @Get(':id/curriculum')
-  getCourseCurriculum(@Param('id') id: string) {
-    return this.coursesService.getCurriculum(id);
+  @UseGuards(OptionalJwtAuthGuard)
+  getCourseCurriculum(@Param('id') id: string, @CurrentUser() user?: User) {
+    return this.coursesService.getCurriculum(
+      id,
+      user?.id ?? null,
+      user?.role ?? null,
+    );
   }
 
   @Get(':id/reviews')
@@ -106,6 +122,6 @@ export class CoursesController {
     @Param('id') id: string,
     @Body() dto: CreateReviewDto,
   ) {
-    return this.coursesService.createReview(id, user.id, dto);
+    return this.coursesService.createReview(id, user.id, user.role, dto);
   }
 }

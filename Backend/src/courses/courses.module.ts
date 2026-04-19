@@ -11,6 +11,8 @@ import { AdminTuitionController } from './admin-tuition.controller';
 import { TeacherTuitionService } from './teacher-tuition.service';
 import { TeacherTuitionController } from './teacher-tuition.controller';
 import { LessonsController } from './lessons.controller';
+import { EnrollmentsModule } from '../enrollments/enrollments.module';
+import { VideosModule } from '../videos/videos.module';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { LessonsController } from './lessons.controller';
       { name: Course.name, schema: CourseSchema },
       { name: Review.name, schema: ReviewSchema },
     ]),
+    EnrollmentsModule,
+    VideosModule,
   ],
   providers: [CoursesService, AdminTuitionService, TeacherTuitionService],
   controllers: [

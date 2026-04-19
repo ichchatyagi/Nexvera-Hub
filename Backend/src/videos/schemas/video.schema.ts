@@ -181,6 +181,13 @@ export class Video {
   @Prop({ type: Date, default: null })
   processed_at: Date | null;
 
+  /**
+   * When true, unauthenticated users may access playback for this video.
+   * Use for free preview lessons that should be publicly visible.
+   */
+  @Prop({ type: Boolean, default: false })
+  public_preview: boolean;
+
   // Injected by timestamps option:
   created_at?: Date;
   updated_at?: Date;

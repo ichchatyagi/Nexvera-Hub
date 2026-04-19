@@ -4,6 +4,7 @@ import React from 'react';
 import { usePathname } from "next/navigation";
 import { ConsultationProvider } from "../context/ConsultationContext";
 import { AuthProvider } from "../context/AuthContext";
+import { NotificationsProvider } from "../context/NotificationsContext";
 import { Toaster } from 'react-hot-toast';
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -35,19 +36,21 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
 
   return (
     <AuthProvider>
-      <ConsultationProvider>
-        <Toaster position="top-right" />
-        <ScrollToTop />
-        <div className="relative min-h-screen bg-transparent font-sans selection:bg-blue-100 selection:text-blue-900">
-          {showBackground && <PageBackground />}
-          {!isAuthPage && <Navbar />}
-          <main className="relative z-10">{children}</main>
-          {!isAuthPage && !isCourseDetailPage && <MobileAppBanner />}
-          {!isAuthPage && !isCourseDetailPage && <Footer />}
-          <ConsultationModal />
-          <TuitionPromo />
-        </div>
-      </ConsultationProvider>
+      <NotificationsProvider>
+        <ConsultationProvider>
+          <Toaster position="top-right" />
+          <ScrollToTop />
+          <div className="relative min-h-screen bg-transparent font-sans selection:bg-blue-100 selection:text-blue-900">
+            {showBackground && <PageBackground />}
+            {!isAuthPage && <Navbar />}
+            <main className="relative z-10">{children}</main>
+            {!isAuthPage && !isCourseDetailPage && <MobileAppBanner />}
+            {!isAuthPage && !isCourseDetailPage && <Footer />}
+            <ConsultationModal />
+            <TuitionPromo />
+          </div>
+        </ConsultationProvider>
+      </NotificationsProvider>
     </AuthProvider>
   );
 }

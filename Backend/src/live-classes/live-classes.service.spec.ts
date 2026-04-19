@@ -11,6 +11,8 @@ import { Types } from 'mongoose';
 import { LiveClassesService, AgoraRole } from './live-classes.service';
 import { UserRole } from '../users/entities/user.entity';
 import { EnrollmentsService } from '../enrollments/enrollments.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/schemas/notification.schema';
 
 import { LiveClass, LiveClassStatus } from './schemas/live-class.schema';
 import { AppConfigService } from '../app-config/app-config.service';
@@ -92,6 +94,11 @@ const mockVideosService = {
 
 const mockEnrollmentsService = {
   isActiveCourseEnrollment: jest.fn(),
+  listActiveCourseIdsForStudent: jest.fn(),
+};
+
+const mockNotificationsService = {
+  createNotification: jest.fn(),
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -126,6 +133,10 @@ describe('LiveClassesService', () => {
         {
           provide: EnrollmentsService,
           useValue: mockEnrollmentsService,
+        },
+        {
+          provide: NotificationsService,
+          useValue: mockNotificationsService,
         },
       ],
     }).compile();
@@ -316,6 +327,19 @@ describe('LiveClassesService', () => {
 
   // ── join ──────────────────────────────────────────────────────────────────
 
+  function localDeriveUid(userId: string): number {
+    if (/^\d+$/.test(userId)) {
+      const parsed = parseInt(userId, 10);
+      if (parsed > 0 && parsed <= 0x7fffffff) return parsed;
+    }
+    let hash = 5381;
+    for (let i = 0; i < userId.length; i++) {
+      hash = ((hash << 5) + hash) ^ userId.charCodeAt(i);
+      hash |= 0;
+    }
+    return (Math.abs(hash) % 0x7ffffffe) + 1;
+  }
+
   describe('join', () => {
     it('allows enrolled student to join', async () => {
       const mockLc = makeMockLiveClass();
@@ -332,6 +356,7 @@ describe('LiveClassesService', () => {
 
       expect(result.channel_name).toBe(mockLc.agora.channel_name);
       expect(result.rtc_token).toBeDefined();
+      expect(result.agora_uid).toBe(localDeriveUid(STUDENT_ID));
       expect(mockLc.attended_students).toContain(STUDENT_ID);
       expect(mockLc.save).toHaveBeenCalled();
     });
@@ -438,6 +463,10 @@ describe('LiveClassesService', () => {
             provide: EnrollmentsService,
             useValue: mockEnrollmentsService,
           },
+          {
+            provide: NotificationsService,
+            useValue: mockNotificationsService,
+          },
         ],
       }).compile();
 
@@ -457,21 +486,38 @@ describe('LiveClassesService', () => {
   // ── start ─────────────────────────────────────────────────────────────────
 
   describe('start', () => {
-    it('transitions status to live and sets actual_start', async () => {
-      const mockLc = makeMockLiveClass();
+    it('transitions status to live and sets actual_start and sends notifications', async () => {
+      const courseId = new Types.ObjectId();
+      const mockLc = makeMockLiveClass({ 
+        teacher_id: 't1',
+        registered_students: ['s1', 's2'],
+        title: 'Test Class',
+        course_id: courseId
+      });
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
       });
 
       const result = await service.start(
         mockLc._id.toString(),
-        TEACHER_ID,
+        't1',
         false,
       );
 
       expect(result.status).toBe(LiveClassStatus.LIVE);
       expect(result.actual_start).toBeInstanceOf(Date);
       expect(mockLc.save).toHaveBeenCalled();
+      
+      expect(mockNotificationsService.createNotification).toHaveBeenCalledTimes(3);
+      expect(mockNotificationsService.createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({ user_id: 't1', type: NotificationType.LIVE_CLASS_STARTED })
+      );
+      expect(mockNotificationsService.createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({ user_id: 's1', type: NotificationType.LIVE_CLASS_STARTED })
+      );
+      expect(mockNotificationsService.createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({ user_id: 's2', type: NotificationType.LIVE_CLASS_STARTED })
+      );
     });
 
     it('throws for non-owner when isAdmin is false', async () => {
@@ -559,10 +605,11 @@ describe('LiveClassesService', () => {
   // ── end ───────────────────────────────────────────────────────────────────
 
   describe('end', () => {
-    it('transitions status to ended and sets actual_end', async () => {
+    it('transitions status to ended and sets actual_end and sends notification', async () => {
       const mockLc = makeMockLiveClass({
         status: LiveClassStatus.LIVE,
         actual_start: new Date(),
+        registered_students: ['s1'],
       });
       mockLiveClassModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockLc),
@@ -577,6 +624,7 @@ describe('LiveClassesService', () => {
       expect(result.status).toBe(LiveClassStatus.ENDED);
       expect(result.actual_end).toBeInstanceOf(Date);
       expect(mockLc.save).toHaveBeenCalled();
+      expect(mockNotificationsService.createNotification).toHaveBeenCalled();
     });
 
     it('throws UnprocessableEntityException for already ended class', async () => {
@@ -1023,6 +1071,71 @@ describe('LiveClassesService', () => {
           UserRole.TEACHER,
         ),
       ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  // ── findAllForUser ─────────────────────────────────────────────────────────
+
+  describe('findAllForUser', () => {
+    const buildFindChain = (data: any[]) => ({
+      sort: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      exec: jest.fn().mockResolvedValue(data),
+    });
+
+    it('filters by enrolled course_ids for a student', async () => {
+      const courseId1 = new Types.ObjectId();
+      const courseId2 = new Types.ObjectId();
+      const mockLc = makeMockLiveClass({ course_id: courseId1 });
+
+      mockEnrollmentsService.listActiveCourseIdsForStudent.mockResolvedValue([
+        courseId1.toString(),
+        courseId2.toString(),
+      ]);
+      mockLiveClassModel.find.mockReturnValue(buildFindChain([mockLc]));
+
+      const result = await service.findAllForUser(STUDENT_ID, UserRole.STUDENT);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toHaveLength(1);
+
+      // Verify the query included course_id and the base status filters
+      const findArg = mockLiveClassModel.find.mock.calls[0][0];
+      expect(findArg.course_id).toBeDefined();
+      expect(findArg.course_id.$in).toHaveLength(2);
+      expect(findArg.status).toBeDefined();
+      expect(findArg.scheduled_end).toBeDefined();
+
+      expect(
+        mockEnrollmentsService.listActiveCourseIdsForStudent,
+      ).toHaveBeenCalledWith(STUDENT_ID);
+    });
+
+    it('returns empty array immediately when student has no active enrollments', async () => {
+      mockEnrollmentsService.listActiveCourseIdsForStudent.mockResolvedValue([]);
+
+      const result = await service.findAllForUser(STUDENT_ID, UserRole.STUDENT);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual([]);
+      // No DB query fired
+      expect(mockLiveClassModel.find).not.toHaveBeenCalled();
+    });
+
+    it('does not apply course_id filter for a teacher', async () => {
+      const mockLc = makeMockLiveClass();
+      mockLiveClassModel.find.mockReturnValue(buildFindChain([mockLc]));
+
+      const result = await service.findAllForUser(TEACHER_ID, UserRole.TEACHER);
+
+      expect(result.success).toBe(true);
+      // Enrollment service must NOT be called for non-student roles
+      expect(
+        mockEnrollmentsService.listActiveCourseIdsForStudent,
+      ).not.toHaveBeenCalled();
+      // Query must NOT include a course_id restriction
+      const findArg = mockLiveClassModel.find.mock.calls[0][0];
+      expect(findArg.course_id).toBeUndefined();
     });
   });
 });

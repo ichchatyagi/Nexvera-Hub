@@ -283,4 +283,24 @@ export const CourseSchema = SchemaFactory.createForClass(Course);
 CourseSchema.index({ 'category.main': 1, 'category.sub': 1 });
 CourseSchema.index({ status: 1, published_at: -1 });
 CourseSchema.index({ 'stats.average_rating': -1 });
-// CourseSchema.index({ '$**': 'text' }); // We can wait for later module for search
+CourseSchema.index(
+  {
+    title: 'text',
+    short_description: 'text',
+    description: 'text',
+    'category.main': 'text',
+    'category.tags': 'text',
+    'tuition_meta.subjects.name': 'text',
+  },
+  {
+    weights: {
+      title: 10,
+      'tuition_meta.subjects.name': 8,
+      short_description: 5,
+      'category.tags': 4,
+      'category.main': 3,
+      description: 1,
+    },
+    name: 'course_text_search_v1',
+  },
+);

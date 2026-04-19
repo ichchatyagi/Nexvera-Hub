@@ -7,12 +7,14 @@ import {
   AdminEnrollmentsController,
   CompatibilityEnrollmentsController,
 } from './enrollments.controller';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Enrollment.name, schema: EnrollmentSchema },
     ]),
+    NotificationsModule,
   ],
   providers: [EnrollmentsService],
   controllers: [

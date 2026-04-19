@@ -1,13 +1,21 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { CoursesService } from './courses.service';
+import { OptionalJwtAuthGuard } from '../common/guards/optional-jwt-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { User } from '../users/entities/user.entity';
 
 @Controller('tuition')
 export class TuitionController {
   constructor(private readonly coursesService: CoursesService) {}
 
   @Get('classes')
-  getTuitionClasses(@Query() query: any) {
-    return this.coursesService.findTuitionClasses(query);
+  @UseGuards(OptionalJwtAuthGuard)
+  getTuitionClasses(@Query() query: any, @CurrentUser() user?: User) {
+    return this.coursesService.findTuitionClasses(
+      query,
+      user?.id ?? null,
+      user?.role ?? null,
+    );
   }
 
   @Get('classes/:classSlug')

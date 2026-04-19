@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -8,6 +8,8 @@ import { Search, SlidersHorizontal, BookOpen, Star, Users, ChevronRight, Loader2
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
 import IconRenderer from '@/components/IconRenderer';
+
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface Course {
   id: string;
@@ -32,9 +34,12 @@ interface Course {
 }
 
 const CourseCatalog = () => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [activeCategory, setActiveCategory] = useState('Artificial Intelligence');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -50,19 +55,28 @@ const CourseCatalog = () => {
     'Entrepreneurship'
   ];
 
+  // Sync searchTerm state with URL search param
+  useEffect(() => {
+    const urlSearch = searchParams.get('search') || '';
+    if (urlSearch !== searchTerm) {
+      setSearchTerm(urlSearch);
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     fetchCourses(currentPage);
-  }, [activeCategory, currentPage]);
+  }, [activeCategory, currentPage, searchParams.get('search')]);
 
   const fetchCourses = async (page = 1) => {
     try {
       setIsLoading(true);
+      const currentSearch = searchParams.get('search') || '';
       const params: any = {
         category: activeCategory,
         page,
         limit: 8
       };
-      if (searchTerm) params.search = searchTerm;
+      if (currentSearch) params.search = currentSearch;
 
       const response = await api.get('/courses', { params });
       setCourses(response.data || []);
@@ -77,6 +91,17 @@ const CourseCatalog = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    const q = searchTerm.trim();
+    
+    // Update URL param
+    const params = new URLSearchParams(searchParams.toString());
+    if (q) {
+      params.set('search', q);
+    } else {
+      params.delete('search');
+    }
+    router.push(`/courses?${params.toString()}`);
+    
     if (currentPage !== 1) {
       setCurrentPage(1);
     } else {
@@ -297,4 +322,10 @@ const CourseCatalog = () => {
   );
 };
 
-export default CourseCatalog;
+export default function CoursesPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-slate-500">Loading...</div>}>
+      <CourseCatalog />
+    </Suspense>
+  );
+}

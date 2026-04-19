@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, User, Mail, Phone, MessageSquare, Loader2 } from 'lucide-react';
 import { useConsultation } from '../context/ConsultationContext';
 import api from '../lib/api';
+import PhoneInput from './PhoneInput';
 
 const ConsultationModal = () => {
     const { isModalOpen, closeModal } = useConsultation();
@@ -84,7 +85,7 @@ const ConsultationModal = () => {
                                             name="name"
                                             value={formData.name}
                                             onChange={handleChange}
-                                            placeholder="John Doe"
+                                            placeholder="Your Name"
                                             className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-bold text-slate-700"
                                         />
                                     </div>
@@ -100,7 +101,7 @@ const ConsultationModal = () => {
                                             name="email"
                                             value={formData.email}
                                             onChange={handleChange}
-                                            placeholder="john@example.com"
+                                            placeholder="name@email.com"
                                             className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-bold text-slate-700"
                                         />
                                     </div>
@@ -109,15 +110,12 @@ const ConsultationModal = () => {
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Phone Number</label>
                                     <div className="relative">
-                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                                        <input
+                                        <PhoneInput
                                             required
-                                            type="tel"
                                             name="phone"
                                             value={formData.phone}
                                             onChange={handleChange}
-                                            placeholder="+1 (555) 000-0000"
-                                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-bold text-slate-700"
+                                            placeholder="555-000-0000"
                                         />
                                     </div>
                                 </div>

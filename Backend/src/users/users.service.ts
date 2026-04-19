@@ -210,4 +210,8 @@ export class UsersService {
     user.verificationOtpExpiresAt = null;
     return this.userRepository.save(user);
   }
+
+  async bumpRefreshTokenVersion(userId: string): Promise<void> {
+    await this.userRepository.increment({ id: userId }, 'refreshTokenVersion', 1);
+  }
 }

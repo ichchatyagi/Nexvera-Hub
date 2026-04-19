@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Video, VideoDocument } from './schemas/video.schema';
 import {
@@ -24,6 +24,8 @@ import { UserRole } from '../users/entities/user.entity';
 import { AppConfigService } from '../app-config/app-config.service';
 import { VideoProcessingQueueService } from '../video-processing-queue/video-processing-queue.service';
 import { EnrollmentsService } from '../enrollments/enrollments.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/schemas/notification.schema';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -60,6 +62,7 @@ export class VideosService {
     private readonly appConfig: AppConfigService,
     private readonly queueService: VideoProcessingQueueService,
     private readonly enrollmentsService: EnrollmentsService,
+    private readonly notificationsService: NotificationsService,
   ) {
     this.s3 = new S3Client({
       region: this.appConfig.awsRegion,
@@ -352,6 +355,41 @@ export class VideosService {
       this.logger.log(
         `Live class ${video.live_class_id} recording marked as AVAILABLE.`,
       );
+
+      // ── Notifications ──────────────────────────────────────────────────────
+      try {
+        const liveClass = await this.liveClassModel
+          .findById(video.live_class_id)
+          .lean()
+          .exec();
+
+        if (liveClass) {
+          const recipients = new Set([
+            liveClass.teacher_id,
+            ...(liveClass.registered_students || []),
+          ]);
+
+          const notifyPromises = Array.from(recipients).map(async (userId) => {
+            return this.notificationsService.createNotification({
+              user_id: userId,
+              type: NotificationType.LIVE_CLASS_RECORDING_AVAILABLE,
+              title: 'Recording available',
+              body: `Recording for "${liveClass.title}" is now available.`,
+              data: {
+                liveClassId: liveClass._id.toString(),
+                courseId: liveClass.course_id.toString(),
+                videoId: video._id.toString(),
+              },
+            });
+          });
+
+          await Promise.allSettled(notifyPromises);
+        }
+      } catch (err) {
+        this.logger.error(
+          `Failed to notify about available recording: ${err.message}`,
+        );
+      }
     }
 
     this.logger.log(
@@ -446,13 +484,28 @@ export class VideosService {
     id: string,
     requester: { id: string; role: UserRole } | null,
   ) {
-    if (!requester) {
-      throw new ForbiddenException(
-        'Authentication required to access playback',
-      );
-    }
-
     const video = await this.findById(id);
+
+    // ── Public preview fast-path (unauthenticated) ───────────────────────────
+    if (!requester) {
+      if (!video.public_preview) {
+        throw new ForbiddenException(
+          'Authentication required to access playback',
+        );
+      }
+      // Preview is valid – still respect processing state
+      if (video.processed.status !== 'completed') {
+        return {
+          success: false,
+          error: {
+            code: 'VIDEO_NOT_READY',
+            message: 'Video is not yet available for playback',
+            status: video.processed.status,
+          },
+        };
+      }
+      return this.buildPlayerPayload(video);
+    }
 
     // ── Authorization Logic ──────────────────────────────────────────────────
     let isAuthorized = false;
@@ -485,7 +538,11 @@ export class VideosService {
       };
     }
 
-    // Only expose what the player needs
+    return this.buildPlayerPayload(video);
+  }
+
+  /** Builds the minimal player-safe response (never leaks S3 keys). */
+  private buildPlayerPayload(video: VideoDocument) {
     return {
       success: true,
       data: {
@@ -507,6 +564,7 @@ export class VideosService {
       },
     };
   }
+
 
   // ─── Captions ─────────────────────────────────────────────────────────────
 
@@ -543,13 +601,61 @@ export class VideosService {
     if (video.teacher_id !== requesterId)
       throw new ForbiddenException('Not your video');
 
-    // TODO: Also delete S3 objects (original + processed) using AWS SDK
+    if (video.original && video.original.key) {
+      await this.safeDeleteS3Keys([video.original.key]);
+    }
+    await this.safeDeleteS3Prefix(`videos/${video._id.toString()}/`);
+
     await this.videoModel.findByIdAndDelete(id).exec();
     this.logger.log(
-      `Video ${id} deleted. TODO: remove S3 objects for key prefix videos/${id}/`,
+      `Video ${id} deleted and S3 objects removed.`,
     );
 
     return { success: true };
+  }
+
+  private async safeDeleteS3Keys(keys: string[]): Promise<void> {
+    if (!this.appConfig.awsS3VideoBucket) return;
+    if (this.appConfig.environment === 'test') return;
+    if (!this.appConfig.awsAccessKey || !this.appConfig.awsSecretKey) return;
+
+    try {
+      if (keys.length === 0) return;
+      await this.s3.send(
+        new DeleteObjectsCommand({
+          Bucket: this.appConfig.awsS3VideoBucket,
+          Delete: { Objects: keys.map((Key) => ({ Key })), Quiet: true },
+        }),
+      );
+    } catch (err: any) {
+      this.logger.warn(`Failed to delete S3 keys: ${err.message}`);
+    }
+  }
+
+  private async safeDeleteS3Prefix(prefix: string): Promise<void> {
+    if (!this.appConfig.awsS3VideoBucket) return;
+    if (this.appConfig.environment === 'test') return;
+    if (!this.appConfig.awsAccessKey || !this.appConfig.awsSecretKey) return;
+
+    try {
+      let continuationToken: string | undefined = undefined;
+      do {
+        const response = await this.s3.send(
+          new ListObjectsV2Command({
+            Bucket: this.appConfig.awsS3VideoBucket,
+            Prefix: prefix,
+            ContinuationToken: continuationToken,
+          }),
+        );
+        if (response.Contents && response.Contents.length > 0) {
+          const keys = response.Contents.map((c) => c.Key).filter(Boolean) as string[];
+          await this.safeDeleteS3Keys(keys);
+        }
+        continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined;
+      } while (continuationToken);
+    } catch (err: any) {
+      this.logger.warn(`Failed to delete S3 objects with prefix ${prefix}: ${err.message}`);
+    }
   }
   /**
    * Creates a Video document for a finished live-class recording
@@ -595,5 +701,21 @@ export class VideosService {
     );
 
     return video;
+  }
+
+  /**
+   * Updates the public_preview flag for a video.
+   * This is called when a lesson's preview status changes.
+   */
+  async setPublicPreview(videoId: string, value: boolean) {
+    if (!Types.ObjectId.isValid(videoId)) {
+      throw new NotFoundException('Invalid video ID');
+    }
+    const video = await this.videoModel.findById(videoId).exec();
+    if (!video) throw new NotFoundException('Video not found');
+
+    video.public_preview = value;
+    await video.save();
+    return { success: true };
   }
 }

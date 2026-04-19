@@ -7,12 +7,15 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Enrollment, EnrollmentDocument } from './schemas/enrollment.schema';
 import { UpdateProgressDto } from './dto/enrollment.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/schemas/notification.schema';
 
 @Injectable()
 export class EnrollmentsService {
   constructor(
     @InjectModel(Enrollment.name)
     private enrollmentModel: Model<EnrollmentDocument>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async enroll(courseId: string, studentId: string, metadata?: any) {
@@ -73,13 +76,37 @@ export class EnrollmentsService {
       }
     }
 
+    const notify = async () => {
+      try {
+        await this.notificationsService.createNotification({
+          user_id: studentId,
+          type: NotificationType.ENROLLMENT_GRANTED,
+          title: 'Enrollment granted',
+          body: metadata?.courseTitle
+            ? `You now have access to "${metadata.courseTitle}".`
+            : `You now have access to your course.`,
+          data: {
+            courseId,
+            product_type: metadata?.product_type ?? 'course',
+            access_scope: metadata?.access_scope,
+            subjectId: metadata?.subjectId,
+            billing_mode: metadata?.billing_mode,
+          },
+        });
+      } catch (err) {
+        console.error('Failed to send enrollment notification:', err);
+      }
+    };
+
     if (existing) {
       Object.assign(existing, enrollmentData);
       await existing.save();
+      await notify();
       return { success: true, data: existing };
     }
 
     const enrollment = await this.enrollmentModel.create(enrollmentData);
+    await notify();
     return { success: true, data: enrollment };
   }
 
@@ -260,5 +287,25 @@ export class EnrollmentsService {
     if (enrollment.access_expires && enrollment.access_expires < new Date())
       return false;
     return true;
+  }
+
+  async listActiveCourseIdsForStudent(studentId: string): Promise<string[]> {
+    const now = new Date();
+    const enrollments = await this.enrollmentModel
+      .find({
+        student_id: studentId,
+        product_type: 'course',
+        status: 'active',
+        $or: [
+          { access_expires: null },
+          { access_expires: { $exists: false } },
+          { access_expires: { $gte: now } },
+        ],
+      })
+      .select('course_id')
+      .lean()
+      .exec();
+
+    return [...new Set(enrollments.map((e) => e.course_id.toString()))];
   }
 }

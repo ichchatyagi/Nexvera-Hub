@@ -15,5 +15,9 @@ export class CreateContactDto {
 
   @IsString()
   @IsOptional()
+  inquiryFor?: string;
+
+  @IsString()
+  @IsOptional()
   message?: string;
 }

@@ -106,6 +106,9 @@ export class User {
   @Column({ type: 'text', nullable: true })
   learningGoals: string;
 
+  @Column({ type: 'int', default: 0 })
+  refreshTokenVersion: number;
+
   @CreateDateColumn()
   createdAt: Date;
 

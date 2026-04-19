@@ -10,6 +10,7 @@ import {
   LiveClassSchema,
 } from '../live-classes/schemas/live-class.schema';
 import { EnrollmentsModule } from '../enrollments/enrollments.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { EnrollmentsModule } from '../enrollments/enrollments.module';
     AppConfigModule,
     VideoProcessingQueueModule,
     EnrollmentsModule,
+    NotificationsModule,
   ],
   providers: [VideosService],
   controllers: [VideosController],

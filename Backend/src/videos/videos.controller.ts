@@ -19,6 +19,7 @@ import {
   CompleteProcessingDto,
 } from './dto/video.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../common/guards/optional-jwt-auth.guard';
 import { AppConfigService } from '../app-config/app-config.service';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -214,13 +215,13 @@ export class VideosController {
    * See IMPLEMENTATION_PLAN_PART2.md §5 (Enrollments) and
    * IMPLEMENTATION_PLAN_PART3.md §7 – "Video Access Middleware".
    */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(OptionalJwtAuthGuard)
   @Get(':id/playback')
-  getPlayback(@CurrentUser() user: User, @Param('id') id: string) {
-    return this.videosService.getPlaybackMetadata(id, {
-      id: user.id,
-      role: user.role,
-    });
+  getPlayback(@CurrentUser() user: User | undefined, @Param('id') id: string) {
+    return this.videosService.getPlaybackMetadata(
+      id,
+      user ? { id: user.id, role: user.role } : null,
+    );
   }
 
   /**

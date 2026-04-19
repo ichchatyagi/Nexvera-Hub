@@ -23,6 +23,8 @@ import { AppConfigService } from '../app-config/app-config.service';
 import { RtcTokenBuilder, RtcRole } from 'agora-access-token';
 import { VideosService } from '../videos/videos.service';
 import { EnrollmentsService } from '../enrollments/enrollments.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/schemas/notification.schema';
 
 // ─── Agora token shape ────────────────────────────────────────────────────────
 
@@ -45,6 +47,8 @@ export interface JoinClassResponse {
   agora_app_id: string;
   /** Server-assigned live-class role for the current user. */
   role: AgoraRole;
+  /** Derivied numeric UID that the client MUST use to join. */
+  agora_uid: number;
   title: string;
   scheduled_start: Date;
   status: LiveClassStatus;
@@ -68,6 +72,7 @@ export class LiveClassesService implements OnModuleInit {
     private readonly appConfig: AppConfigService,
     private readonly videosService: VideosService,
     private readonly enrollmentsService: EnrollmentsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   onModuleInit() {
@@ -138,9 +143,8 @@ export class LiveClassesService implements OnModuleInit {
     const now = Math.floor(Date.now() / 1000);
     const privilegeExpiredTs = now + ttlSeconds;
 
-    // Agora token builder expects a numeric UID; derive a stable one from userId
-    // For simplicity, use uid = 0 to let Agora auto-assign, but encode userId in room logic.
-    const uid = 0;
+    // RTC tokens MUST use the same UID that the client uses to join()
+    const uid = this.deriveAgoraUid(userId);
 
     const rtcRole =
       role === AgoraRole.PUBLISHER ? RtcRole.PUBLISHER : RtcRole.SUBSCRIBER;
@@ -156,10 +160,34 @@ export class LiveClassesService implements OnModuleInit {
       );
     } catch (err) {
       this.logger.error(
-        `Failed to generate Agora token for channel "${channelName}", user "${userId}": ${err instanceof Error ? err.message : String(err)}`,
+        `Failed to generate Agora token for channel "${channelName}", user "${userId}" (uid ${uid}): ${err instanceof Error ? err.message : String(err)}`,
       );
       throw new InternalServerErrorException('Failed to generate Agora token');
     }
+  }
+
+  /**
+   * Derives a stable 32-bit numeric UID from a string userId.
+   * Matches the djb2 hashing logic used in the frontend.
+   */
+  private deriveAgoraUid(userId: string): number {
+    // If it's already a numeric string (e.g. "999" for recording bot), use it directly.
+    if (/^\d+$/.test(userId)) {
+      const parsed = parseInt(userId, 10);
+      if (parsed > 0 && parsed <= 0x7fffffff) {
+        return parsed;
+      }
+    }
+
+    // djb2 hash
+    let hash = 5381;
+    for (let i = 0; i < userId.length; i++) {
+      hash = (hash << 5) + hash ^ userId.charCodeAt(i);
+      hash |= 0; // Coerce to 32-bit
+    }
+
+    // Map to 1..2147483647
+    return (Math.abs(hash) % 0x7ffffffe) + 1;
   }
 
   // ─── Teacher / Admin ──────────────────────────────────────────────────────
@@ -418,6 +446,29 @@ export class LiveClassesService implements OnModuleInit {
 
     await lc.save();
 
+    // ── Notifications ───────────────────────────────────────────────────────
+    try {
+      const recipients = new Set([lc.teacher_id, ...(lc.registered_students || [])]);
+      const notifyPromises = Array.from(recipients).map(async (userId) => {
+        const isTeacher = userId === lc.teacher_id;
+        await this.notificationsService.createNotification({
+          user_id: userId,
+          type: NotificationType.LIVE_CLASS_STARTED,
+          title: 'Live class started',
+          body: isTeacher
+            ? `Your live class "${lc.title}" is now live.`
+            : `Class started: "${lc.title}". Join now.`,
+          data: {
+            liveClassId: lc._id.toString(),
+            courseId: lc.course_id.toString(),
+          },
+        });
+      });
+      await Promise.allSettled(notifyPromises);
+    } catch (err) {
+      this.logger.error(`Failed to send start notifications for class ${id}: ${err.message}`);
+    }
+
     this.logger.log(`Live class "${id}" started by "${requesterId}".`);
     return lc;
   }
@@ -504,6 +555,29 @@ export class LiveClassesService implements OnModuleInit {
     }
 
     await lc.save();
+
+    // ── Notifications ───────────────────────────────────────────────────────
+    try {
+      const recipients = new Set([lc.teacher_id, ...(lc.registered_students || [])]);
+      const notifyPromises = Array.from(recipients).map(async (userId) => {
+        const isTeacher = userId === lc.teacher_id;
+        await this.notificationsService.createNotification({
+          user_id: userId,
+          type: NotificationType.LIVE_CLASS_ENDED,
+          title: 'Live class ended',
+          body: isTeacher
+            ? `Your live class "${lc.title}" has ended.`
+            : `Class ended: "${lc.title}".`,
+          data: {
+            liveClassId: lc._id.toString(),
+            courseId: lc.course_id.toString(),
+          },
+        });
+      });
+      await Promise.allSettled(notifyPromises);
+    } catch (err) {
+      this.logger.error(`Failed to send end notifications for class ${id}: ${err.message}`);
+    }
 
     this.logger.log(`Live class "${id}" ended by "${requesterId}".`);
     return lc;
@@ -735,6 +809,7 @@ export class LiveClassesService implements OnModuleInit {
       token_expiry_seconds: ttlSeconds,
       agora_app_id: this.appConfig.agoraAppId,
       role,
+      agora_uid: this.deriveAgoraUid(userId),
       title: lc.title,
       scheduled_start: lc.scheduled_start,
       status: lc.status,
@@ -1060,13 +1135,24 @@ export class LiveClassesService implements OnModuleInit {
    * For students, this helps populate "All Upcoming Sessions" views.
    */
   async findAllForUser(userId: string, role: string) {
-    // Basic implementation: return upcoming non-cancelled classes
-    // Future: Filter by enrollments if role === STUDENT
+    const baseFilter: any = {
+      status: { $in: [LiveClassStatus.SCHEDULED, LiveClassStatus.LIVE] },
+      scheduled_end: { $gte: new Date() },
+    };
+
+    if (role === UserRole.STUDENT) {
+      const courseIds =
+        await this.enrollmentsService.listActiveCourseIdsForStudent(userId);
+      if (courseIds.length === 0) {
+        return { success: true, data: [] };
+      }
+      baseFilter.course_id = {
+        $in: courseIds.map((id) => new Types.ObjectId(id)),
+      };
+    }
+
     const data = await this.liveClassModel
-      .find({
-        status: { $in: [LiveClassStatus.SCHEDULED, LiveClassStatus.LIVE] },
-        scheduled_end: { $gte: new Date() },
-      })
+      .find(baseFilter)
       .sort({ scheduled_start: 1 })
       .select('-agora.recording_uid -registered_students -attended_students')
       .exec();
