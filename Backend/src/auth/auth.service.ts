@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   ForbiddenException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -68,8 +69,6 @@ export class AuthService {
 
   async register(dto: RegisterDto) {
     // Restrict self-registration to student/teacher only.
-    // The DTO is already typed as UserRole.STUDENT | UserRole.TEACHER but we
-    // guard at runtime as well for defence-in-depth.
     const role: UserRole = (dto.role as UserRole) ?? UserRole.STUDENT;
     if (([UserRole.ADMIN, UserRole.MODERATOR] as UserRole[]).includes(role)) {
       throw new ForbiddenException(
@@ -77,39 +76,80 @@ export class AuthService {
       );
     }
 
-    const user = await this.usersService.create(
-      dto.email,
-      dto.password,
-      role,
-      dto.name,
-    );
+    try {
+      const user = await this.usersService.create(
+        dto.email,
+        dto.password,
+        role,
+        dto.name,
+      );
 
-    // Generate Verification OTP
+      // Generate Verification OTP
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let otp = '';
+      for (let i = 0; i < 5; i++) {
+        otp += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+
+      await this.usersService.setVerificationOtp(user.email, otp, expiresAt);
+
+      // Send Verification Email
+      const displayName = user.name || user.email.split('@')[0];
+      this.contactService
+        .sendVerificationEmail(user.email, displayName, otp)
+        .catch((err) => {
+          console.error('Failed to send verification email:', err);
+        });
+
+      return {
+        success: true,
+        message: 'Registration successful. Please verify your email.',
+        data: {
+          user: { email: user.email, name: user.name, status: user.status },
+          isVerified: false,
+        },
+      };
+    } catch (err) {
+      // PROMPT 2: Prevent user existence leak.
+      // If the email is already registered, we return the same success message.
+      if (err instanceof ConflictException) {
+        // Safe behavior: if existing user is 'pending', resend OTP
+        const existingUser = await this.usersService.findByEmail(dto.email);
+        if (existingUser && existingUser.status === 'pending') {
+          // Internal call to resend logic without revealing user presence
+          await this.internalResendOtp(existingUser);
+        }
+
+        return {
+          success: true,
+          message: 'Registration successful. Please verify your email.',
+          data: {
+            user: { email: dto.email, name: dto.name, status: 'pending' },
+            isVerified: false,
+          },
+        };
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Internal helper to resend OTP without revealing user state to public API
+   */
+  private async internalResendOtp(user: User) {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let otp = '';
     for (let i = 0; i < 5; i++) {
       otp += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
     await this.usersService.setVerificationOtp(user.email, otp, expiresAt);
-
-    // Send Verification Email
     const displayName = user.name || user.email.split('@')[0];
-    this.contactService
+    await this.contactService
       .sendVerificationEmail(user.email, displayName, otp)
-      .catch((err) => {
-        console.error('Failed to send verification email:', err);
-      });
-
-    return {
-      success: true,
-      message: 'Registration successful. Please verify your email.',
-      data: {
-        user: { email: user.email, name: user.name, status: user.status },
-        isVerified: false,
-      },
-    };
+      .catch(() => {});
   }
 
   // -----------------------------------------------------------------------
@@ -326,31 +366,20 @@ export class AuthService {
 
   async resendVerificationOtp(email: string) {
     const user = await this.usersService.findByEmail(email);
-    if (!user || user.status !== 'pending') {
-      throw new BadRequestException(
-        'Verification not required for this account',
-      );
-    }
 
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let otp = '';
-    for (let i = 0; i < 5; i++) {
-      otp += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-
-    await this.usersService.setVerificationOtp(user.email, otp, expiresAt);
-    const displayName = user.name || user.email.split('@')[0];
-    await this.contactService.sendVerificationEmail(
-      user.email,
-      displayName,
-      otp,
-    );
-
-    return {
+    // Prompt 2: Always return success to prevent email enumeration/state leakage.
+    const successResponse = {
       success: true,
       message: 'New verification code sent!',
     };
+
+    if (!user || user.status !== 'pending') {
+      return successResponse;
+    }
+
+    await this.internalResendOtp(user);
+
+    return successResponse;
   }
 
   async verifyEmail(_token: string) {

@@ -110,6 +110,37 @@ export class EnrollmentsService {
     return { success: true, data: enrollment };
   }
 
+  /**
+   * Idempotent enrollment: Returns consistent success even if already enrolled.
+   */
+  async enrollIdempotent(course_id: string, student_id: string, metadata?: any) {
+    try {
+      return await this.enroll(course_id, student_id, metadata);
+    } catch (err) {
+      if (err instanceof ConflictException) {
+        const isTuition = metadata?.product_type === 'tuition';
+        const filter: any = {
+          course_id: new Types.ObjectId(course_id),
+          student_id: student_id,
+          product_type: isTuition ? 'tuition' : 'course',
+        };
+        if (isTuition) {
+          filter.access_scope = metadata.access_scope;
+          if (metadata.access_scope === 'subject' && metadata.subjectId) {
+            filter.tuition_subject_id = new Types.ObjectId(metadata.subjectId);
+          }
+        }
+        const existing = await this.enrollmentModel.findOne(filter);
+        return {
+          success: true,
+          data: existing,
+          meta: { alreadyEnrolled: true },
+        };
+      }
+      throw err;
+    }
+  }
+
   async getProgress(courseId: string, studentId: string) {
     if (!Types.ObjectId.isValid(courseId))
       throw new NotFoundException('Invalid Course ID');

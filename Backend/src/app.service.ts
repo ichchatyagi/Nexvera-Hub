@@ -4,6 +4,7 @@ import { InjectConnection as InjectMongoose } from '@nestjs/mongoose';
 import { Connection as TypeORMConnection } from 'typeorm';
 import { Connection as MongooseConnection } from 'mongoose';
 import { AppConfigService } from './app-config/app-config.service';
+import { RedisHealthIndicator } from './redis/redis.health';
 import * as process from 'process';
 
 @Injectable()
@@ -12,6 +13,7 @@ export class AppService {
     private appConfigService: AppConfigService,
     @InjectTypeORM() private postgresConnection: TypeORMConnection,
     @InjectMongoose() private mongoConnection: MongooseConnection,
+    private redisHealth: RedisHealthIndicator,
   ) {}
 
   getHealth(): any {
@@ -24,9 +26,10 @@ export class AppService {
   }
 
   async checkReadiness(): Promise<any> {
-    const status = {
+    const status: any = {
       postgres: 'down',
       mongodb: 'down',
+      redis: 'down',
     };
 
     try {
@@ -48,13 +51,19 @@ export class AppService {
       status.mongodb = 'down';
     }
 
-    const allUp = status.postgres === 'up' && status.mongodb === 'up';
+    const redisStatus = await this.redisHealth.isHealthy();
+    status.redis = redisStatus.status;
+
+    const allUp =
+      status.postgres === 'up' &&
+      status.mongodb === 'up' &&
+      (redisStatus.status === 'up' || !redisStatus.required);
 
     if (!allUp) {
       throw new ServiceUnavailableException({
         success: false,
         data: status,
-        error: 'One or more databases are unreachable or failing pings',
+        error: 'One or more required services are unreachable or failing pings',
       });
     }
 

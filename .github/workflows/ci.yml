@@ -1,0 +1,56 @@
+name: Nexvera CI
+
+on:
+  push:
+    branches: [ main, master, feat/ATLIVE-11 ]
+  pull_request:
+    branches: [ main, master, feat/ATLIVE-11 ]
+
+jobs:
+  backend:
+    name: Backend CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: Backend/package-lock.json
+          
+      - name: Install dependencies
+        run: npm ci
+        working-directory: Backend
+        
+      - name: Run tests
+        # Using --no-watchman as per environment requirements
+        run: npm test -- --no-watchman
+        working-directory: Backend
+        
+      - name: Build
+        run: npm run build
+        working-directory: Backend
+
+  frontend:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: next-frontend/package-lock.json
+          
+      - name: Install dependencies
+        run: npm ci
+        working-directory: next-frontend
+        
+      - name: Build
+        # NEXT_DISABLE_TURBOPACK=1 to avoid issues in CI environments
+        run: NEXT_DISABLE_TURBOPACK=1 npm run build
+        working-directory: next-frontend

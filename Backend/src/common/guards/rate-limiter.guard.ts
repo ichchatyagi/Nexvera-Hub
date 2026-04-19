@@ -5,73 +5,90 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { Reflector } from '@nestjs/core';
+import { Request, Response } from 'express';
 import { AppConfigService } from '../../app-config/app-config.service';
-
-interface RateLimitRecord {
-  count: number;
-  expiresAt: number;
-}
+import { RedisService } from '../../redis/redis.service';
+import {
+  RATE_LIMIT_KEY,
+  RateLimitOptions,
+} from '../decorators/rate-limit.decorator';
 
 @Injectable()
 export class RateLimiterGuard implements CanActivate {
-  private static storage = new Map<string, RateLimitRecord>();
-
-  constructor(private readonly appConfigService: AppConfigService) {}
+  constructor(
+    private readonly appConfigService: AppConfigService,
+    private readonly redisService: RedisService,
+    private readonly reflector: Reflector,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request: Request = context.switchToHttp().getRequest();
-    
-    // Parse IP: if x-forwarded-for exists, take the first one; else fallback to request.ip
+    const http = context.switchToHttp();
+    const request: Request = http.getRequest();
+    const response: Response = http.getResponse();
+
+    // 1. Get Rate Limit configuration from decorator
+    const options = this.reflector.get<RateLimitOptions>(
+      RATE_LIMIT_KEY,
+      context.getHandler(),
+    );
+
+    const limit = options?.limit || this.appConfigService.authRateLimitMax;
+    const windowSeconds =
+      options?.windowSeconds || this.appConfigService.authRateLimitWindowSeconds;
+    const routeId = options?.id || 'default';
+
+    // 2. Identify keys (IP and normalized email)
     let ip = request.ip || 'unknown';
     const forwarded = request.headers['x-forwarded-for'];
     if (forwarded) {
       const forwardedStr = Array.isArray(forwarded) ? forwarded[0] : forwarded;
       ip = forwardedStr.split(',')[0].trim() || ip;
     }
-    
-    const email = request.body?.email || '';
-    const now = Date.now();
 
-    // Use configurable values
-    const limit = this.appConfigService.authRateLimitMax;
-    const ttlMs = this.appConfigService.authRateLimitWindowSeconds * 1000;
+    const email = (request.body?.email || '').toLowerCase().trim();
 
-    // 1. Check IP-based limit
-    this.checkLimit(`ip:${ip}`, now, limit, ttlMs);
-
-    // 2. Check email-based limit if present
+    // Key format: rl:<routeId>:<type>:<value>
+    const keys = [`rl:${routeId}:ip:${ip}`];
     if (email) {
-      this.checkLimit(`email:${email}`, now, limit, ttlMs);
+      keys.push(`rl:${routeId}:email:${email}`);
+    }
+
+    // 3. Increment and check all applicable keys in Redis
+    for (const key of keys) {
+      const [count, ttl] = await this.redisService.rateLimit(
+        key,
+        windowSeconds,
+      );
+
+      if (count > limit) {
+        // Set standard rate limit headers on the blocked response
+        this.setRateLimitHeaders(response, limit, 0, ttl);
+
+        throw new HttpException(
+          {
+            success: false,
+            error: { code: 'RATE_LIMITED' },
+            message: 'Too many requests',
+          },
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
     }
 
     return true;
   }
 
-  private checkLimit(key: string, now: number, limit: number, ttlMs: number) {
-    let record = RateLimiterGuard.storage.get(key);
-
-    if (!record || now > record.expiresAt) {
-      record = {
-        count: 1,
-        expiresAt: now + ttlMs,
-      };
-      RateLimiterGuard.storage.set(key, record);
-      return;
-    }
-
-    record.count++;
-
-    if (record.count > limit) {
-      const retryAfter = Math.ceil((record.expiresAt - now) / 1000);
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.TOO_MANY_REQUESTS,
-          message: 'Too many requests, please try again later.',
-          retryAfter,
-        },
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-    }
+  private setRateLimitHeaders(
+    response: Response,
+    limit: number,
+    remaining: number,
+    ttl: number,
+  ) {
+    const resetTime = Math.ceil(Date.now() / 1000 + ttl);
+    response.setHeader('Retry-After', ttl.toString());
+    response.setHeader('X-RateLimit-Limit', limit.toString());
+    response.setHeader('X-RateLimit-Remaining', remaining.toString());
+    response.setHeader('X-RateLimit-Reset', resetTime.toString());
   }
 }

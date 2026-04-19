@@ -12,6 +12,7 @@ describe('NotificationsController', () => {
     listForUser: jest.fn(),
     markRead: jest.fn(),
     markAllRead: jest.fn(),
+    getUnreadCount: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -78,5 +79,16 @@ describe('NotificationsController', () => {
     const req = { user: { id: 'u1' } };
     await controller.markAllRead(req);
     expect(service.markAllRead).toHaveBeenCalledWith('u1');
+  });
+
+  it('GET /unread-count should return unread count', async () => {
+    const req = { user: { id: 'u1' } };
+    mockService.getUnreadCount.mockResolvedValue({
+      success: true,
+      data: { unread_count: 5 },
+    });
+    const result = await controller.getUnreadCount(req);
+    expect(result.data.unread_count).toBe(5);
+    expect(service.getUnreadCount).toHaveBeenCalledWith('u1');
   });
 });

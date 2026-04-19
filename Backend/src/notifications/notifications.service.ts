@@ -117,4 +117,12 @@ export class NotificationsService {
       data: { updated: result.modifiedCount },
     };
   }
+
+  async getUnreadCount(userId: string) {
+    const unreadCount = await this.notificationModel.countDocuments({
+      user_id: userId,
+      read_at: null,
+    });
+    return { success: true, data: { unread_count: unreadCount } };
+  }
 }

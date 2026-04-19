@@ -11,6 +11,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import * as crypto from 'crypto';
 import Razorpay from 'razorpay';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { AppConfigService } from '../../app-config/app-config.service';
 import { Transaction, TransactionStatus } from '../entities/transaction.entity';
 import { Course, CourseDocument } from '../../courses/schemas/course.schema';
@@ -31,6 +33,8 @@ export class PaymentsService implements OnModuleInit {
     private readonly courseModel: Model<CourseDocument>,
     private readonly enrollmentsService: EnrollmentsService,
     private readonly notificationsService: NotificationsService,
+    @InjectQueue('enrollment-reconcile')
+    private readonly enrollmentQueue: Queue,
   ) {}
 
   onModuleInit() {
@@ -225,13 +229,30 @@ export class PaymentsService implements OnModuleInit {
     }
 
     if (transaction.status === TransactionStatus.COMPLETED) {
-      return {
-        success: true,
-        data: { enrolled: true, alreadyCompleted: true },
-      };
+      // Prompt 3 Recovery: If transaction is already completed, ensure enrollment exists
+      try {
+        await this.enrollmentsService.enrollIdempotent(
+          courseId,
+          userId,
+          transaction.metadata,
+        );
+        return {
+          success: true,
+          data: { enrolled: true, alreadyCompleted: true },
+        };
+      } catch (err) {
+        return {
+          success: true,
+          data: {
+            enrolled: false,
+            enrollment_status: 'pending',
+            alreadyCompleted: true,
+          },
+        };
+      }
     }
 
-    // Update transaction - preserve all metadata, add confirmation details
+    // Mark as completed initially to secure the payment state
     transaction.status = TransactionStatus.COMPLETED;
     transaction.razorpayPaymentId = razorpay_payment_id;
     transaction.razorpaySignature = razorpay_signature;
@@ -242,16 +263,65 @@ export class PaymentsService implements OnModuleInit {
       verifiedAt: new Date().toISOString(),
     };
 
-    await this.transactionRepository.save(transaction);
+    try {
+      // Attempt idempotent enrollment
+      const enrollmentResult = await this.enrollmentsService.enrollIdempotent(
+        courseId,
+        userId,
+        transaction.metadata,
+      );
 
-    // Create enrollment
-    await this.enrollmentsService.enroll(
-      courseId,
-      userId,
-      transaction.metadata,
-    );
+      transaction.metadata.enrollment_status = 'success';
+      await this.transactionRepository.save(transaction);
 
-    // Send notification
+      // Only notify if enrollment was confirmed now
+      await this.sendPaymentNotification(userId, courseId, transaction);
+
+      return {
+        success: true,
+        data: { enrolled: true },
+      };
+    } catch (err) {
+      // Fatal enrollment error: complete the transaction but mark enrollment as pending
+      transaction.metadata.enrollment_status = 'pending';
+      transaction.metadata.enrollment_error = err.message;
+      await this.transactionRepository.save(transaction);
+
+      // PROMPT 4: Enqueue reconciliation job
+      try {
+        await this.enrollmentQueue.add(
+          'reconcile-enrollment',
+          { transactionId: transaction.id },
+          {
+            jobId: `enrollment-reconcile:${transaction.id}`,
+            attempts: 10,
+            backoff: {
+              type: 'exponential',
+              delay: 30000,
+            },
+          },
+        );
+      } catch (queueErr) {
+        // We logged the error in metadata; if queue fails, we'll re-run manually or on next verify
+        console.error('Failed to enqueue enrollment reconciliation:', queueErr);
+      }
+
+      return {
+        success: true,
+        data: {
+          enrolled: false,
+          enrollment_status: 'pending',
+          transaction_status: 'completed',
+        },
+      };
+    }
+  }
+
+  private async sendPaymentNotification(
+    userId: string,
+    courseId: string,
+    transaction: Transaction,
+  ) {
     try {
       const metadata = transaction.metadata || {};
       await this.notificationsService.createNotification({
@@ -263,8 +333,8 @@ export class PaymentsService implements OnModuleInit {
           : `Your payment was confirmed.`,
         data: {
           courseId,
-          razorpay_order_id,
-          razorpay_payment_id,
+          razorpay_order_id: transaction.razorpayOrderId,
+          razorpay_payment_id: transaction.razorpayPaymentId,
           gateway: 'razorpay',
           product_type: metadata.product_type,
           access_scope: metadata.access_scope,
@@ -274,12 +344,5 @@ export class PaymentsService implements OnModuleInit {
     } catch (err) {
       console.error('Failed to send payment confirmation notification:', err);
     }
-
-    return {
-      success: true,
-      data: {
-        enrolled: true,
-      },
-    };
   }
 }

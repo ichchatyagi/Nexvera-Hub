@@ -26,6 +26,7 @@ import { VideoProcessingQueueService } from '../video-processing-queue/video-pro
 import { EnrollmentsService } from '../enrollments/enrollments.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/schemas/notification.schema';
+import { signCloudFrontUrl } from './cloudfront-signer';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -562,17 +563,26 @@ export class VideosService {
       success: true,
       data: {
         video_id: video._id,
-        manifest_url: video.processed.manifest_url,
+        manifest_url: signCloudFrontUrl(
+          video.processed.manifest_url,
+          this.appConfig,
+        ),
         qualities: video.processed.qualities.map((q) => ({
           resolution: q.resolution,
           bitrate: q.bitrate,
-          url: q.url,
+          url: signCloudFrontUrl(q.url, this.appConfig),
         })),
-        thumbnail_url: video.processed.thumbnail_url,
-        thumbnails_vtt: video.processed.thumbnails_vtt,
+        thumbnail_url: signCloudFrontUrl(
+          video.processed.thumbnail_url,
+          this.appConfig,
+        ),
+        thumbnails_vtt: signCloudFrontUrl(
+          video.processed.thumbnails_vtt,
+          this.appConfig,
+        ),
         captions: video.captions.map((c) => ({
           language: c.language,
-          url: c.url,
+          url: signCloudFrontUrl(c.url, this.appConfig),
           auto_generated: c.auto_generated,
         })),
         duration_seconds: video.original.duration_seconds,

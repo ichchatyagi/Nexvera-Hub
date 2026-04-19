@@ -1,77 +1,128 @@
 import { ExecutionContext, HttpException, HttpStatus } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { RateLimiterGuard } from './rate-limiter.guard';
 import { AppConfigService } from '../../app-config/app-config.service';
+import { RedisService } from '../../redis/redis.service';
 
 describe('RateLimiterGuard', () => {
   let guard: RateLimiterGuard;
   let mockAppConfig: Partial<AppConfigService>;
+  let mockRedis: Partial<RedisService>;
+  let mockReflector: Partial<Reflector>;
 
   beforeEach(() => {
     mockAppConfig = {
       authRateLimitMax: 3,
       authRateLimitWindowSeconds: 60,
     };
-    guard = new RateLimiterGuard(mockAppConfig as AppConfigService);
-    // Clear static storage between tests
-    (RateLimiterGuard as any).storage.clear();
+    mockRedis = {
+      rateLimit: jest.fn().mockResolvedValue([1, 60]),
+    };
+    mockReflector = {
+      get: jest.fn().mockReturnValue(undefined), // default no decorator
+    };
+    guard = new RateLimiterGuard(
+      mockAppConfig as AppConfigService,
+      mockRedis as RedisService,
+      mockReflector as Reflector,
+    );
   });
 
-  const createMockContext = (ip: string, email?: string, forwardedFor?: string): Partial<ExecutionContext> => ({
-    switchToHttp: () => ({
-      getRequest: () => ({
-        ip,
-        body: { email },
-        headers: forwardedFor ? { 'x-forwarded-for': forwardedFor } : {},
-      }),
-    }),
-  });
+  const createMockContext = (
+    ip: string,
+    email?: string,
+    forwardedFor?: string,
+  ): Partial<ExecutionContext> => {
+    const headers = forwardedFor ? { 'x-forwarded-for': forwardedFor } : {};
+    const mockResponse = {
+      setHeader: jest.fn(),
+    };
+
+    return {
+      getHandler: () => ({}),
+      switchToHttp: () =>
+        ({
+          getRequest: () => ({
+            ip,
+            body: { email },
+            headers,
+          }),
+          getResponse: () => mockResponse,
+        }) as any,
+    };
+  };
 
   it('allows requests within limit', async () => {
     const context = createMockContext('1.1.1.1');
-    for (let i = 0; i < 3; i++) {
-      expect(await guard.canActivate(context as ExecutionContext)).toBe(true);
-    }
+    mockRedis.rateLimit = jest.fn().mockResolvedValue([1, 60]);
+
+    expect(await guard.canActivate(context as ExecutionContext)).toBe(true);
+    expect(mockRedis.rateLimit).toHaveBeenCalledWith(
+      expect.stringContaining('1.1.1.1'),
+      60,
+    );
   });
 
-  it('throws HttpException when limit exceeded for IP', async () => {
+  it('throws 429 and sets headers when limit exceeded', async () => {
     const context = createMockContext('1.1.1.1');
-    for (let i = 0; i < 3; i++) {
-        await guard.canActivate(context as ExecutionContext);
-    }
-    
-    await expect(guard.canActivate(context as ExecutionContext)).rejects.toThrow(
-        expect.objectContaining({ status: HttpStatus.TOO_MANY_REQUESTS })
+    const mockResponse = context.switchToHttp().getResponse();
+
+    // Redis returns count 4 (which is > limit 3)
+    mockRedis.rateLimit = jest.fn().mockResolvedValue([4, 45]);
+
+    await expect(
+      guard.canActivate(context as ExecutionContext),
+    ).rejects.toThrow(
+      new HttpException(
+        {
+          success: false,
+          error: { code: 'RATE_LIMITED' },
+          message: 'Too many requests',
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      ),
+    );
+
+    expect(mockResponse.setHeader).toHaveBeenCalledWith('Retry-After', '45');
+    expect(mockResponse.setHeader).toHaveBeenCalledWith(
+      'X-RateLimit-Limit',
+      '3',
+    );
+    expect(mockResponse.setHeader).toHaveBeenCalledWith(
+      'X-RateLimit-Remaining',
+      '0',
     );
   });
 
-  it('parses the first IP from x-forwarded-for', async () => {
-    // 3 requests from "proxy-ip" but with different forwarded first IP
-    // Wait, if it takes the first IP from forwarded list, it should group by that.
-    const context1 = createMockContext('10.0.0.1', undefined, '1.1.1.1, 10.0.0.2');
-    const context2 = createMockContext('10.0.0.1', undefined, ' 1.1.1.1 ');
+  it('honors @RateLimit decorator if present', async () => {
+    const context = createMockContext('1.1.1.1');
+    mockReflector.get = jest
+      .fn()
+      .mockReturnValue({ id: 'test', limit: 1, windowSeconds: 10 });
 
-    await guard.canActivate(context1 as ExecutionContext);
-    await guard.canActivate(context2 as ExecutionContext);
-    await guard.canActivate(context1 as ExecutionContext);
-    
-    // 4th hit should fail
-    await expect(guard.canActivate(context1 as ExecutionContext)).rejects.toThrow(
-        expect.objectContaining({ status: HttpStatus.TOO_MANY_REQUESTS })
-    );
+    // First hit allowed
+    mockRedis.rateLimit = jest.fn().mockResolvedValue([1, 10]);
+    await guard.canActivate(context as ExecutionContext);
+    expect(mockRedis.rateLimit).toHaveBeenCalledWith('rl:test:ip:1.1.1.1', 10);
+
+    // Second hit fails
+    mockRedis.rateLimit = jest.fn().mockResolvedValue([2, 9]);
+    await expect(
+      guard.canActivate(context as ExecutionContext),
+    ).rejects.toThrow(HttpException);
   });
 
-  it('throws HttpException when limit exceeded for email', async () => {
-    const context1 = createMockContext('1.1.1.1', 'test@example.com');
-    const context2 = createMockContext('2.2.2.2', 'test@example.com');
+  it('normalizes email and checks email-based limit', async () => {
+    const context = createMockContext('1.1.1.1', '  Test@Example.Com  ');
+    mockRedis.rateLimit = jest.fn().mockResolvedValue([1, 60]);
 
-    // Limit is 3
-    await guard.canActivate(context1 as ExecutionContext);
-    await guard.canActivate(context2 as ExecutionContext);
-    await guard.canActivate(context1 as ExecutionContext);
+    await guard.canActivate(context as ExecutionContext);
 
-    // 4th hit for the same email should fail even from a different IP
-    await expect(guard.canActivate(context2 as ExecutionContext)).rejects.toThrow(
-        expect.objectContaining({ status: HttpStatus.TOO_MANY_REQUESTS })
+    // Should call Redis twice: once for IP, once for normalized email
+    expect(mockRedis.rateLimit).toHaveBeenCalledTimes(2);
+    expect(mockRedis.rateLimit).toHaveBeenCalledWith(
+      expect.stringContaining('email:test@example.com'),
+      60,
     );
   });
 });

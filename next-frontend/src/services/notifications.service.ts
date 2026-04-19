@@ -36,7 +36,8 @@ export const notificationsService = {
   },
 
   async getUnreadCount(): Promise<number> {
-    const { meta } = await this.listMy({ unread: true, limit: 1, page: 1 });
-    return meta?.pagination?.total_items || 0;
+    const resp = await api.get('/notifications/unread-count');
+    // api interceptor unwraps originalData.data into resp.data
+    return resp.data?.unread_count || 0;
   }
 };

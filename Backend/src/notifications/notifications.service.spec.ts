@@ -161,4 +161,19 @@ describe('NotificationsService', () => {
       );
     });
   });
+
+  describe('getUnreadCount', () => {
+    it('should return the count of unread notifications', async () => {
+      mockNotificationModel.countDocuments.mockResolvedValue(3);
+
+      const result = await service.getUnreadCount('u1');
+
+      expect(result.success).toBe(true);
+      expect(result.data.unread_count).toBe(3);
+      expect(mockNotificationModel.countDocuments).toHaveBeenCalledWith({
+        user_id: 'u1',
+        read_at: null,
+      });
+    });
+  });
 });

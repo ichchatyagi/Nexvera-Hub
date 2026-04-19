@@ -61,6 +61,22 @@ export class AppConfigService {
     return this.configService.get<number>('REDIS_PORT') || 6379;
   }
 
+  get redisPassword(): string {
+    return this.configService.get<string>('REDIS_PASSWORD') || '';
+  }
+
+  get redisDb(): number {
+    return this.configService.get<number>('REDIS_DB') || 0;
+  }
+
+  get redisTls(): boolean {
+    return this.configService.get<boolean>('REDIS_TLS') || false;
+  }
+
+  get redisRequired(): boolean {
+    return this.configService.get<boolean>('REDIS_REQUIRED') || false;
+  }
+
   // Stripe Config
   get stripeSecretKey(): string {
     return this.configService.get<string>('STRIPE_SECRET_KEY') || '';
@@ -240,6 +256,30 @@ export class AppConfigService {
   }
 
   get authRateLimitWindowSeconds(): number {
-    return this.configService.get<number>('AUTH_RATE_LIMIT_WINDOW_SECONDS') || 60;
+    return (
+      this.configService.get<number>('AUTH_RATE_LIMIT_WINDOW_SECONDS') || 60
+    );
+  }
+
+  get cloudfrontKeyPairId(): string {
+    return this.configService.get<string>('CLOUDFRONT_KEY_PAIR_ID') || '';
+  }
+
+  get cloudfrontPrivateKeyBase64(): string {
+    return (
+      this.configService.get<string>('CLOUDFRONT_PRIVATE_KEY_BASE64') || ''
+    );
+  }
+
+  get cloudfrontSignedUrlTtlSeconds(): number {
+    return (
+      this.configService.get<number>('CLOUDFRONT_SIGNED_URL_TTL_SECONDS') || 600
+    );
+  }
+
+  get cloudfrontSignedUrlsEnabled(): boolean {
+    return (
+      this.configService.get<boolean>('CLOUDFRONT_SIGNED_URLS_ENABLED') || false
+    );
   }
 }

@@ -12,6 +12,7 @@ import {
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { mapUserToResponse } from './dto/user-response.dto';
+import { AnalyticsService } from '../analytics/analytics.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -21,7 +22,10 @@ import { User, UserRole } from './entities/user.entity';
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly analyticsService: AnalyticsService,
+  ) {}
 
   @Get('me')
   async getMe(@CurrentUser() user: User) {
@@ -50,9 +54,13 @@ export class UsersController {
   @Roles(UserRole.ADMIN)
   @Get('admin/dashboard')
   async adminDashboard() {
+    const stats = await this.analyticsService.getOverview();
     return {
       success: true,
-      data: { message: 'Admin dashboard – coming soon' },
+      data: {
+        overview: stats.data,
+        generated_at_utc: new Date().toISOString(),
+      },
     };
   }
 

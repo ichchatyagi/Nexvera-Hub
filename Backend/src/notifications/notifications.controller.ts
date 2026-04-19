@@ -15,6 +15,11 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
+  @Get('unread-count')
+  async getUnreadCount(@Req() req: any) {
+    return this.notificationsService.getUnreadCount(req.user.id);
+  }
+
   @Get()
   async list(
     @Req() req: any,

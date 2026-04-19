@@ -103,6 +103,45 @@ describe('AuthService', () => {
         }),
       ).rejects.toThrow('Cannot self-register with admin or moderator role');
     });
+    it('returns success even if email already exists (no leak)', async () => {
+      mockUsersService.create.mockRejectedValue(
+        new ConflictException('Email already registered'),
+      );
+      mockUsersService.findByEmail.mockResolvedValue({
+        ...mockUser,
+        status: 'active',
+      });
+
+      const result = await service.register({
+        email: 'test@example.com',
+        password: 'password123',
+        role: UserRole.STUDENT,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.message).toBe(
+        'Registration successful. Please verify your email.',
+      );
+    });
+  });
+
+  describe('resendVerificationOtp', () => {
+    it('returns success even if user not found (no leak)', async () => {
+      mockUsersService.findByEmail.mockResolvedValue(null);
+      const result = await service.resendVerificationOtp('nope@example.com');
+      expect(result.success).toBe(true);
+      expect(mockUsersService.setVerificationOtp).not.toHaveBeenCalled();
+    });
+
+    it('returns success even if account already active (no leak)', async () => {
+      mockUsersService.findByEmail.mockResolvedValue({
+        ...mockUser,
+        status: 'active',
+      });
+      const result = await service.resendVerificationOtp('active@example.com');
+      expect(result.success).toBe(true);
+      expect(mockUsersService.setVerificationOtp).not.toHaveBeenCalled();
+    });
   });
 
   describe('login', () => {

@@ -19,6 +19,15 @@ export const configValidationSchema = Joi.object({
   // Redis configuration
   REDIS_HOST: Joi.string().default('localhost'),
   REDIS_PORT: Joi.number().default(6379),
+  REDIS_PASSWORD: Joi.string().allow('').optional(),
+  REDIS_DB: Joi.number().default(0),
+  REDIS_TLS: Joi.boolean().default(false),
+  REDIS_REQUIRED: Joi.boolean()
+    .when('NODE_ENV', {
+      is: 'production',
+      then: Joi.boolean().default(true),
+      otherwise: Joi.boolean().default(false),
+    }),
 
   // Other credentials
   JWT_SECRET: Joi.string().required(),
@@ -72,4 +81,30 @@ export const configValidationSchema = Joi.object({
   AGORA_WHITEBOARD_REGION: Joi.string()
     .valid('cn-hz', 'us-sv', 'sg', 'in-mum', 'gb-lon')
     .default('cn-hz'),
+
+  // CloudFront signed URL configuration
+  CLOUDFRONT_SIGNED_URLS_ENABLED: Joi.boolean().when('NODE_ENV', {
+    is: 'production',
+    then: Joi.boolean().default(true),
+    otherwise: Joi.boolean().default(false),
+  }),
+  CLOUDFRONT_KEY_PAIR_ID: Joi.string().when('NODE_ENV', {
+    is: 'production',
+    then: Joi.when('CLOUDFRONT_SIGNED_URLS_ENABLED', {
+      is: true,
+      then: Joi.required(),
+      otherwise: Joi.optional(),
+    }),
+    otherwise: Joi.optional(),
+  }),
+  CLOUDFRONT_PRIVATE_KEY_BASE64: Joi.string().when('NODE_ENV', {
+    is: 'production',
+    then: Joi.when('CLOUDFRONT_SIGNED_URLS_ENABLED', {
+      is: true,
+      then: Joi.required(),
+      otherwise: Joi.optional(),
+    }),
+    otherwise: Joi.optional(),
+  }),
+  CLOUDFRONT_SIGNED_URL_TTL_SECONDS: Joi.number().default(600),
 });

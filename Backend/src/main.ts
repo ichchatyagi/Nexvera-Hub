@@ -40,6 +40,9 @@ async function bootstrap() {
   // App prefix
   app.setGlobalPrefix('api/v1');
 
+  // Enable shutdown hooks for graceful termination (e.g., Redis quit)
+  app.enableShutdownHooks();
+
   await app.listen(port);
   console.log(`Application is running on: http://localhost:${port}/api/v1`);
 }

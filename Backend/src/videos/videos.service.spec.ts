@@ -16,6 +16,14 @@ import { NotificationType } from '../notifications/schemas/notification.schema';
 jest.mock('@aws-sdk/s3-request-presigner');
 const mockedGetSignedUrl = getSignedUrl as jest.Mock;
 
+jest.mock('./cloudfront-signer', () => ({
+  signCloudFrontUrl: jest.fn().mockImplementation((url, config) => {
+    if (!url) return url;
+    if (config && config.cloudfrontSignedUrlsEnabled === false) return url;
+    return url.includes('?') ? `${url}&signed=true` : `${url}?signed=true`;
+  }),
+}));
+
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
 const TEACHER_ID = 'teacher-uuid-111';
@@ -92,6 +100,10 @@ const mockConfigService = {
   environment: 'test',
   awsAccessKey: '',
   awsSecretKey: '',
+  cloudfrontSignedUrlsEnabled: true,
+  cloudfrontKeyPairId: 'test-key',
+  cloudfrontPrivateKeyBase64: 'test-pk',
+  cloudfrontSignedUrlTtlSeconds: 600,
 };
 
 const mockQueueService = {
@@ -546,7 +558,9 @@ describe('VideosService', () => {
 
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
-      expect(result.data!.manifest_url).toBe('https://cdn.example.com/preview/master.m3u8');
+      expect(result.data!.manifest_url).toBe(
+        'https://cdn.example.com/preview/master.m3u8?signed=true',
+      );
       // Enrollment service must not be called for anonymous preview
       expect(mockEnrollmentsService.isActiveCourseEnrollment).not.toHaveBeenCalled();
       // Must not expose raw S3 keys
@@ -608,13 +622,48 @@ describe('VideosService', () => {
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
       expect(result.data!.manifest_url).toBe(
-        'https://test.cloudfront.net/videos/abc/master.m3u8',
+        'https://test.cloudfront.net/videos/abc/master.m3u8?signed=true',
       );
       expect(result.data!.qualities).toHaveLength(1);
       expect(result.data!.captions).toHaveLength(1);
 
       // Must NOT expose raw S3 keys (original.key)
       expect(JSON.stringify(result.data)).not.toContain('originals/');
+
+      // Verify URLs are signed
+      expect(result.data!.manifest_url).toContain('signed=true');
+      expect(result.data!.thumbnail_url).toContain('signed=true');
+      expect(result.data!.thumbnails_vtt).toContain('signed=true');
+      expect(result.data!.qualities[0].url).toContain('signed=true');
+      expect(result.data!.captions[0].url).toContain('signed=true');
+    });
+
+    it('returns raw URLs when signing is disabled', async () => {
+      const originalFlag = mockConfigService.cloudfrontSignedUrlsEnabled;
+      (mockConfigService as any).cloudfrontSignedUrlsEnabled = false;
+
+      const mockVideo = makeMockVideo({
+        processed: {
+          status: 'completed',
+          manifest_url: 'https://test.cloudfront.net/raw.m3u8',
+          qualities: [],
+        },
+      });
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+
+      try {
+        const result = await service.getPlaybackMetadata(
+          mockVideo._id.toString(),
+          { id: 'admin', role: UserRole.ADMIN },
+        );
+        expect(result.data!.manifest_url).toBe(
+          'https://test.cloudfront.net/raw.m3u8',
+        );
+      } finally {
+        (mockConfigService as any).cloudfrontSignedUrlsEnabled = originalFlag;
+      }
     });
 
     it('returns an error payload when video is not yet ready', async () => {

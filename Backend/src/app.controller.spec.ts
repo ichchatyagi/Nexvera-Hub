@@ -9,7 +9,7 @@ describe('AppController (Health & Readiness)', () => {
 
   const mockAppService = {
     getHealth: jest.fn().mockReturnValue({ status: 'ok' }),
-    checkReadiness: jest.fn().mockResolvedValue({ postgres: 'up', mongodb: 'up' }),
+    checkReadiness: jest.fn().mockResolvedValue({ postgres: 'up', mongodb: 'up', redis: 'up' }),
     getInfo: jest.fn().mockReturnValue({ version: '1.0.0' }),
   };
 
@@ -37,13 +37,14 @@ describe('AppController (Health & Readiness)', () => {
   });
 
   describe('GET /health/ready', () => {
-    it('returns 200 when both Postgres and Mongo pings succeed', async () => {
-      mockAppService.checkReadiness.mockResolvedValueOnce({ postgres: 'up', mongodb: 'up' });
+    it('returns 200 when all pings succeed', async () => {
+      mockAppService.checkReadiness.mockResolvedValueOnce({ postgres: 'up', mongodb: 'up', redis: 'up' });
       
       const result = await controller.getReadiness();
       expect(result.success).toBe(true);
       expect(result.data.postgres).toBe('up');
       expect(result.data.mongodb).toBe('up');
+      expect(result.data.redis).toBe('up');
     });
 
     it('throws 503 when Postgres ping fails', async () => {
