@@ -2,9 +2,9 @@ name: Nexvera CI
 
 on:
   push:
-    branches: [ main, master, feat/ATLIVE-11 ]
+    branches: [ main, master, feat/ATLIVE-11, feat/ATLIVE-12 ]
   pull_request:
-    branches: [ main, master, feat/ATLIVE-11 ]
+    branches: [ main, master, feat/ATLIVE-11, feat/ATLIVE-12 ]
 
 jobs:
   backend:
