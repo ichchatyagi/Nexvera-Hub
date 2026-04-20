@@ -214,7 +214,10 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
   };
 
   const enableLocalAudio = async () => {
-    if (!clientRef.current || !joined) return;
+    if (!clientRef.current || !joined) {
+      throw new Error('Not connected to classroom channel');
+    }
+    
     try {
       if (!localAudioRef.current) {
         // If student, switch to host role to allow publishing
@@ -227,12 +230,17 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
         const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
         localAudioRef.current = audioTrack;
         setLocalAudioTrack(audioTrack);
+        
         // Start muted
         await audioTrack.setEnabled(false);
         await clientRef.current.publish([audioTrack]);
       }
     } catch (err) {
       console.error('[Agora] Failed to enable local audio:', err);
+      // Ensure we clean up if partially initialized
+      localAudioRef.current = null;
+      setLocalAudioTrack(null);
+      throw err;
     }
   };
 
@@ -254,6 +262,7 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
       }
     } catch (err) {
       console.error('[Agora] Failed to disable local audio:', err);
+      throw err;
     }
   };
 

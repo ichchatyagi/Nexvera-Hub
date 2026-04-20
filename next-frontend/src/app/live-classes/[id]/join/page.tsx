@@ -61,6 +61,7 @@ const JoinLiveClass = () => {
   const [isVideoFullscreen, setIsVideoFullscreen] = useState(false);
   const videoContainerRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
+  const [socket, setSocket] = useState<any>(null);
   const socketRef = useRef<any>(null);
   const isClassOwnerRef = useRef(isClassOwner);
 
@@ -161,11 +162,25 @@ const JoinLiveClass = () => {
       // Lifecycle Socket
       const token = getCookie('access_token') || localStorage.getItem('access_token');
       const apiUrl = getSocketUrl('/ws/live-classes');
-      const socket = io(apiUrl, {
+      const newSocket = io(apiUrl, {
         query: { token, liveClassId: id },
         withCredentials: true,
       });
 
+      socketRef.current = newSocket;
+      setSocket(newSocket);
+
+      return () => {
+        newSocket.disconnect();
+        socketRef.current = null;
+        setSocket(null);
+      };
+    }
+  }, [id, isAuthenticated, tokenData]);
+
+  // Stable Listeners Registration
+  useEffect(() => {
+    if (socket) {
       socket.on('class:ended', () => {
         setClassStatus('ended');
         setPendingRequests([]);
@@ -237,8 +252,12 @@ const JoinLiveClass = () => {
 
       socket.on('audio:revoked', async (payload: { userId: string; rtc_token: string }) => {
         if (payload.userId === user?.id) {
-          await renewToken(payload.rtc_token);
-          await disableLocalAudio();
+          try {
+            await renewToken(payload.rtc_token);
+            await disableLocalAudio();
+          } catch (err) {
+            console.error('Audio revoke cleanup failed:', err);
+          }
           setSpeakStatus('idle');
           setIsMicOn(false);
           setShouldEnableStudentAudio(false);
@@ -246,14 +265,18 @@ const JoinLiveClass = () => {
         }
       });
 
-      socketRef.current = socket;
-
       return () => {
-        socket.disconnect();
-        socketRef.current = null;
+        socket.off('class:ended');
+        socket.off('error');
+        socket.off('class:started');
+        socket.off('audio:request');
+        socket.off('audio:request:ack');
+        socket.off('audio:speakers');
+        socket.off('audio:approved');
+        socket.off('audio:revoked');
       };
     }
-  }, [id, isAuthenticated, tokenData, renewToken, join, joined, enableLocalAudio, disableLocalAudio, user?.id, isClassOwner, isTuition]);
+  }, [socket, id, user?.id, isClassOwner, isTuition, renewToken, join, joined, enableLocalAudio, disableLocalAudio]);
 
   // Retry effect for student audio publish
   useEffect(() => {
@@ -330,8 +353,16 @@ const JoinLiveClass = () => {
   };
 
   const handleToggleMic = async () => {
-    const next = await toggleMic();
-    if (next !== undefined) setIsMicOn(next);
+    if (!localAudioTrack && speakStatus === 'approved') {
+      toast.error('Microphone is initializing, please wait...');
+      return;
+    }
+    try {
+      const next = await toggleMic();
+      if (next !== undefined) setIsMicOn(next);
+    } catch (err) {
+      toast.error('Failed to toggle microphone');
+    }
   };
 
   const handleToggleCam = async () => {
@@ -672,7 +703,7 @@ const JoinLiveClass = () => {
             )}
 
             {tokenData?.features?.chat_enabled && classStatus !== 'ended' ? (
-              <ChatPanel liveClassId={id as string} socket={socketRef.current} />
+              <ChatPanel liveClassId={id as string} socket={socket} />
             ) : (
               <div className="p-8 flex flex-col h-full">
                 <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em] mb-6">Channel Configuration</h3>
