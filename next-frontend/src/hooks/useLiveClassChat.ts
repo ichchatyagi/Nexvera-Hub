@@ -11,9 +11,9 @@ export interface ChatMessage {
   timestamp: string;
 }
 
-export const useLiveClassChat = (liveClassId: string) => {
+export const useLiveClassChat = (liveClassId: string, externalSocket?: Socket | null) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isConnected, setIsConnected] = useState(false);
+  const [isConnected, setIsConnected] = useState(externalSocket?.connected || false);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
@@ -23,8 +23,8 @@ export const useLiveClassChat = (liveClassId: string) => {
     const token = getCookie('access_token') || localStorage.getItem('access_token');
     const apiUrl = getSocketUrl('/ws/live-classes');
 
-    // Initialize socket
-    const socket = io(apiUrl, {
+    // Initialize socket or use external
+    const socket = externalSocket || io(apiUrl, {
       query: { token, liveClassId },
       withCredentials: true,
     });
@@ -75,10 +75,20 @@ export const useLiveClassChat = (liveClassId: string) => {
     });
 
     return () => {
-      socket.disconnect();
+      // Only disconnect if we created it
+      if (!externalSocket) {
+        socket.disconnect();
+      } else {
+        // Clean up listeners only
+        socket.off('connect');
+        socket.off('disconnect');
+        socket.off('chat:history');
+        socket.off('chat:message');
+        socket.off('error');
+      }
       socketRef.current = null;
     };
-  }, [liveClassId]);
+  }, [liveClassId, externalSocket]);
 
   const sendMessage = useCallback((content: string) => {
     if (socketRef.current && isConnected) {

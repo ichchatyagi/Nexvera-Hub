@@ -217,6 +217,12 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
     if (!clientRef.current || !joined) return;
     try {
       if (!localAudioRef.current) {
+        // If student, switch to host role to allow publishing
+        if (options?.role === 'audience') {
+          console.log('[Agora] Switching role to host for publishing');
+          await clientRef.current.setClientRole('host');
+        }
+
         const AgoraRTC = await getAgoraRTC();
         const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
         localAudioRef.current = audioTrack;
@@ -239,6 +245,12 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
         localAudioRef.current.close();
         localAudioRef.current = null;
         setLocalAudioTrack(null);
+
+        // Switch back to audience role if originally audience
+        if (options?.role === 'audience') {
+          console.log('[Agora] Switching role back to audience');
+          await clientRef.current.setClientRole('audience');
+        }
       }
     } catch (err) {
       console.error('[Agora] Failed to disable local audio:', err);

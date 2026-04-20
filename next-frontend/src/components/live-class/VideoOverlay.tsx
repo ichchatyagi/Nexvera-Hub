@@ -2,10 +2,14 @@
 
 import React, { useEffect, useRef } from "react";
 import { Rnd } from "react-rnd";
-import type { ILocalVideoTrack, IRemoteVideoTrack } from "agora-rtc-sdk-ng";
+import type { ILocalVideoTrack, IRemoteVideoTrack, IRemoteAudioTrack } from "agora-rtc-sdk-ng";
 import { User } from "lucide-react";
 
-type RemoteStream = { uid: string; videoTrack?: IRemoteVideoTrack | null };
+type RemoteStream = { 
+  uid: string; 
+  videoTrack?: IRemoteVideoTrack | null; 
+  audioTrack?: IRemoteAudioTrack | null;
+};
 
 export interface VideoOverlayProps {
   isTeacher: boolean;

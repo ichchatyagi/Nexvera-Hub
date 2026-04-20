@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -92,16 +92,16 @@ const JoinLiveClass = () => {
     }
   };
 
-  const agoraOptions =
-    tokenData && user
-      ? {
-        appId: tokenData.agora_app_id,
-        channelName: tokenData.channel_name,
-        token: tokenData.rtc_token,
-        uid: tokenData.agora_uid,
-        role: getAgoraRole(tokenData.role),
-      }
-      : null;
+  const agoraOptions = useMemo(() => {
+    if (!tokenData || !user) return null;
+    return {
+      appId: tokenData.agora_app_id,
+      channelName: tokenData.channel_name,
+      token: tokenData.rtc_token,
+      uid: tokenData.agora_uid,
+      role: getAgoraRole(tokenData.role),
+    };
+  }, [tokenData, user]);
 
   const {
     joined,
@@ -117,6 +117,33 @@ const JoinLiveClass = () => {
     localAudioTrack,
   } = useAgoraClassroom(agoraOptions);
 
+  const fetchToken = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await api.post(`/live-classes/${id}/join`);
+
+      // Fail fast if backend is out of sync with new Agora numeric UID protocol
+      if (response.data.agora_uid === undefined || response.data.agora_uid === null) {
+        throw new Error('Server assigned an invalid numeric UID (protocol mismatch)');
+      }
+
+      setTokenData(response.data);
+      setClassStatus(response.data.status);
+
+      // Check if current user is the owner/teacher using role (1 = PUBLISHER)
+      if (user && response.data.role === 1) {
+        setIsClassOwner(true);
+      }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Failed to obtain real-time token';
+      toast.error(msg);
+      console.error(error);
+      router.push('/live-classes');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [id, user, router]);
+
   const layout = useLiveClassLayout({
     liveClassId: id as string,
     enabled: joined && classStatus !== 'ended',
@@ -126,7 +153,11 @@ const JoinLiveClass = () => {
   useEffect(() => {
     if (isAuthenticated && id && id !== 'undefined') {
       fetchToken();
+    }
+  }, [id, isAuthenticated, fetchToken]);
 
+  useEffect(() => {
+    if (isAuthenticated && id && id !== 'undefined' && tokenData) {
       // Lifecycle Socket
       const token = getCookie('access_token') || localStorage.getItem('access_token');
       const apiUrl = getSocketUrl('/ws/live-classes');
@@ -222,7 +253,7 @@ const JoinLiveClass = () => {
         socketRef.current = null;
       };
     }
-  }, [id, isAuthenticated, isClassOwner, joined, renewToken, enableLocalAudio, disableLocalAudio, user?.id]);
+  }, [id, isAuthenticated, tokenData, renewToken, join, joined, enableLocalAudio, disableLocalAudio, user?.id, isClassOwner, isTuition]);
 
   // Retry effect for student audio publish
   useEffect(() => {
@@ -237,6 +268,8 @@ const JoinLiveClass = () => {
     }
   }, [shouldEnableStudentAudio, speakStatus, joined, localAudioTrack, enableLocalAudio]);
 
+
+
   // Auto-join effect for students
   useEffect(() => {
     if (!joined && !isClassOwner && classStatus === 'live') {
@@ -249,33 +282,6 @@ const JoinLiveClass = () => {
       })();
     }
   }, [joined, isClassOwner, classStatus, join]);
-
-  const fetchToken = async () => {
-    try {
-      setIsLoading(true);
-      const response = await api.post(`/live-classes/${id}/join`);
-
-      // Fail fast if backend is out of sync with new Agora numeric UID protocol
-      if (response.data.agora_uid === undefined || response.data.agora_uid === null) {
-        throw new Error('Server assigned an invalid numeric UID (protocol mismatch)');
-      }
-
-      setTokenData(response.data);
-      setClassStatus(response.data.status);
-
-      // Check if current user is the owner/teacher using role (1 = PUBLISHER)
-      if (user && response.data.role === 1) {
-        setIsClassOwner(true);
-      }
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Failed to obtain real-time token';
-      toast.error(msg);
-      console.error(error);
-      router.push('/live-classes');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleJoin = async () => {
     try {
@@ -666,7 +672,7 @@ const JoinLiveClass = () => {
             )}
 
             {tokenData?.features?.chat_enabled && classStatus !== 'ended' ? (
-              <ChatPanel liveClassId={id as string} />
+              <ChatPanel liveClassId={id as string} socket={socketRef.current} />
             ) : (
               <div className="p-8 flex flex-col h-full">
                 <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em] mb-6">Channel Configuration</h3>
