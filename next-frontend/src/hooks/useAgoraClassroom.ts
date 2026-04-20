@@ -237,11 +237,11 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
         localAudioRef.current = audioTrack;
         setLocalAudioTrack(audioTrack);
         
-        // Start muted
-        await audioTrack.setEnabled(false);
+        // Start muted - must publish first, then disable
         console.log('[Agora] Publishing local audio track');
         await clientRef.current.publish([audioTrack]);
         console.log('[Agora] Audio track published successfully');
+        await audioTrack.setEnabled(false);
       }
     } catch (err) {
       console.error('[Agora] Failed to enable local audio:', err);
