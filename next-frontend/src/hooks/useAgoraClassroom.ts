@@ -67,6 +67,14 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
     let agoraModule: any;
 
     const initAgora = async () => {
+      // Reset connection states whenever we initialize a new client
+      setJoined(false);
+      setRemoteStreams([]);
+      setLocalAudioTrack(null);
+      setLocalVideoTrack(null);
+      localAudioRef.current = null;
+      localVideoRef.current = null;
+
       try {
         const AgoraRTC = await getAgoraRTC();
         client = AgoraRTC.createClient({ mode: 'live', codec: 'vp8' });
@@ -220,7 +228,9 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
   }, []);
 
   const enableLocalAudio = useCallback(async () => {
-    if (!clientRef.current || !joined) {
+    const client = clientRef.current;
+    if (!client || !joined || client.connectionState !== 'CONNECTED') {
+      console.warn('[Agora] enableLocalAudio aborted: Client not CONNECTED');
       throw new Error('Not connected to classroom channel');
     }
     
