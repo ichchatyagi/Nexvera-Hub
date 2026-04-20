@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Put,
   Body,
   Param,
@@ -11,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { RegisterPushTokenDto } from './dto/register-push-token.dto';
 import { mapUserToResponse } from './dto/user-response.dto';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -102,5 +104,14 @@ export class UsersController {
   ) {
     const updated = await this.usersService.updateStatus(id, status);
     return { success: true, data: mapUserToResponse(updated) };
+  }
+
+  @Post('me/push-tokens')
+  async registerPushToken(
+    @CurrentUser() user: User,
+    @Body() dto: RegisterPushTokenDto,
+  ) {
+    await this.usersService.registerPushToken(user.id, dto.token, dto.platform);
+    return { success: true };
   }
 }

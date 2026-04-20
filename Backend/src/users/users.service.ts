@@ -226,4 +226,28 @@ export class UsersService {
     });
     return students.map((s) => s.id);
   }
+
+  async registerPushToken(
+    userId: string,
+    token: string,
+    platform: string,
+  ): Promise<void> {
+    const user = await this.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+
+    let tokens = user.pushTokens || [];
+    // Remove if token already exists
+    tokens = tokens.filter((t) => t.token !== token);
+
+    // Add new token
+    tokens.push({ token, platform, updatedAt: new Date() });
+
+    // Limit to 5 tokens per user
+    if (tokens.length > 5) {
+      tokens = tokens.slice(-5);
+    }
+
+    user.pushTokens = tokens;
+    await this.userRepository.save(user);
+  }
 }
