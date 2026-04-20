@@ -125,10 +125,20 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
 
     return () => {
       if (client) {
-        client.leave(); 
+        client.leave().catch(err => console.error('[Agora] Leave failed during cleanup:', err));
       }
     };
-  }, [options?.appId, options?.channelName, options?.token, options?.uid, options?.role]);
+  }, [options?.appId, options?.channelName, options?.uid]);
+
+  // Handle background token renewal to prevent disconnects during permission upgrades
+  useEffect(() => {
+    if (joined && options?.token && clientRef.current) {
+      console.log('[Agora] Background token upgrade/renewal triggered');
+      clientRef.current.renewToken(options.token).catch(err => {
+        console.error('[Agora] Background token renewal failed:', err);
+      });
+    }
+  }, [options?.token, joined]);
 
   const join = useCallback(async () => {
     if (!options || !clientRef.current || joined || isJoiningRef.current) return;
