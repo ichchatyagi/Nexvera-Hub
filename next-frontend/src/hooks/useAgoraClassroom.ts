@@ -69,7 +69,7 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
     const initAgora = async () => {
       try {
         const AgoraRTC = await getAgoraRTC();
-        client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+        client = AgoraRTC.createClient({ mode: 'live', codec: 'vp8' });
         clientRef.current = client;
 
         const handleUserPublished = async (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
@@ -142,8 +142,12 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
         : (options.uid ? toNumericUid(options.uid) : 0);
 
       if (process.env.NODE_ENV === 'development') {
-        console.log('[Agora] joining with uid:', numericUid, typeof numericUid);
+        console.log('[Agora] joining with uid:', numericUid, typeof numericUid, 'as', options.role);
       }
+
+      // In 'live' mode, the role must be set before joining
+      await client.setClientRole(options.role);
+
       await client.join(
         options.appId,
         options.channelName,
