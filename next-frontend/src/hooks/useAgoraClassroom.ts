@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import type {
   IAgoraRTCClient,
   ILocalAudioTrack,
@@ -81,11 +81,13 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
               videoTrack: existing?.videoTrack ?? null,
               audioTrack: existing?.audioTrack ?? null,
             };
+            console.log(`[Agora] User ${user.uid} published ${mediaType}`);
             if (mediaType === 'video') next.videoTrack = user.videoTrack || null;
             if (mediaType === 'audio') next.audioTrack = user.audioTrack || null;
             return [next, ...prev.filter((s) => s.uid !== next.uid)];
           });
           if (mediaType === 'audio' && user.audioTrack) {
+            console.log(`[Agora] Playing audio from user ${user.uid}`);
             user.audioTrack.play();
           }
         };
@@ -120,7 +122,7 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
     };
   }, [options?.appId, options?.channelName, options?.token, options?.uid, options?.role]);
 
-  const join = async () => {
+  const join = useCallback(async () => {
     if (!options || !clientRef.current || joined || isJoiningRef.current) return;
     
     const client = clientRef.current;
@@ -181,9 +183,9 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
     } finally {
       isJoiningRef.current = false;
     }
-  };
+  }, [options, joined]);
 
-  const leave = async () => {
+  const leave = useCallback(async () => {
     if (!clientRef.current) return;
     isJoiningRef.current = false; 
     localAudioRef.current?.close();
@@ -195,25 +197,25 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
     await clientRef.current.leave();
     setRemoteStreams([]);
     setJoined(false);
-  };
+  }, []);
 
-  const toggleMic = async () => {
+  const toggleMic = useCallback(async () => {
     if (!localAudioRef.current) return;
     const enabled = localAudioRef.current.enabled;
     await localAudioRef.current.setEnabled(!enabled);
     return !enabled;
-  };
+  }, []);
 
-  const renewToken = async (token: string) => {
+  const renewToken = useCallback(async (token: string) => {
     if (!clientRef.current) return;
     try {
       await clientRef.current.renewToken(token);
     } catch (err) {
       console.error('[Agora] Token renewal failed:', err);
     }
-  };
+  }, []);
 
-  const enableLocalAudio = async () => {
+  const enableLocalAudio = useCallback(async () => {
     if (!clientRef.current || !joined) {
       throw new Error('Not connected to classroom channel');
     }
@@ -233,7 +235,9 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
         
         // Start muted
         await audioTrack.setEnabled(false);
+        console.log('[Agora] Publishing local audio track');
         await clientRef.current.publish([audioTrack]);
+        console.log('[Agora] Audio track published successfully');
       }
     } catch (err) {
       console.error('[Agora] Failed to enable local audio:', err);
@@ -242,9 +246,9 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
       setLocalAudioTrack(null);
       throw err;
     }
-  };
+  }, [joined, options?.role]);
 
-  const disableLocalAudio = async () => {
+  const disableLocalAudio = useCallback(async () => {
     if (!clientRef.current) return;
     try {
       if (localAudioRef.current) {
@@ -264,14 +268,14 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
       console.error('[Agora] Failed to disable local audio:', err);
       throw err;
     }
-  };
+  }, [options?.role]);
 
-  const toggleCamera = async () => {
+  const toggleCamera = useCallback(async () => {
     if (!localVideoRef.current) return;
     const enabled = localVideoRef.current.enabled;
     await localVideoRef.current.setEnabled(!enabled);
     return !enabled;
-  };
+  }, []);
 
   return {
     joined,
@@ -285,5 +289,6 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
     disableLocalAudio,
     localVideoTrack,
     localAudioTrack,
+    localAudioRef,
   };
 }

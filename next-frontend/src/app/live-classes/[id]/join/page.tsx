@@ -52,7 +52,7 @@ const JoinLiveClass = () => {
   const [tokenData, setTokenData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCamOn, setIsCamOn] = useState(true);
-  const [isMicOn, setIsMicOn] = useState(true);
+  const [isMicOn, setIsMicOn] = useState(false);
   const [classStatus, setClassStatus] = useState<string>('');
   const [isClassOwner, setIsClassOwner] = useState(false);
   const [isEndModalOpen, setIsEndModalOpen] = useState(false);
@@ -71,6 +71,7 @@ const JoinLiveClass = () => {
 
   // PROMPT 3/4: Tuition Speaking State
   const [speakStatus, setSpeakStatus] = useState<'idle' | 'requested' | 'approved'>('idle');
+  const [isAudioInitializing, setIsAudioInitializing] = useState(false);
   const [shouldEnableStudentAudio, setShouldEnableStudentAudio] = useState(false);
   const [pendingRequests, setPendingRequests] = useState<Array<{ userId: string; userName: string; requestedAt: string }>>([]);
   const [activeSpeakers, setActiveSpeakers] = useState<string[]>([]);
@@ -116,6 +117,7 @@ const JoinLiveClass = () => {
     disableLocalAudio,
     localVideoTrack,
     localAudioTrack,
+    localAudioRef,
   } = useAgoraClassroom(agoraOptions);
 
   const fetchToken = useCallback(async () => {
@@ -134,6 +136,8 @@ const JoinLiveClass = () => {
       // Check if current user is the owner/teacher using role (1 = PUBLISHER)
       if (user && response.data.role === 1) {
         setIsClassOwner(true);
+        setIsMicOn(true); // Teachers start with mic on
+        setIsCamOn(true);
       }
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to obtain real-time token';
@@ -237,14 +241,19 @@ const JoinLiveClass = () => {
           setIsMicOn(false);
           setShouldEnableStudentAudio(true);
           try {
+            // Update tokenData to sync the new publisher token with the Agora hook options
+            setTokenData(prev => prev ? { ...prev, rtc_token: payload.rtc_token } : null);
             await renewToken(payload.rtc_token);
             if (!joined) {
               await join();
             }
+            setIsAudioInitializing(true);
             await enableLocalAudio();
+            setIsAudioInitializing(false);
             toast.success('Instructor approved your audio request. You are now a speaker!', { duration: 5000 });
           } catch (error) {
             console.error('Audio start failure:', error);
+            setIsAudioInitializing(false);
             toast.error('Approved to speak, but microphone failed to start. Try leaving and rejoining.');
           }
         }
@@ -280,16 +289,19 @@ const JoinLiveClass = () => {
 
   // Retry effect for student audio publish
   useEffect(() => {
-    if (shouldEnableStudentAudio && speakStatus === 'approved' && joined && !localAudioTrack) {
+    if (shouldEnableStudentAudio && speakStatus === 'approved' && joined && !localAudioTrack && !isAudioInitializing) {
       (async () => {
         try {
+          setIsAudioInitializing(true);
           await enableLocalAudio();
         } catch (err) {
           console.error('Retry enable audio failed', err);
+        } finally {
+          setIsAudioInitializing(false);
         }
       })();
     }
-  }, [shouldEnableStudentAudio, speakStatus, joined, localAudioTrack, enableLocalAudio]);
+  }, [shouldEnableStudentAudio, speakStatus, joined, localAudioTrack, enableLocalAudio, isAudioInitializing]);
 
 
 
@@ -353,13 +365,42 @@ const JoinLiveClass = () => {
   };
 
   const handleToggleMic = async () => {
-    if (!localAudioTrack && speakStatus === 'approved') {
+    if (isAudioInitializing) {
       toast.error('Microphone is initializing, please wait...');
       return;
     }
+
+    const currentTrack = localAudioRef.current;
+
+    if (!currentTrack && speakStatus === 'approved') {
+      toast.error('Microphone not ready. Re-initializing...');
+      setIsAudioInitializing(true);
+      try {
+        await enableLocalAudio();
+      } catch (err) {
+        toast.error('Initialization failed');
+      } finally {
+        setIsAudioInitializing(false);
+      }
+      return;
+    }
+
+    if (!currentTrack && !isClassOwner) {
+      toast.error('Microphone not available');
+      return;
+    }
+
     try {
       const next = await toggleMic();
-      if (next !== undefined) setIsMicOn(next);
+      if (next !== undefined) {
+        setIsMicOn(next);
+        // Sync with server list
+        if (next) {
+          socketRef.current?.emit('audio:speaking:start');
+        } else {
+          socketRef.current?.emit('audio:speaking:stop');
+        }
+      }
     } catch (err) {
       toast.error('Failed to toggle microphone');
     }
