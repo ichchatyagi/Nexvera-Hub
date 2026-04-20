@@ -240,22 +240,10 @@ const JoinLiveClass = () => {
           setSpeakStatus('approved');
           setIsMicOn(false);
           setShouldEnableStudentAudio(true);
-          try {
-            // Update tokenData to sync the new publisher token with the Agora hook options
-            setTokenData(prev => prev ? { ...prev, rtc_token: payload.rtc_token } : null);
-            await renewToken(payload.rtc_token);
-            if (!joined) {
-              await join();
-            }
-            setIsAudioInitializing(true);
-            await enableLocalAudio();
-            setIsAudioInitializing(false);
-            toast.success('Instructor approved your audio request. You are now a speaker!', { duration: 5000 });
-          } catch (error) {
-            console.error('Audio start failure:', error);
-            setIsAudioInitializing(false);
-            toast.error('Approved to speak, but microphone failed to start. Try leaving and rejoining.');
-          }
+          // Update tokenData to sync the new publisher token with the Agora hook options
+          // This will trigger a hook re-initialization with the correct Host permissions
+          setTokenData(prev => prev ? { ...prev, rtc_token: payload.rtc_token } : null);
+          toast.success('Instructor approved your audio request. Preparing microphone...', { duration: 5000 });
         }
       });
 
