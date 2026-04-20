@@ -110,3 +110,59 @@ jobs:
         # Enforce Webpack build for determinism in CI
         run: npx next build --webpack
         working-directory: next-frontend
+
+  mobile:
+    name: Mobile Flutter Analyze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.29.0' # Matches current version 3.29.0 on stable
+          
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: mobile/flutter_app
+        
+      - name: Analyze
+        run: flutter analyze
+        working-directory: mobile/flutter_app
+        
+      - name: Build Debug APK (Smoke Test)
+        run: flutter build apk --debug
+        working-directory: mobile/flutter_app
+
+  contracts:
+    name: Contracts CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm ci
+        working-directory: packages/nexvera-contracts
+      - name: Build
+        run: npm run build
+        working-directory: packages/nexvera-contracts
+
+  video_worker:
+    name: Video Worker CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm ci
+        working-directory: video-processing-worker
+      - name: Build
+        run: npm run build
+        working-directory: video-processing-worker
