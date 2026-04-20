@@ -76,6 +76,12 @@ jobs:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: Backend/package-lock.json
+
+      - name: Build contracts (for file: dependency)
+        run: |
+          npm ci
+          npm run build
+        working-directory: packages/nexvera-contracts
           
       - name: Install dependencies
         run: npm ci
@@ -121,7 +127,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          flutter-version: '3.29.0' # Matches current version 3.29.0 on stable
+          flutter-version: '3.41.7' # Matches local stable (Dart 3.11.5)
           
       - name: Install dependencies
         run: flutter pub get
@@ -160,6 +166,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Build contracts (for file: dependency)
+        run: |
+          npm ci
+          npm run build
+        working-directory: packages/nexvera-contracts
       - name: Install dependencies
         run: npm ci
         working-directory: video-processing-worker
