@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import type {
   IAgoraRTCClient,
   ILocalAudioTrack,
@@ -67,9 +67,17 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
     let agoraModule: any;
 
     const initAgora = async () => {
+      // Reset connection states whenever we initialize a new client
+      setJoined(false);
+      setRemoteStreams([]);
+      setLocalAudioTrack(null);
+      setLocalVideoTrack(null);
+      localAudioRef.current = null;
+      localVideoRef.current = null;
+
       try {
         const AgoraRTC = await getAgoraRTC();
-        client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+        client = AgoraRTC.createClient({ mode: 'live', codec: 'vp8' });
         clientRef.current = client;
 
         const handleUserPublished = async (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
@@ -81,11 +89,13 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
               videoTrack: existing?.videoTrack ?? null,
               audioTrack: existing?.audioTrack ?? null,
             };
+            console.log(`[Agora] User ${user.uid} published ${mediaType}`);
             if (mediaType === 'video') next.videoTrack = user.videoTrack || null;
             if (mediaType === 'audio') next.audioTrack = user.audioTrack || null;
             return [next, ...prev.filter((s) => s.uid !== next.uid)];
           });
           if (mediaType === 'audio' && user.audioTrack) {
+            console.log(`[Agora] Playing audio from user ${user.uid}`);
             user.audioTrack.play();
           }
         };
@@ -115,12 +125,22 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
 
     return () => {
       if (client) {
-        client.leave(); 
+        client.leave().catch(err => console.error('[Agora] Leave failed during cleanup:', err));
       }
     };
-  }, [options?.appId, options?.channelName, options?.token, options?.uid, options?.role]);
+  }, [options?.appId, options?.channelName, options?.uid]);
 
-  const join = async () => {
+  // Handle background token renewal to prevent disconnects during permission upgrades
+  useEffect(() => {
+    if (joined && options?.token && clientRef.current) {
+      console.log('[Agora] Background token upgrade/renewal triggered');
+      clientRef.current.renewToken(options.token).catch(err => {
+        console.error('[Agora] Background token renewal failed:', err);
+      });
+    }
+  }, [options?.token, joined]);
+
+  const join = useCallback(async () => {
     if (!options || !clientRef.current || joined || isJoiningRef.current) return;
     
     const client = clientRef.current;
@@ -140,8 +160,12 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
         : (options.uid ? toNumericUid(options.uid) : 0);
 
       if (process.env.NODE_ENV === 'development') {
-        console.log('[Agora] joining with uid:', numericUid, typeof numericUid);
+        console.log('[Agora] joining with uid:', numericUid, typeof numericUid, 'as', options.role);
       }
+
+      // In 'live' mode, the role must be set before joining
+      await client.setClientRole(options.role);
+
       await client.join(
         options.appId,
         options.channelName,
@@ -181,9 +205,9 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
     } finally {
       isJoiningRef.current = false;
     }
-  };
+  }, [options, joined]);
 
-  const leave = async () => {
+  const leave = useCallback(async () => {
     if (!clientRef.current) return;
     isJoiningRef.current = false; 
     localAudioRef.current?.close();
@@ -195,42 +219,60 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
     await clientRef.current.leave();
     setRemoteStreams([]);
     setJoined(false);
-  };
+  }, []);
 
-  const toggleMic = async () => {
+  const toggleMic = useCallback(async () => {
     if (!localAudioRef.current) return;
     const enabled = localAudioRef.current.enabled;
     await localAudioRef.current.setEnabled(!enabled);
     return !enabled;
-  };
+  }, []);
 
-  const renewToken = async (token: string) => {
+  const renewToken = useCallback(async (token: string) => {
     if (!clientRef.current) return;
     try {
       await clientRef.current.renewToken(token);
     } catch (err) {
       console.error('[Agora] Token renewal failed:', err);
     }
-  };
+  }, []);
 
-  const enableLocalAudio = async () => {
-    if (!clientRef.current || !joined) return;
+  const enableLocalAudio = useCallback(async () => {
+    const client = clientRef.current;
+    if (!client || !joined || client.connectionState !== 'CONNECTED') {
+      console.warn('[Agora] enableLocalAudio aborted: Client not CONNECTED');
+      throw new Error('Not connected to classroom channel');
+    }
+    
     try {
       if (!localAudioRef.current) {
+        // If student, switch to host role to allow publishing
+        if (options?.role === 'audience') {
+          console.log('[Agora] Switching role to host for publishing');
+          await clientRef.current.setClientRole('host');
+        }
+
         const AgoraRTC = await getAgoraRTC();
         const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
         localAudioRef.current = audioTrack;
         setLocalAudioTrack(audioTrack);
-        // Start muted
-        await audioTrack.setEnabled(false);
+        
+        // Start muted - must publish first, then disable
+        console.log('[Agora] Publishing local audio track');
         await clientRef.current.publish([audioTrack]);
+        console.log('[Agora] Audio track published successfully');
+        await audioTrack.setEnabled(false);
       }
     } catch (err) {
       console.error('[Agora] Failed to enable local audio:', err);
+      // Ensure we clean up if partially initialized
+      localAudioRef.current = null;
+      setLocalAudioTrack(null);
+      throw err;
     }
-  };
+  }, [joined, options?.role]);
 
-  const disableLocalAudio = async () => {
+  const disableLocalAudio = useCallback(async () => {
     if (!clientRef.current) return;
     try {
       if (localAudioRef.current) {
@@ -239,18 +281,25 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
         localAudioRef.current.close();
         localAudioRef.current = null;
         setLocalAudioTrack(null);
+
+        // Switch back to audience role if originally audience
+        if (options?.role === 'audience') {
+          console.log('[Agora] Switching role back to audience');
+          await clientRef.current.setClientRole('audience');
+        }
       }
     } catch (err) {
       console.error('[Agora] Failed to disable local audio:', err);
+      throw err;
     }
-  };
+  }, [options?.role]);
 
-  const toggleCamera = async () => {
+  const toggleCamera = useCallback(async () => {
     if (!localVideoRef.current) return;
     const enabled = localVideoRef.current.enabled;
     await localVideoRef.current.setEnabled(!enabled);
     return !enabled;
-  };
+  }, []);
 
   return {
     joined,
@@ -264,5 +313,6 @@ export function useAgoraClassroom(options: UseAgoraClassroomOptions | null) {
     disableLocalAudio,
     localVideoTrack,
     localAudioTrack,
+    localAudioRef,
   };
 }

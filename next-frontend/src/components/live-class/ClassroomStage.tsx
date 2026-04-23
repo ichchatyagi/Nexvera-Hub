@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { VideoOverlay } from "./VideoOverlay";
 import { LayoutState } from "@/hooks/useLiveClassLayout";
-import type { ILocalVideoTrack, IRemoteVideoTrack } from "agora-rtc-sdk-ng";
+import type { ILocalVideoTrack, IRemoteVideoTrack, IRemoteAudioTrack } from "agora-rtc-sdk-ng";
 import dynamic from "next/dynamic";
 import { WhiteboardPanel } from "./WhiteboardPanel";
 
@@ -13,7 +13,11 @@ const AgoraWhiteboardPanel = dynamic(
   { ssr: false },
 );
 
-type RemoteStream = { uid: string; videoTrack?: IRemoteVideoTrack | null };
+type RemoteStream = { 
+  uid: string; 
+  videoTrack?: IRemoteVideoTrack | null; 
+  audioTrack?: IRemoteAudioTrack | null;
+};
 
 interface ClassroomStageProps {
   liveClassId: string;

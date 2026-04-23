@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -52,7 +52,7 @@ const JoinLiveClass = () => {
   const [tokenData, setTokenData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCamOn, setIsCamOn] = useState(true);
-  const [isMicOn, setIsMicOn] = useState(true);
+  const [isMicOn, setIsMicOn] = useState(false);
   const [classStatus, setClassStatus] = useState<string>('');
   const [isClassOwner, setIsClassOwner] = useState(false);
   const [isEndModalOpen, setIsEndModalOpen] = useState(false);
@@ -61,6 +61,7 @@ const JoinLiveClass = () => {
   const [isVideoFullscreen, setIsVideoFullscreen] = useState(false);
   const videoContainerRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
+  const [socket, setSocket] = useState<any>(null);
   const socketRef = useRef<any>(null);
   const isClassOwnerRef = useRef(isClassOwner);
 
@@ -70,6 +71,7 @@ const JoinLiveClass = () => {
 
   // PROMPT 3/4: Tuition Speaking State
   const [speakStatus, setSpeakStatus] = useState<'idle' | 'requested' | 'approved'>('idle');
+  const [isAudioInitializing, setIsAudioInitializing] = useState(false);
   const [shouldEnableStudentAudio, setShouldEnableStudentAudio] = useState(false);
   const [pendingRequests, setPendingRequests] = useState<Array<{ userId: string; userName: string; requestedAt: string }>>([]);
   const [activeSpeakers, setActiveSpeakers] = useState<string[]>([]);
@@ -92,16 +94,16 @@ const JoinLiveClass = () => {
     }
   };
 
-  const agoraOptions =
-    tokenData && user
-      ? {
-        appId: tokenData.agora_app_id,
-        channelName: tokenData.channel_name,
-        token: tokenData.rtc_token,
-        uid: tokenData.agora_uid,
-        role: getAgoraRole(tokenData.role),
-      }
-      : null;
+  const agoraOptions = useMemo(() => {
+    if (!tokenData || !user) return null;
+    return {
+      appId: tokenData.agora_app_id,
+      channelName: tokenData.channel_name,
+      token: tokenData.rtc_token,
+      uid: tokenData.agora_uid,
+      role: getAgoraRole(tokenData.role),
+    };
+  }, [tokenData, user]);
 
   const {
     joined,
@@ -115,7 +117,37 @@ const JoinLiveClass = () => {
     disableLocalAudio,
     localVideoTrack,
     localAudioTrack,
+    localAudioRef,
   } = useAgoraClassroom(agoraOptions);
+
+  const fetchToken = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await api.post(`/live-classes/${id}/join`);
+
+      // Fail fast if backend is out of sync with new Agora numeric UID protocol
+      if (response.data.agora_uid === undefined || response.data.agora_uid === null) {
+        throw new Error('Server assigned an invalid numeric UID (protocol mismatch)');
+      }
+
+      setTokenData(response.data);
+      setClassStatus(response.data.status);
+
+      // Check if current user is the owner/teacher using role (1 = PUBLISHER)
+      if (user && response.data.role === 1) {
+        setIsClassOwner(true);
+        setIsMicOn(true); // Teachers start with mic on
+        setIsCamOn(true);
+      }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Failed to obtain real-time token';
+      toast.error(msg);
+      console.error(error);
+      router.push('/live-classes');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [id, user, router]);
 
   const layout = useLiveClassLayout({
     liveClassId: id as string,
@@ -126,15 +158,33 @@ const JoinLiveClass = () => {
   useEffect(() => {
     if (isAuthenticated && id && id !== 'undefined') {
       fetchToken();
+    }
+  }, [id, isAuthenticated, fetchToken]);
 
+  useEffect(() => {
+    if (isAuthenticated && id && id !== 'undefined' && tokenData) {
       // Lifecycle Socket
       const token = getCookie('access_token') || localStorage.getItem('access_token');
       const apiUrl = getSocketUrl('/ws/live-classes');
-      const socket = io(apiUrl, {
+      const newSocket = io(apiUrl, {
         query: { token, liveClassId: id },
         withCredentials: true,
       });
 
+      socketRef.current = newSocket;
+      setSocket(newSocket);
+
+      return () => {
+        newSocket.disconnect();
+        socketRef.current = null;
+        setSocket(null);
+      };
+    }
+  }, [id, isAuthenticated, tokenData]);
+
+  // Stable Listeners Registration
+  useEffect(() => {
+    if (socket) {
       socket.on('class:ended', () => {
         setClassStatus('ended');
         setPendingRequests([]);
@@ -190,24 +240,21 @@ const JoinLiveClass = () => {
           setSpeakStatus('approved');
           setIsMicOn(false);
           setShouldEnableStudentAudio(true);
-          try {
-            await renewToken(payload.rtc_token);
-            if (!joined) {
-              await join();
-            }
-            await enableLocalAudio();
-            toast.success('Instructor approved your audio request. You are now a speaker!', { duration: 5000 });
-          } catch (error) {
-            console.error('Audio start failure:', error);
-            toast.error('Approved to speak, but microphone failed to start. Try leaving and rejoining.');
-          }
+          // Update tokenData to sync the new publisher token with the Agora hook options
+          // This will trigger a hook re-initialization with the correct Host permissions
+          setTokenData(prev => prev ? { ...prev, rtc_token: payload.rtc_token } : null);
+          toast.success('Instructor approved your audio request. Preparing microphone...', { duration: 5000 });
         }
       });
 
       socket.on('audio:revoked', async (payload: { userId: string; rtc_token: string }) => {
         if (payload.userId === user?.id) {
-          await renewToken(payload.rtc_token);
-          await disableLocalAudio();
+          try {
+            await renewToken(payload.rtc_token);
+            await disableLocalAudio();
+          } catch (err) {
+            console.error('Audio revoke cleanup failed:', err);
+          }
           setSpeakStatus('idle');
           setIsMicOn(false);
           setShouldEnableStudentAudio(false);
@@ -215,27 +262,36 @@ const JoinLiveClass = () => {
         }
       });
 
-      socketRef.current = socket;
-
       return () => {
-        socket.disconnect();
-        socketRef.current = null;
+        socket.off('class:ended');
+        socket.off('error');
+        socket.off('class:started');
+        socket.off('audio:request');
+        socket.off('audio:request:ack');
+        socket.off('audio:speakers');
+        socket.off('audio:approved');
+        socket.off('audio:revoked');
       };
     }
-  }, [id, isAuthenticated, isClassOwner, joined, renewToken, enableLocalAudio, disableLocalAudio, user?.id]);
+  }, [socket, id, user?.id, isClassOwner, isTuition, renewToken, join, joined, enableLocalAudio, disableLocalAudio]);
 
   // Retry effect for student audio publish
   useEffect(() => {
-    if (shouldEnableStudentAudio && speakStatus === 'approved' && joined && !localAudioTrack) {
+    if (shouldEnableStudentAudio && speakStatus === 'approved' && joined && !localAudioTrack && !isAudioInitializing) {
       (async () => {
         try {
+          setIsAudioInitializing(true);
           await enableLocalAudio();
         } catch (err) {
           console.error('Retry enable audio failed', err);
+        } finally {
+          setIsAudioInitializing(false);
         }
       })();
     }
-  }, [shouldEnableStudentAudio, speakStatus, joined, localAudioTrack, enableLocalAudio]);
+  }, [shouldEnableStudentAudio, speakStatus, joined, localAudioTrack, enableLocalAudio, isAudioInitializing]);
+
+
 
   // Auto-join effect for students
   useEffect(() => {
@@ -249,33 +305,6 @@ const JoinLiveClass = () => {
       })();
     }
   }, [joined, isClassOwner, classStatus, join]);
-
-  const fetchToken = async () => {
-    try {
-      setIsLoading(true);
-      const response = await api.post(`/live-classes/${id}/join`);
-
-      // Fail fast if backend is out of sync with new Agora numeric UID protocol
-      if (response.data.agora_uid === undefined || response.data.agora_uid === null) {
-        throw new Error('Server assigned an invalid numeric UID (protocol mismatch)');
-      }
-
-      setTokenData(response.data);
-      setClassStatus(response.data.status);
-
-      // Check if current user is the owner/teacher using role (1 = PUBLISHER)
-      if (user && response.data.role === 1) {
-        setIsClassOwner(true);
-      }
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Failed to obtain real-time token';
-      toast.error(msg);
-      console.error(error);
-      router.push('/live-classes');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleJoin = async () => {
     try {
@@ -324,8 +353,45 @@ const JoinLiveClass = () => {
   };
 
   const handleToggleMic = async () => {
-    const next = await toggleMic();
-    if (next !== undefined) setIsMicOn(next);
+    if (isAudioInitializing) {
+      toast.error('Microphone is initializing, please wait...');
+      return;
+    }
+
+    const currentTrack = localAudioRef.current;
+
+    if (!currentTrack && speakStatus === 'approved') {
+      toast.error('Microphone not ready. Re-initializing...');
+      setIsAudioInitializing(true);
+      try {
+        await enableLocalAudio();
+      } catch (err) {
+        toast.error('Initialization failed');
+      } finally {
+        setIsAudioInitializing(false);
+      }
+      return;
+    }
+
+    if (!currentTrack && !isClassOwner) {
+      toast.error('Microphone not available');
+      return;
+    }
+
+    try {
+      const next = await toggleMic();
+      if (next !== undefined) {
+        setIsMicOn(next);
+        // Sync with server list
+        if (next) {
+          socketRef.current?.emit('audio:speaking:start');
+        } else {
+          socketRef.current?.emit('audio:speaking:stop');
+        }
+      }
+    } catch (err) {
+      toast.error('Failed to toggle microphone');
+    }
   };
 
   const handleToggleCam = async () => {
@@ -666,7 +732,7 @@ const JoinLiveClass = () => {
             )}
 
             {tokenData?.features?.chat_enabled && classStatus !== 'ended' ? (
-              <ChatPanel liveClassId={id as string} />
+              <ChatPanel liveClassId={id as string} socket={socket} />
             ) : (
               <div className="p-8 flex flex-col h-full">
                 <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em] mb-6">Channel Configuration</h3>
