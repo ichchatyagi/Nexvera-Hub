@@ -3,14 +3,16 @@ import { Send, Hash, MessageSquareOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLiveClassChat, ChatMessage } from '@/hooks/useLiveClassChat';
 import { useAuth } from '@/context/AuthContext';
+import { Socket } from 'socket.io-client';
 
 interface ChatPanelProps {
   liveClassId: string;
+  socket?: Socket | null;
 }
 
-export const ChatPanel: React.FC<ChatPanelProps> = ({ liveClassId }) => {
+export const ChatPanel: React.FC<ChatPanelProps> = ({ liveClassId, socket }) => {
   const { user } = useAuth();
-  const { messages, isConnected, errorCode, sendMessage } = useLiveClassChat(liveClassId);
+  const { messages, isConnected, errorCode, sendMessage } = useLiveClassChat(liveClassId, socket);
   const [inputValue, setInputValue] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 

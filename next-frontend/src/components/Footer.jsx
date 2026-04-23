@@ -37,7 +37,7 @@ const Footer = () => {
                         <ul className="space-y-4">
                             <li><Link href="/about" className="text-slate-500 hover:text-blue-600 font-semibold transition-all">About Nexvera</Link></li>
                             <li><Link href="/certifications" className="text-slate-500 hover:text-blue-600 font-semibold transition-all">Certifications</Link></li>
-                            <li><Link href="/course" className="text-slate-500 hover:text-blue-600 font-semibold transition-all">Courses</Link></li>
+                            <li><Link href="/courses" className="text-slate-500 hover:text-blue-600 font-semibold transition-all">Courses</Link></li>
                         </ul>
                     </div>
 
