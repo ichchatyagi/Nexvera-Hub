@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike } from 'typeorm';
+import { Repository, ILike, In } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from './entities/user.entity';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -213,5 +213,17 @@ export class UsersService {
 
   async bumpRefreshTokenVersion(userId: string): Promise<void> {
     await this.userRepository.increment({ id: userId }, 'refreshTokenVersion', 1);
+  }
+
+  async getStudentIds(ids: string[]): Promise<string[]> {
+    if (!ids || ids.length === 0) return [];
+    const students = await this.userRepository.find({
+      select: ['id'],
+      where: {
+        id: In(ids),
+        role: UserRole.STUDENT,
+      },
+    });
+    return students.map((s) => s.id);
   }
 }

@@ -70,12 +70,47 @@ describe('EnrollmentsService', () => {
 
     it('should throw ConflictException if already enrolled and not send notification', async () => {
       const courseId = new Types.ObjectId().toString();
-      mockEnrollmentModel.findOne.mockResolvedValue({ _id: 'e1', subscription_status: 'active' });
+      mockEnrollmentModel.findOne.mockResolvedValue({
+        _id: 'e1',
+        subscription_status: 'active',
+      });
 
       await expect(service.enroll(courseId, 's1')).rejects.toThrow(
         ConflictException,
       );
-      expect(mockNotificationsService.createNotification).not.toHaveBeenCalled();
+      expect(
+        mockNotificationsService.createNotification,
+      ).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('enrollIdempotent', () => {
+    it('returns alreadyEnrolled meta instead of throwing on ConflictException', async () => {
+      const courseId = new Types.ObjectId().toString();
+      mockEnrollmentModel.findOne.mockResolvedValue({
+        _id: 'e1',
+        subscription_status: 'active',
+      });
+
+      const result = await service.enrollIdempotent(courseId, 's1');
+
+      expect(result.success).toBe(true);
+      expect(result.meta?.alreadyEnrolled).toBe(true);
+      expect(result.data._id).toBe('e1');
+    });
+
+    it('successfully enrolls if no duplicate found', async () => {
+      const courseId = new Types.ObjectId().toString();
+      mockEnrollmentModel.findOne.mockResolvedValue(null);
+      mockEnrollmentModel.create.mockResolvedValue({
+        _id: 'e-new',
+        course_id: courseId,
+      });
+
+      const result = await service.enrollIdempotent(courseId, 's1');
+
+      expect(result.success).toBe(true);
+      expect(result.data._id).toBe('e-new');
     });
   });
 

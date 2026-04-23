@@ -42,10 +42,37 @@ export default function AdminOverview() {
   }, []);
 
   const stats = [
-    { label: 'Total Users', value: 'N/A', icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: 'Total Courses', value: 'N/A', icon: BookOpen, color: 'text-cyan-500', bg: 'bg-cyan-50' },
-    { label: 'Active Enrollments', value: 'N/A', icon: Activity, color: 'text-green-500', bg: 'bg-green-50' },
-    { label: 'Monthly Revenue', value: 'N/A', icon: IndianRupee, color: 'text-orange-500', bg: 'bg-orange-50' },
+    {
+      label: 'Total Users',
+      value: dashboardData?.overview?.users?.total_users ?? '...',
+      icon: Users,
+      color: 'text-blue-600',
+      bg: 'bg-blue-50',
+    },
+    {
+      label: 'Total Courses',
+      value: dashboardData?.overview?.catalog?.total_courses ?? '...',
+      icon: BookOpen,
+      color: 'text-cyan-500',
+      bg: 'bg-cyan-50',
+    },
+    {
+      label: 'Active Enrollments',
+      value: dashboardData?.overview?.learning?.active_enrollments ?? '...',
+      icon: Activity,
+      color: 'text-green-500',
+      bg: 'bg-green-50',
+    },
+    {
+      label: 'Monthly Revenue',
+      value:
+        dashboardData?.overview?.revenue?.revenue_mtd !== undefined
+          ? `₹${dashboardData.overview.revenue.revenue_mtd.toLocaleString()}`
+          : '...',
+      icon: IndianRupee,
+      color: 'text-orange-500',
+      bg: 'bg-orange-50',
+    },
   ];
 
   return (

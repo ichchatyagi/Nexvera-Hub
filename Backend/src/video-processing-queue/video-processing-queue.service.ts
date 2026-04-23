@@ -2,11 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { AppConfigService } from '../app-config/app-config.service';
 
-export interface VideoProcessingJob {
-  videoId: string;
-  s3Key: string;
-  source: 'upload' | 'live_recording';
-}
+import {
+  VideoProcessingJob,
+  VIDEO_PROCESSING_JOB_VERSION,
+} from '@nexvera/contracts';
+
 
 @Injectable()
 export class VideoProcessingQueueService {
@@ -23,15 +23,25 @@ export class VideoProcessingQueueService {
     });
   }
 
-  async publishJob(job: VideoProcessingJob): Promise<boolean> {
+  async publishJob(
+    jobData: Omit<VideoProcessingJob, 'version' | 'requestedAtUtc'>,
+  ): Promise<boolean> {
+
     const queueUrl = this.appConfig.awsSqsQueueUrl;
 
     if (!queueUrl) {
       this.logger.warn(
-        `AWS_SQS_VIDEO_QUEUE_URL not configured. Job for video ${job.videoId} will not be queued.`,
+        `AWS_SQS_VIDEO_QUEUE_URL not configured. Job for video ${jobData.videoId} will not be queued.`,
       );
       return false;
     }
+
+    const job: VideoProcessingJob = {
+      ...jobData,
+      version: VIDEO_PROCESSING_JOB_VERSION,
+      requestedAtUtc: new Date().toISOString(),
+    };
+
 
     try {
       const command = new SendMessageCommand({

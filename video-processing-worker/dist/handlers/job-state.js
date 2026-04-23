@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.handler = void 0;
 const axios_1 = __importDefault(require("axios"));
 const client_s3_1 = require("@aws-sdk/client-s3");
+const contracts_1 = require("@nexvera/contracts");
 const BACKEND_BASE_URL = process.env.BACKEND_BASE_URL;
 const WEBHOOK_SECRET = process.env.VIDEO_PROCESSING_WEBHOOK_SECRET;
 const BUCKET = process.env.AWS_S3_VIDEO_BUCKET;
@@ -66,10 +67,11 @@ const handler = async (event) => {
         durationSeconds = Math.floor(outputGroupDetails[0].outputDetails[0].durationInMs / 1000);
     }
     const payload = {
-        base_key: baseKey,
+        version: contracts_1.VIDEO_PROCESSING_WEBHOOK_VERSION,
         status: status === 'COMPLETE' ? 'completed' : 'failed',
+        base_key: baseKey,
         duration_seconds: durationSeconds,
-        error: errorMessage
+        error: errorMessage,
     };
     try {
         console.log(`Sending webhook to backend for video ${videoId}, status: ${payload.status}`);

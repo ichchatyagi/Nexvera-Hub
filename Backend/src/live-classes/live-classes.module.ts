@@ -15,6 +15,7 @@ import { AuthModule } from '../auth/auth.module';
 import { VideosModule } from '../videos/videos.module';
 import { EnrollmentsModule } from '../enrollments/enrollments.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     VideosModule,
     EnrollmentsModule,
     NotificationsModule,
+    UsersModule,
   ],
   providers: [LiveClassesService, LiveClassesGateway],
   controllers: [LiveClassesController, AdminLiveClassesController],

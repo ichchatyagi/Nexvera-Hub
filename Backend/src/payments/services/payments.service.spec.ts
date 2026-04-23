@@ -7,10 +7,15 @@ import { Course } from '../../courses/schemas/course.schema';
 import { EnrollmentsService } from '../../enrollments/enrollments.service';
 import { AppConfigService } from '../../app-config/app-config.service';
 import { Types } from 'mongoose';
-import { BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import * as crypto from 'crypto';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { NotificationType } from '../../notifications/schemas/notification.schema';
+import { getQueueToken } from '@nestjs/bullmq';
 
 const mockConfigService = {
   razorpayKeyId: 'test_key',
@@ -29,10 +34,16 @@ const mockCourseModel = {
 
 const mockEnrollmentsService = {
   enroll: jest.fn(),
+  enrollIdempotent: jest.fn(),
+  hasAccess: jest.fn().mockResolvedValue(false),
 };
 
 const mockNotificationsService = {
   createNotification: jest.fn(),
+};
+
+const mockQueue = {
+  add: jest.fn().mockResolvedValue({ id: 'job_123' }),
 };
 
 describe('PaymentsService Tuition Logic', () => {
@@ -50,6 +61,10 @@ describe('PaymentsService Tuition Logic', () => {
         { provide: getModelToken(Course.name), useValue: mockCourseModel },
         { provide: EnrollmentsService, useValue: mockEnrollmentsService },
         { provide: NotificationsService, useValue: mockNotificationsService },
+        {
+          provide: getQueueToken('enrollment-reconcile'),
+          useValue: mockQueue,
+        },
       ],
     }).compile();
 
@@ -57,6 +72,10 @@ describe('PaymentsService Tuition Logic', () => {
     (service as any).razorpay = {
       orders: { create: jest.fn().mockResolvedValue({ id: 'order_123' }) },
     };
+    mockEnrollmentsService.enrollIdempotent.mockResolvedValue({
+      success: true,
+      data: {},
+    });
   });
 
   afterEach(() => {
@@ -191,12 +210,81 @@ describe('PaymentsService Tuition Logic', () => {
       const transaction = {
         id: 'trans_1',
         status: TransactionStatus.PENDING,
+        razorpayOrderId: razorpay_order_id,
         metadata,
       };
 
       mockTransactionRepo.findOne.mockResolvedValue(transaction);
       return { razorpay_order_id, razorpay_payment_id, razorpay_signature };
     };
+
+    it('recovery: verify when already completed but enrollment missing -> enrollIdempotent called', async () => {
+      const courseId = new Types.ObjectId().toString();
+      const razorpay_order_id = 'order_valid';
+      const razorpay_payment_id = 'pay_valid';
+      const text = razorpay_order_id + '|' + razorpay_payment_id;
+      const razorpay_signature = crypto
+        .createHmac('sha256', mockConfigService.razorpayKeySecret)
+        .update(text)
+        .digest('hex');
+
+      mockTransactionRepo.findOne.mockResolvedValueOnce({
+        id: 'trans_1',
+        status: TransactionStatus.COMPLETED,
+        metadata: { courseTitle: 'Test Course' },
+        razorpayOrderId: razorpay_order_id,
+      });
+
+      const result = await service.verifyAndConfirmPayment('u1', {
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature,
+        courseId,
+      });
+
+      expect(mockEnrollmentsService.enrollIdempotent).toHaveBeenCalledWith(
+        courseId,
+        'u1',
+        expect.objectContaining({ courseTitle: 'Test Course' }),
+      );
+      expect(result.data.alreadyCompleted).toBe(true);
+      expect(result.data.enrolled).toBe(true);
+    });
+
+    it('verify: transaction completed but generic enrollment error -> mark pending', async () => {
+      const courseId = new Types.ObjectId().toString();
+      const dto = setupVerifyMock({ courseTitle: 'Error Course' });
+
+      mockEnrollmentsService.enrollIdempotent.mockRejectedValue(
+        new Error('Mongo Timeout'),
+      );
+
+      const result = await service.verifyAndConfirmPayment('u1', {
+        ...dto,
+        courseId,
+      });
+
+      expect(mockTransactionRepo.save).toHaveBeenCalled();
+      const savedTrans = mockTransactionRepo.save.mock.calls.find(
+        (call) => call[0].status === TransactionStatus.COMPLETED,
+      )[0];
+      expect(savedTrans.metadata.enrollment_status).toBe('pending');
+      expect(savedTrans.metadata.enrollment_error).toBe('Mongo Timeout');
+
+      expect(result.data.enrollment_status).toBe('pending');
+      expect(result.data.enrolled).toBe(false);
+      expect(result.data.transaction_status).toBe('completed');
+
+      // PROMPT 4: Verify queue add
+      expect(mockQueue.add).toHaveBeenCalledWith(
+        'reconcile-enrollment',
+        { transactionId: 'trans_1' },
+        expect.objectContaining({
+          jobId: 'enrollment-reconcile:trans_1',
+          attempts: 10,
+        }),
+      );
+    });
 
     it('should enroll subject monthly correctly mapping metadata and send notification', async () => {
       const courseId = new Types.ObjectId().toString();
@@ -211,7 +299,7 @@ describe('PaymentsService Tuition Logic', () => {
       await service.verifyAndConfirmPayment('u1', { ...dto, courseId });
 
       expect(mockTransactionRepo.save).toHaveBeenCalled();
-      expect(mockEnrollmentsService.enroll).toHaveBeenCalledWith(
+      expect(mockEnrollmentsService.enrollIdempotent).toHaveBeenCalledWith(
         courseId,
         'u1',
         expect.objectContaining({
@@ -225,7 +313,7 @@ describe('PaymentsService Tuition Logic', () => {
         expect.objectContaining({
           type: NotificationType.PAYMENT_CONFIRMED,
           user_id: 'u1',
-        })
+        }),
       );
     });
 
@@ -266,7 +354,7 @@ describe('PaymentsService Tuition Logic', () => {
 
       await service.verifyAndConfirmPayment('u1', { ...dto, courseId });
 
-      expect(mockEnrollmentsService.enroll).toHaveBeenCalledWith(
+      expect(mockEnrollmentsService.enrollIdempotent).toHaveBeenCalledWith(
         courseId,
         'u1',
         expect.objectContaining({
@@ -289,7 +377,7 @@ describe('PaymentsService Tuition Logic', () => {
 
       await service.verifyAndConfirmPayment('u1', { ...dto, courseId });
 
-      expect(mockEnrollmentsService.enroll).toHaveBeenCalledWith(
+      expect(mockEnrollmentsService.enrollIdempotent).toHaveBeenCalledWith(
         courseId,
         'u1',
         expect.objectContaining({
@@ -311,7 +399,7 @@ describe('PaymentsService Tuition Logic', () => {
 
       await service.verifyAndConfirmPayment('u1', { ...dto, courseId });
 
-      expect(mockEnrollmentsService.enroll).toHaveBeenCalledWith(
+      expect(mockEnrollmentsService.enrollIdempotent).toHaveBeenCalledWith(
         courseId,
         'u1',
         expect.objectContaining({
@@ -320,6 +408,58 @@ describe('PaymentsService Tuition Logic', () => {
           billing_mode: 'bundle',
         }),
       );
+    });
+  });
+
+  describe('Amount Units and Precision', () => {
+    it('should convert major units to minor units for Razorpay and store major units in DB', async () => {
+      const courseId = new Types.ObjectId().toString();
+      mockCourseModel.findById.mockResolvedValue({
+        _id: courseId,
+        status: 'published',
+        title: 'High Precision Course',
+        pricing: { price: 999.5, currency: 'INR' },
+      });
+
+      const result = await service.createCourseOrder('u1', { courseId });
+
+      // Razorpay expects paisa (999.5 * 100 = 99950)
+      expect((service as any).razorpay.orders.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: 99950,
+        }),
+      );
+
+      // DB should store rupees (999.5)
+      expect(mockTransactionRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: 999.5,
+        }),
+      );
+
+      expect(result.data.amount).toBe(99950);
+    });
+  });
+
+  describe('Validation', () => {
+    it('should throw BadRequestException if already enrolled', async () => {
+      const courseId = new Types.ObjectId().toString();
+      mockCourseModel.findById.mockResolvedValue({
+        _id: courseId,
+        status: 'published',
+        product_type: 'course',
+      });
+      mockEnrollmentsService.hasAccess.mockResolvedValueOnce(true);
+
+      await expect(
+        service.createCourseOrder('u1', { courseId }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw NotFoundException for invalid mongo courseId in createOrder', async () => {
+      await expect(
+        service.createCourseOrder('u1', { courseId: 'invalid-id' }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

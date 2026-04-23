@@ -282,6 +282,7 @@ export const CourseSchema = SchemaFactory.createForClass(Course);
 
 CourseSchema.index({ 'category.main': 1, 'category.sub': 1 });
 CourseSchema.index({ status: 1, published_at: -1 });
+CourseSchema.index({ title: 1 });
 CourseSchema.index({ 'stats.average_rating': -1 });
 CourseSchema.index(
   {

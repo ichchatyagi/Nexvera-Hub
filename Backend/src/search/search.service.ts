@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Course, CourseDocument } from '../courses/schemas/course.schema';
 
 @Injectable()
@@ -18,7 +18,9 @@ export class SearchService {
 
   async suggest(q: string) {
     const rawQuery = (q || '').trim();
-    if (rawQuery.length < 2) {
+    
+    // Constraint: min 2, max 64
+    if (rawQuery.length < 2 || rawQuery.length > 64) {
       return {
         success: true,
         data: {
@@ -29,14 +31,11 @@ export class SearchService {
       };
     }
 
-    // Cap length to 64 chars
-    const sanitizedQuery = rawQuery.substring(0, 64);
-    const escaped = this.escapeRegex(sanitizedQuery);
-    const regex = new RegExp(escaped, 'i');
+    const escaped = this.escapeRegex(rawQuery);
 
     const [courses, tuitionClasses, tuitionSubjects] = await Promise.all([
-      this.getCourseSuggestions(regex),
-      this.getTuitionClassSuggestions(regex),
+      this.getCourseSuggestions(escaped),
+      this.getTuitionClassSuggestions(escaped),
       this.getTuitionSubjectSuggestions(escaped),
     ]);
 
@@ -50,17 +49,40 @@ export class SearchService {
     };
   }
 
-  private async getCourseSuggestions(regex: RegExp) {
+  private async getCourseSuggestions(escaped: string) {
     const docs = await this.courseModel
-      .find({
-        product_type: { $ne: 'tuition' },
-        status: 'published',
-        title: { $regex: regex },
-      })
-      .sort({ published_at: -1, created_at: -1 })
-      .limit(6)
-      .select('_id slug title thumbnail_url category.main level')
-      .lean()
+      .aggregate([
+        {
+          $match: {
+            product_type: { $ne: 'tuition' },
+            status: 'published',
+            title: { $regex: escaped, $options: 'i' },
+          },
+        },
+        {
+          $addFields: {
+            relevance: {
+              $cond: [
+                { $regexMatch: { input: "$title", regex: "^" + escaped, options: "i" } },
+                2,
+                1
+              ]
+            }
+          }
+        },
+        { $sort: { relevance: -1, published_at: -1, created_at: -1 } },
+        { $limit: 6 },
+        {
+          $project: {
+            _id: 1,
+            slug: 1,
+            title: 1,
+            thumbnail_url: 1,
+            category_main: '$category.main',
+            level: 1,
+          }
+        }
+      ])
       .exec();
 
     return docs.map((doc: any) => ({
@@ -69,22 +91,43 @@ export class SearchService {
       slug: doc.slug,
       title: doc.title,
       thumbnail_url: doc.thumbnail_url || null,
-      category_main: doc.category?.main || null,
+      category_main: doc.category_main || null,
       level: doc.level || null,
     }));
   }
 
-  private async getTuitionClassSuggestions(regex: RegExp) {
+  private async getTuitionClassSuggestions(escaped: string) {
     const docs = await this.courseModel
-      .find({
-        product_type: 'tuition',
-        status: 'published',
-        title: { $regex: regex },
-      })
-      .sort({ published_at: -1, created_at: -1 })
-      .limit(6)
-      .select('_id slug title tuition_meta.class_level')
-      .lean()
+      .aggregate([
+        {
+          $match: {
+            product_type: 'tuition',
+            status: 'published',
+            title: { $regex: escaped, $options: 'i' },
+          },
+        },
+        {
+          $addFields: {
+            relevance: {
+              $cond: [
+                { $regexMatch: { input: "$title", regex: "^" + escaped, options: "i" } },
+                2,
+                1
+              ]
+            }
+          }
+        },
+        { $sort: { relevance: -1, published_at: -1, created_at: -1 } },
+        { $limit: 6 },
+        {
+          $project: {
+            _id: 1,
+            slug: 1,
+            title: 1,
+            class_level: '$tuition_meta.class_level',
+          }
+        }
+      ])
       .exec();
 
     return docs.map((doc: any) => ({
@@ -92,25 +135,36 @@ export class SearchService {
       id: doc._id.toString(),
       slug: doc.slug,
       title: doc.title,
-      class_level: doc.tuition_meta?.class_level || null,
+      class_level: doc.class_level || null,
     }));
   }
 
-  private async getTuitionSubjectSuggestions(escapedQuery: string) {
+  private async getTuitionSubjectSuggestions(escaped: string) {
     const results = await this.courseModel
       .aggregate([
         {
           $match: {
             product_type: 'tuition',
             status: 'published',
-            'tuition_meta.subjects.0': { $exists: true },
+            'tuition_meta.subjects.name': { $regex: escaped, $options: 'i' },
           },
         },
         { $unwind: '$tuition_meta.subjects' },
         {
           $match: {
-            'tuition_meta.subjects.name': { $regex: escapedQuery, $options: 'i' },
+            'tuition_meta.subjects.name': { $regex: escaped, $options: 'i' },
           },
+        },
+        {
+          $addFields: {
+            relevance: {
+              $cond: [
+                { $regexMatch: { input: "$tuition_meta.subjects.name", regex: "^" + escaped, options: "i" } },
+                2,
+                1
+              ]
+            }
+          }
         },
         {
           $project: {
@@ -122,15 +176,20 @@ export class SearchService {
             subjectId: { $toString: '$tuition_meta.subjects.subject_id' },
             subjectSlug: '$tuition_meta.subjects.slug',
             subjectName: '$tuition_meta.subjects.name',
+            relevance: 1,
           },
         },
+        { $sort: { relevance: -1, subjectName: 1 } },
         { $limit: 6 },
       ])
       .exec();
 
-    return results.map((res) => ({
-      type: 'tuition_subject',
-      ...res,
-    }));
+    return results.map((res) => {
+      const { relevance, ...data } = res;
+      return {
+        type: 'tuition_subject',
+        ...data,
+      };
+    });
   }
 }

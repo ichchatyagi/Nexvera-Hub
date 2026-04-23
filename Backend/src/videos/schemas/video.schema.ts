@@ -83,6 +83,12 @@ export class VideoProcessed {
    */
   @Prop({ type: String, default: null })
   thumbnails_vtt: string | null;
+
+  /**
+   * Detailed error message or code if status = 'failed'.
+   */
+  @Prop({ type: String, default: null })
+  error: string | null;
 }
 
 /** A caption/subtitle track for a specific language. */
@@ -100,6 +106,27 @@ export class VideoCaption {
   @Prop({ default: false })
   auto_generated: boolean;
 }
+
+/** A record of a discrete step in the video pipeline (upload, queuing, completion, failure). */
+@Schema({ _id: false })
+export class VideoPipelineEvent {
+  /** Timestamp of the event. */
+  @Prop({ default: () => new Date() })
+  at: Date;
+
+  /** Machine-readable event type, e.g. "UPLOAD_INITIATED", "PROCESSING_FAILED". */
+  @Prop({ required: true })
+  type: string;
+
+  /** Human-readable description or context. */
+  @Prop()
+  message?: string;
+
+  /** Small, flexible metadata for the event (e.g. error codes, S3 keys). No secrets. */
+  @Prop({ type: Object, default: {} })
+  meta?: Record<string, any>;
+}
+
 
 // ─── Root document ────────────────────────────────────────────────────────────
 
@@ -164,6 +191,13 @@ export class Video {
   @Prop({ type: [VideoCaption], default: [] })
   captions: VideoCaption[];
 
+  // ── Pipeline metrics / Observability ─────────────────────────────────────
+
+  /** Chronological history of events in this video's processing lifecycle. */
+  @Prop({ type: [VideoPipelineEvent], default: [] })
+  pipeline_events: VideoPipelineEvent[];
+
+
   // ── Engagement stats ──────────────────────────────────────────────────────
 
   /** Total number of individual play events. */
@@ -201,3 +235,7 @@ VideoSchema.index({ teacher_id: 1, 'processed.status': 1 });
 VideoSchema.index({ course_id: 1, lesson_id: 1 });
 // Link recording to live class and check processing status
 VideoSchema.index({ live_class_id: 1, 'processed.status': 1 });
+
+// Index for efficiently querying pipeline failures or recent activity
+VideoSchema.index({ 'processed.status': 1, updated_at: -1 });
+

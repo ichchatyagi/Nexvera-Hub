@@ -55,7 +55,8 @@ export class LiveClassesController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(@CurrentUser() user: User, @Body() dto: CreateLiveClassDto) {
-    const data = await this.liveClassesService.create(user.id, dto);
+    const isAdmin = user.role === UserRole.ADMIN;
+    const data = await this.liveClassesService.create(user.id, dto, isAdmin);
     return { success: true, data };
   }
 
@@ -147,6 +148,10 @@ export class LiveClassesController {
   async cancel(@CurrentUser() user: User, @Param('id') id: string) {
     const isAdmin = user.role === UserRole.ADMIN;
     const data = await this.liveClassesService.cancel(id, user.id, isAdmin);
+    
+    // Broadcast cancellation
+    this.liveClassesGateway.sendLifecycleEvent(id, 'class:cancelled');
+
     return { success: true, data };
   }
 
@@ -171,8 +176,8 @@ export class LiveClassesController {
     const isAdmin = user.role === UserRole.ADMIN;
     const data = await this.liveClassesService.start(id, user.id, isAdmin);
 
-    // Broadcast start
-    this.liveClassesGateway.server.to(id).emit('class:started');
+    // Broadcast start safely
+    this.liveClassesGateway.sendLifecycleEvent(id, 'class:started');
 
     return { success: true, data };
   }
@@ -196,8 +201,8 @@ export class LiveClassesController {
     const isAdmin = user.role === UserRole.ADMIN;
     const data = await this.liveClassesService.end(id, user.id, isAdmin);
 
-    // Broadcast end
-    this.liveClassesGateway.server.to(id).emit('class:ended');
+    // Broadcast end safely
+    this.liveClassesGateway.sendLifecycleEvent(id, 'class:ended');
 
     return { success: true, data };
   }

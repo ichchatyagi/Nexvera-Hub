@@ -20,7 +20,7 @@ export interface Notification {
 
 export const notificationsService = {
   async listMy(params?: { unread?: boolean; page?: number; limit?: number }) {
-    const resp = await api.get('/notifications/my', { params });
+    const resp = await api.get('/notifications', { params });
     // api unwraps { success, data, meta }
     return { data: resp.data, meta: (resp as any).meta };
   },
@@ -36,7 +36,8 @@ export const notificationsService = {
   },
 
   async getUnreadCount(): Promise<number> {
-    const { meta } = await this.listMy({ unread: true, limit: 1, page: 1 });
-    return meta?.pagination?.total_items || 0;
+    const resp = await api.get('/notifications/unread-count');
+    // api interceptor unwraps originalData.data into resp.data
+    return resp.data?.unread_count || 0;
   }
 };

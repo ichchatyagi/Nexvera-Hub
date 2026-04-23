@@ -61,6 +61,10 @@ export class NotificationsGateway
   }
 
   emitToUser(userId: string, event: string, payload: any) {
+    if (!this.server) {
+      this.logger.warn(`Cannot emit "${event}" to user ${userId}: WebSocket server not initialized`);
+      return;
+    }
     this.server.to(userId).emit(event, payload);
   }
 }

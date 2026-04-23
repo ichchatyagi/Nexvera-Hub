@@ -10,7 +10,9 @@
   "dependencies": {
     "@aws-sdk/client-mediaconvert": "^3.500.0",
     "@aws-sdk/client-s3": "^3.500.0",
-    "axios": "^1.6.0"
+    "@aws-sdk/client-sqs": "^3.0.0",
+    "@nexvera/contracts": "file:../packages/nexvera-contracts",
+    "axios": "^1.7.9"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.125",

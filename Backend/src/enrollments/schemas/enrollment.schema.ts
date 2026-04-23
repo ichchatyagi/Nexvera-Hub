@@ -116,6 +116,12 @@ export const EnrollmentSchema = SchemaFactory.createForClass(Enrollment);
 
 // Allow multiple granular tuition records natively avoiding global course conflicts organically
 EnrollmentSchema.index(
-  { student_id: 1, course_id: 1, access_scope: 1, tuition_subject_id: 1 },
+  {
+    student_id: 1,
+    course_id: 1,
+    product_type: 1,
+    access_scope: 1,
+    tuition_subject_id: 1,
+  },
   { unique: true },
 );

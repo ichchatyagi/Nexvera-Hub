@@ -128,6 +128,12 @@ export class CompleteProcessingDto {
    */
   @IsString()
   @IsIn(['completed', 'failed'])
+  status: 'completed' | 'failed';
+
+  /**
+   * Optional error message or code if status is "failed".
+   */
+  @IsString()
   @IsOptional()
-  status?: 'completed' | 'failed';
+  error?: string;
 }

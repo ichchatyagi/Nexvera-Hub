@@ -3,15 +3,17 @@ import { getModelToken } from '@nestjs/mongoose';
 import { SearchService } from './search.service';
 import { Course } from '../courses/schemas/course.schema';
 
-const mockCourseModel = {
-  find: jest.fn(),
-  aggregate: jest.fn(),
-};
-
-describe('SearchService', () => {
+describe('SearchService Hardening', () => {
   let service: SearchService;
+  let mockCourseModel: any;
 
   beforeEach(async () => {
+    mockCourseModel = {
+      aggregate: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue([]),
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SearchService,
@@ -25,104 +27,79 @@ describe('SearchService', () => {
     service = module.get<SearchService>(SearchService);
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
-
-  describe('escapeRegex', () => {
-    it('should escape regex metacharacters', () => {
-      const input = '(a+)+';
-      const escaped = service.escapeRegex(input);
-      expect(escaped).toBe('\\(a\\+\\)\\+');
-      expect(() => new RegExp(escaped)).not.toThrow();
-    });
-
-    it('should escape all common metacharacters', () => {
-      const input = '.*+?^${}()|[]\\';
-      const escaped = service.escapeRegex(input);
-      expect(escaped).toBe('\\.\\*\\+\\?\\^\\$\\{\\}\\(\\)\\|\\[\\]\\\\');
-    });
-  });
-
-  describe('suggest', () => {
-    it('should return empty buckets if q is shorter than 2', async () => {
+  describe('Input Validation', () => {
+    it('returns empty results for queries < 2 chars', async () => {
       const result = await service.suggest('a');
-      expect(result.success).toBe(true);
       expect(result.data.courses).toEqual([]);
-      expect(result.data.tuition_classes).toEqual([]);
-      expect(result.data.tuition_subjects).toEqual([]);
-      expect(mockCourseModel.find).not.toHaveBeenCalled();
+      expect(mockCourseModel.aggregate).not.toHaveBeenCalled();
     });
 
-    it('should handle missing or empty q', async () => {
-      const result = await service.suggest('');
+    it('returns empty results for queries > 64 chars', async () => {
+      const result = await service.suggest('a'.repeat(65));
       expect(result.data.courses).toEqual([]);
-      expect(mockCourseModel.find).not.toHaveBeenCalled();
+      expect(mockCourseModel.aggregate).not.toHaveBeenCalled();
     });
 
-    it('should return tuition subjects with mapped fields from aggregation', async () => {
-      const mockAggregationResult = [
-        {
-          classId: 'c1',
-          classSlug: 'class-slug',
-          classTitle: 'Class Title',
-          class_level: 10,
-          subjectId: 's1',
-          subjectSlug: 'subject-slug',
-          subjectName: 'Subject Name',
-        },
-      ];
+    it('trims whitespace', async () => {
+      await service.suggest('  ab  ');
+      // The first argument to aggregate is the pipeline
+      const pipeline = mockCourseModel.aggregate.mock.calls[0][0];
+      const matchStage = pipeline.find((s: any) => s.$match);
+      expect(matchStage.$match.title.$regex).toBe('ab');
+    });
 
-      mockCourseModel.find.mockReturnValue({
-        sort: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        lean: jest.fn().mockReturnThis(),
-        exec: jest.fn().mockResolvedValue([]),
-      });
-
-      mockCourseModel.aggregate.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(mockAggregationResult),
-      });
-
-      const result = await service.suggest('subject');
-
+    it('handles regex metacharacters safely', async () => {
+      const result = await service.suggest('(a+)+');
       expect(result.success).toBe(true);
-      expect(result.data.tuition_subjects).toHaveLength(1);
-      expect(result.data.tuition_subjects[0]).toEqual({
-        type: 'tuition_subject',
-        classId: 'c1',
-        classSlug: 'class-slug',
-        classTitle: 'Class Title',
-        class_level: 10,
-        subjectId: 's1',
-        subjectSlug: 'subject-slug',
-        subjectName: 'Subject Name',
-      });
+      const pipeline = mockCourseModel.aggregate.mock.calls[0][0];
+      const matchStage = pipeline.find((s: any) => s.$match);
+      expect(matchStage.$match.title.$regex).toBe('\\(a\\+\\)\\+');
     });
+  });
 
-    it('should truncate query to 64 characters', async () => {
-      const longQuery = 'a'.repeat(100);
-      mockCourseModel.find.mockReturnValue({
-        sort: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        lean: jest.fn().mockReturnThis(),
-        exec: jest.fn().mockResolvedValue([]),
-      });
+  describe('Relevance Ordering', () => {
+    it('ranks prefix matches higher using $addFields relevance', async () => {
       mockCourseModel.aggregate.mockReturnValue({
-        exec: jest.fn().mockResolvedValue([]),
+        exec: jest.fn().mockResolvedValue([
+          { _id: '1', title: 'Calculus 101', relevance: 2 },
+          { _id: '2', title: 'Advanced Calculus', relevance: 1 },
+        ]),
       });
 
-      await service.suggest(longQuery);
+      const result = await service.suggest('Calc');
       
-      // We check that it was called once for courses, once for tuition classes
-      expect(mockCourseModel.find).toHaveBeenCalledTimes(2);
-      expect(mockCourseModel.aggregate).toHaveBeenCalledTimes(1);
+      // Verify pipeline contains relevance logic
+      const pipeline = mockCourseModel.aggregate.mock.calls[0][0];
+      const addFieldsStage = pipeline.find((s: any) => s.$addFields);
+      expect(addFieldsStage.$addFields.relevance).toBeDefined();
+      
+      const sortStage = pipeline.find((s: any) => s.$sort);
+      expect(sortStage.$sort.relevance).toBe(-1);
+
+      expect(result.data.courses[0].title).toBe('Calculus 101');
+    });
+  });
+
+  describe('Stable Payload', () => {
+    it('stringifies Mongo ObjectIds and hides internal fields', async () => {
+      mockCourseModel.aggregate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue([
+          { 
+            _id: { toString: () => 'mongo-id-123' }, 
+            title: 'Test Course',
+            slug: 'test-course',
+            relevance: 2 // Should be removed in mapping
+          },
+        ]),
+      });
+
+      const result = await service.suggest('test');
+      const course = result.data.courses[0];
+      
+      expect(course.id).toBe('mongo-id-123');
+      expect(course).not.toHaveProperty('_id');
+      expect(course).not.toHaveProperty('relevance');
+      expect(course.type).toBe('course');
     });
   });
 });

@@ -113,11 +113,12 @@ const VideoManager = () => {
         size_bytes: uploadFile.size
       });
 
-      const { upload_url, video_id } = initiateRes.data;
+      const { presigned, video_id } = initiateRes.data;
 
       // 2. Upload directly to S3
-      await axios.put(upload_url, uploadFile, {
+      await axios.put(presigned.upload_url, uploadFile, {
         headers: {
+          ...presigned.headers,
           'Content-Type': uploadFile.type
         },
         onUploadProgress: (progressEvent) => {

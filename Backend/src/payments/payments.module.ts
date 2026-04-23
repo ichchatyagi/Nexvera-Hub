@@ -18,6 +18,8 @@ import {
 import { AppConfigModule } from '../app-config/app-config.module';
 import { EnrollmentsModule } from '../enrollments/enrollments.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { QueueModule } from '../queue/queue.module';
+import { EnrollmentReconcileProcessor } from './processors/enrollment-reconcile.processor';
 
 @Module({
   imports: [
@@ -29,13 +31,18 @@ import { NotificationsModule } from '../notifications/notifications.module';
     AppConfigModule,
     EnrollmentsModule,
     NotificationsModule,
+    QueueModule,
   ],
   controllers: [
     InstructorEarningsController,
     PaymentsController,
     AdminTransactionsController,
   ],
-  providers: [PaymentsService, PayoutsService],
+  providers: [
+    PaymentsService,
+    PayoutsService,
+    EnrollmentReconcileProcessor,
+  ],
   exports: [PaymentsService, PayoutsService],
 })
 export class PaymentsModule {}

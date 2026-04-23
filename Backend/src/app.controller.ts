@@ -9,11 +9,17 @@ export class AppController {
 
   @Get('health')
   getHealth() {
-    return this.appService.getHealth();
+    return { success: true, data: this.appService.getHealth() };
+  }
+
+  @Get('health/ready')
+  async getReadiness() {
+    const isReady = await this.appService.checkReadiness();
+    return { success: true, data: isReady };
   }
 
   @Get('info')
   getInfo() {
-    return this.appService.getInfo();
+    return { success: true, data: this.appService.getInfo() };
   }
 }

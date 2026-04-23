@@ -13,7 +13,6 @@ export class AnalyticsController {
 
   @Get('overview')
   async getOverview() {
-    const data = await this.analyticsService.getOverview();
-    return { success: true, data };
+    return this.analyticsService.getOverview();
   }
 }

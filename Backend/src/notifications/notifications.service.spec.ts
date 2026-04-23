@@ -66,6 +66,30 @@ describe('NotificationsService', () => {
       });
       expect(mockGateway.emitToUser).toHaveBeenCalledWith('u1', 'notification:new', expect.any(Object));
     });
+
+    it('should not throw if gateway emission fails', async () => {
+      const input = {
+        user_id: 'u1',
+        type: NotificationType.PAYMENT_CONFIRMED,
+        title: 'Title',
+        body: 'Body',
+      };
+      
+      const mockCreated = {
+        toObject: jest.fn().mockReturnValue({ _id: 'n1', ...input, read_at: null }),
+      };
+      mockNotificationModel.create.mockResolvedValue(mockCreated);
+      mockGateway.emitToUser.mockImplementation(() => {
+        throw new Error('Websocket Failure');
+      });
+
+      const result = await service.createNotification(input);
+
+      expect(result._id).toBe('n1');
+      expect(mockNotificationModel.create).toHaveBeenCalled();
+      // Should have tried to emit
+      expect(mockGateway.emitToUser).toHaveBeenCalled();
+    });
   });
 
   describe('listForUser', () => {
@@ -135,6 +159,21 @@ describe('NotificationsService', () => {
         { user_id: 'u1', read_at: null },
         { $set: { read_at: expect.any(Date) } },
       );
+    });
+  });
+
+  describe('getUnreadCount', () => {
+    it('should return the count of unread notifications', async () => {
+      mockNotificationModel.countDocuments.mockResolvedValue(3);
+
+      const result = await service.getUnreadCount('u1');
+
+      expect(result.success).toBe(true);
+      expect(result.data.unread_count).toBe(3);
+      expect(mockNotificationModel.countDocuments).toHaveBeenCalledWith({
+        user_id: 'u1',
+        read_at: null,
+      });
     });
   });
 });

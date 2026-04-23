@@ -13,6 +13,7 @@ import {
   LiveClass,
   LiveClassStatus,
 } from '../live-classes/schemas/live-class.schema';
+import { CacheService } from '../cache/cache.service';
 
 describe('AnalyticsService', () => {
   let service: AnalyticsService;
@@ -48,6 +49,10 @@ describe('AnalyticsService', () => {
     }),
   };
 
+  const mockCacheService = {
+    getOrSetJson: jest.fn().mockImplementation((ns, key, ttl, loader) => loader()),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -72,6 +77,10 @@ describe('AnalyticsService', () => {
           provide: getModelToken(LiveClass.name),
           useValue: mockLiveClassModel,
         },
+        {
+          provide: CacheService,
+          useValue: mockCacheService,
+        },
       ],
     }).compile();
 
@@ -86,15 +95,17 @@ describe('AnalyticsService', () => {
     it('should return overview data in correct shape', async () => {
       const result = await service.getOverview();
 
-      expect(result).toHaveProperty('users');
-      expect(result).toHaveProperty('catalog');
-      expect(result).toHaveProperty('learning');
-      expect(result).toHaveProperty('revenue');
-      expect(result).toHaveProperty('live_classes');
-
-      expect(result.users.total_users).toBe(100);
-      expect(result.catalog.total_courses).toBe(10);
-      expect(result.revenue.revenue_all_time).toBe(100); // 10000 / 100
+      expect(result.success).toBe(true);
+      expect(result.data).toHaveProperty('users');
+      expect(result.data).toHaveProperty('catalog');
+      expect(result.data.users.total_users).toBe(100);
+      expect(result.data.revenue.revenue_all_time).toBe(10000); // Now using major units directly
+      expect(mockCacheService.getOrSetJson).toHaveBeenCalledWith(
+        'admin-analytics',
+        'overview',
+        60,
+        expect.any(Function),
+      );
     });
   });
 });

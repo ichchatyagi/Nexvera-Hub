@@ -27,6 +27,7 @@ const navItems = [
   { label: 'Instructors & Earnings', href: '/admin/instructors/earnings', icon: IndianRupee },
   { label: 'Users', href: '/admin/users', icon: Users },
   { label: 'Live Classes', href: '/admin/live-classes', icon: Video },
+  { label: 'Attendance Report', href: '/admin/live-classes/attendance', icon: BarChart3 },
   { label: 'Payments', href: '/admin/payments', icon: CreditCard },
   { label: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
 ];

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
@@ -18,6 +18,8 @@ export interface CreateNotificationInput {
 
 @Injectable()
 export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
+
   constructor(
     @InjectModel(Notification.name)
     private readonly notificationModel: Model<NotificationDocument>,
@@ -32,8 +34,14 @@ export class NotificationsService {
 
     const plainNotification = created.toObject();
 
-    // Push to live feed
-    this.gateway.emitToUser(input.user_id, 'notification:new', plainNotification);
+    // Push to live feed - Best effort, do not crash if emit fails
+    try {
+      this.gateway.emitToUser(input.user_id, 'notification:new', plainNotification);
+    } catch (err) {
+      this.logger.error(
+        `Failed to emit live notification for user ${input.user_id}: ${err.message}`,
+      );
+    }
 
     return plainNotification;
   }
@@ -108,5 +116,13 @@ export class NotificationsService {
       success: true,
       data: { updated: result.modifiedCount },
     };
+  }
+
+  async getUnreadCount(userId: string) {
+    const unreadCount = await this.notificationModel.countDocuments({
+      user_id: userId,
+      read_at: null,
+    });
+    return { success: true, data: { unread_count: unreadCount } };
   }
 }

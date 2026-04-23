@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { UserRole } from './entities/user.entity';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 const mockUser = {
   id: 'uuid-1',
@@ -21,13 +22,28 @@ const mockUsersService = {
   listTeachers: jest.fn(),
 };
 
+const mockAnalyticsService = {
+  getOverview: jest.fn().mockResolvedValue({
+    success: true,
+    data: {
+      users: { total_users: 100 },
+      catalog: { total_courses: 50 },
+      learning: { active_enrollments: 20 },
+      revenue: { revenue_mtd: 1000 },
+    },
+  }),
+};
+
 describe('UsersController', () => {
   let controller: UsersController;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [UsersController],
-      providers: [{ provide: UsersService, useValue: mockUsersService }],
+      providers: [
+        { provide: UsersService, useValue: mockUsersService },
+        { provide: AnalyticsService, useValue: mockAnalyticsService },
+      ],
     }).compile();
 
     controller = module.get<UsersController>(UsersController);
@@ -65,6 +81,18 @@ describe('UsersController', () => {
       expect(result.success).toBe(true);
       expect(Array.isArray(result.data)).toBe(true);
       expect((result.data[0] as any).passwordHash).toBeUndefined();
+    });
+  });
+
+  describe('GET /users/admin/dashboard', () => {
+    it('should return real dashboard stats for admin', async () => {
+      const result = await controller.adminDashboard();
+
+      expect(result.success).toBe(true);
+      expect(result.data.overview).toBeDefined();
+      expect(result.data.overview.users.total_users).toBe(100);
+      expect(result.data.generated_at_utc).toBeDefined();
+      expect(mockAnalyticsService.getOverview).toHaveBeenCalled();
     });
   });
 });

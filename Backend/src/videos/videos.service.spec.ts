@@ -12,9 +12,19 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { UserRole } from '../users/entities/user.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/schemas/notification.schema';
+import { AlertsService } from '../alerts/alerts.service';
+
 
 jest.mock('@aws-sdk/s3-request-presigner');
 const mockedGetSignedUrl = getSignedUrl as jest.Mock;
+
+jest.mock('./cloudfront-signer', () => ({
+  signCloudFrontUrl: jest.fn().mockImplementation((url, config) => {
+    if (!url) return url;
+    if (config && config.cloudfrontSignedUrlsEnabled === false) return url;
+    return url.includes('?') ? `${url}&signed=true` : `${url}?signed=true`;
+  }),
+}));
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -67,21 +77,22 @@ const mockVideoModel = {
   find: jest.fn(),
   findByIdAndUpdate: jest.fn(),
   findByIdAndDelete: jest.fn(),
+  updateOne: jest.fn().mockResolvedValue({}),
 };
+
 
 const mockLiveClassModel = {
   findByIdAndUpdate: jest.fn(),
   findOneAndUpdate: jest.fn(),
   findById: jest.fn().mockReturnValue({
-    lean: jest.fn().mockReturnValue({
-      exec: jest.fn().mockResolvedValue({
-        _id: new Types.ObjectId(),
-        course_id: new Types.ObjectId(),
-        title: 'Mock Live Class',
-        teacher_id: 't1',
-        registered_students: ['s1', 's2'],
-      }),
+    exec: jest.fn().mockResolvedValue({
+      _id: new Types.ObjectId(),
+      course_id: new Types.ObjectId(),
+      title: 'Mock Live Class',
+      teacher_id: 't1',
+      registered_students: ['s1', 's2'],
     }),
+    lean: jest.fn().mockReturnThis(),
   }),
 };
 
@@ -93,6 +104,12 @@ const mockConfigService = {
   environment: 'test',
   awsAccessKey: '',
   awsSecretKey: '',
+  cloudfrontSignedUrlsEnabled: true,
+  cloudfrontKeyPairId: 'test-key',
+  cloudfrontPrivateKeyBase64: 'test-pk',
+  cloudfrontSignedUrlTtlSeconds: 600,
+  videoUploadsEnabled: true,
+  videoProcessingQueueEnabled: true,
 };
 
 const mockQueueService = {
@@ -106,6 +123,11 @@ const mockEnrollmentsService = {
 const mockNotificationsService = {
   createNotification: jest.fn(),
 };
+
+const mockAlertsService = {
+  sendAlert: jest.fn().mockResolvedValue(undefined),
+};
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -143,7 +165,12 @@ describe('VideosService', () => {
           provide: NotificationsService,
           useValue: mockNotificationsService,
         },
+        {
+          provide: AlertsService,
+          useValue: mockAlertsService,
+        },
       ],
+
     }).compile();
 
     service = module.get<VideosService>(VideosService);
@@ -155,6 +182,41 @@ describe('VideosService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('Feature Gating', () => {
+    it('initiateUpload throws ServiceUnavailableException when uploads are disabled', async () => {
+      (mockConfigService as any).videoUploadsEnabled = false;
+      const dto = {
+        course_id: new Types.ObjectId().toString(),
+        filename: 'test.mp4',
+        mime_type: 'video/mp4',
+        size_bytes: 100,
+      };
+
+      try {
+        await service.initiateUpload(TEACHER_ID, dto as any);
+        throw new Error('Did not throw');
+      } catch (err: any) {
+        expect(err.status).toBe(503);
+        expect(err.getResponse().error.code).toBe('VIDEO_PIPELINE_DISABLED');
+      } finally {
+        (mockConfigService as any).videoUploadsEnabled = true;
+      }
+    });
+
+    it('triggerProcessing throws ServiceUnavailableException when queue is disabled', async () => {
+      (mockConfigService as any).videoProcessingQueueEnabled = false;
+      try {
+        await service.triggerProcessing(new Types.ObjectId().toString(), TEACHER_ID);
+        throw new Error('Did not throw');
+      } catch (err: any) {
+        expect(err.status).toBe(503);
+        expect(err.getResponse().error.code).toBe('VIDEO_PIPELINE_DISABLED');
+      } finally {
+        (mockConfigService as any).videoProcessingQueueEnabled = true;
+      }
+    });
   });
 
   // ── initiateUpload ──────────────────────────────────────────────────────────
@@ -195,7 +257,25 @@ describe('VideosService', () => {
 
       // Video document ref
       expect(result.video).toBe(mockVideo);
+
+      // Pipeline event was recorded
+      const createdId = (mockVideoModel.create.mock.calls[0][0] as any)._id;
+      expect(mockVideoModel.updateOne).toHaveBeenCalledWith(
+        { _id: createdId },
+        {
+          $push: {
+            pipeline_events: expect.objectContaining({
+              type: 'UPLOAD_INITIATED',
+              meta: expect.objectContaining({
+                teacher_id: TEACHER_ID,
+                course_id: courseId,
+              }),
+            }),
+          },
+        },
+      );
     });
+
 
     it('uses the correct s3 key pattern: originals/<id>/original.<ext>', async () => {
       const courseId = new Types.ObjectId().toString();
@@ -234,8 +314,13 @@ describe('VideosService', () => {
             provide: NotificationsService,
             useValue: mockNotificationsService,
           },
+          {
+            provide: AlertsService,
+            useValue: mockAlertsService,
+          },
         ],
       }).compile();
+
 
       const badService = badModule.get<VideosService>(VideosService);
 
@@ -304,7 +389,21 @@ describe('VideosService', () => {
         source: 'upload',
       });
       expect(result.success).toBe(true);
+
+      // Pipeline event was recorded
+      expect(mockVideoModel.updateOne).toHaveBeenCalledWith(
+        { _id: mockVideo._id.toString() },
+        {
+          $push: {
+            pipeline_events: expect.objectContaining({
+              type: 'PROCESSING_TRIGGERED',
+              meta: expect.objectContaining({ queued: true }),
+            }),
+          },
+        },
+      );
     });
+
 
     it('throws ForbiddenException when requester is not the owner', async () => {
       const mockVideo = makeMockVideo();
@@ -315,6 +414,23 @@ describe('VideosService', () => {
       await expect(
         service.triggerProcessing(mockVideo._id.toString(), OTHER_TEACHER_ID),
       ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('returns success with message when queue is not configured', async () => {
+      const mockVideo = makeMockVideo();
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+      mockQueueService.publishJob.mockResolvedValueOnce(false);
+
+      const result = await service.triggerProcessing(
+        mockVideo._id.toString(),
+        TEACHER_ID,
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('job could not be queued');
+      expect(mockVideo.processed.status).toBe('processing');
     });
   });
 
@@ -350,6 +466,29 @@ describe('VideosService', () => {
       for (const q of mockVideo.processed.qualities) {
         expect(q.url).toContain('test.cloudfront.net');
       }
+    });
+
+    it('throws ForbiddenException in production mode', async () => {
+      // Temporarily mock environment as production
+      const productionConfig = { ...mockConfigService, environment: 'production' };
+      const prodModule: TestingModule = await Test.createTestingModule({
+        providers: [
+          VideosService,
+          { provide: getModelToken(Video.name), useValue: mockVideoModel },
+          { provide: getModelToken(LiveClass.name), useValue: mockLiveClassModel },
+          { provide: AppConfigService, useValue: productionConfig },
+          { provide: VideoProcessingQueueService, useValue: mockQueueService },
+          { provide: EnrollmentsService, useValue: mockEnrollmentsService },
+          { provide: NotificationsService, useValue: mockNotificationsService },
+          { provide: AlertsService, useValue: mockAlertsService },
+        ],
+      }).compile();
+
+      const prodService = prodModule.get<VideosService>(VideosService);
+
+      await expect(prodService.simulateProcessing('any-id')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -509,7 +648,9 @@ describe('VideosService', () => {
 
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
-      expect(result.data!.manifest_url).toBe('https://cdn.example.com/preview/master.m3u8');
+      expect(result.data!.manifest_url).toBe(
+        'https://cdn.example.com/preview/master.m3u8?signed=true',
+      );
       // Enrollment service must not be called for anonymous preview
       expect(mockEnrollmentsService.isActiveCourseEnrollment).not.toHaveBeenCalled();
       // Must not expose raw S3 keys
@@ -571,13 +712,48 @@ describe('VideosService', () => {
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
       expect(result.data!.manifest_url).toBe(
-        'https://test.cloudfront.net/videos/abc/master.m3u8',
+        'https://test.cloudfront.net/videos/abc/master.m3u8?signed=true',
       );
       expect(result.data!.qualities).toHaveLength(1);
       expect(result.data!.captions).toHaveLength(1);
 
       // Must NOT expose raw S3 keys (original.key)
       expect(JSON.stringify(result.data)).not.toContain('originals/');
+
+      // Verify URLs are signed
+      expect(result.data!.manifest_url).toContain('signed=true');
+      expect(result.data!.thumbnail_url).toContain('signed=true');
+      expect(result.data!.thumbnails_vtt).toContain('signed=true');
+      expect(result.data!.qualities[0].url).toContain('signed=true');
+      expect(result.data!.captions[0].url).toContain('signed=true');
+    });
+
+    it('returns raw URLs when signing is disabled', async () => {
+      const originalFlag = mockConfigService.cloudfrontSignedUrlsEnabled;
+      (mockConfigService as any).cloudfrontSignedUrlsEnabled = false;
+
+      const mockVideo = makeMockVideo({
+        processed: {
+          status: 'completed',
+          manifest_url: 'https://test.cloudfront.net/raw.m3u8',
+          qualities: [],
+        },
+      });
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+
+      try {
+        const result = await service.getPlaybackMetadata(
+          mockVideo._id.toString(),
+          { id: 'admin', role: UserRole.ADMIN },
+        );
+        expect(result.data!.manifest_url).toBe(
+          'https://test.cloudfront.net/raw.m3u8',
+        );
+      } finally {
+        (mockConfigService as any).cloudfrontSignedUrlsEnabled = originalFlag;
+      }
     });
 
     it('returns an error payload when video is not yet ready', async () => {
@@ -673,9 +849,65 @@ describe('VideosService', () => {
       expect(mockVideo.original.duration_seconds).toBe(123);
       expect(mockVideo.processed_at).toBeInstanceOf(Date);
       expect(mockVideo.save).toHaveBeenCalled();
+
+
+      // Pipeline event was recorded
+      expect(mockVideoModel.updateOne).toHaveBeenCalledWith(
+        { _id: mockVideo._id.toString() },
+        {
+          $push: {
+            pipeline_events: expect.objectContaining({
+              type: 'PROCESSING_COMPLETED',
+              meta: expect.objectContaining({ base_key: baseKey }),
+            }),
+          },
+        },
+      );
+
       // Not a recording, so no live class update
       expect(mockLiveClassModel.findByIdAndUpdate).not.toHaveBeenCalled();
     });
+
+    it('records PROCESSING_FAILED event and sends alert on failure', async () => {
+      const mockVideo = makeMockVideo({
+        processed: { status: 'processing' },
+      });
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+
+      await service.completeProcessing(mockVideo._id.toString(), {
+        status: 'failed',
+        error: 'Transcode failed',
+        base_key: 'failed/key',
+      } as any);
+
+      expect(mockVideo.processed.status).toBe('failed');
+      expect(mockVideo.processed.error).toBe('Transcode failed');
+
+      // Pipeline event was recorded
+      expect(mockVideoModel.updateOne).toHaveBeenCalledWith(
+        { _id: mockVideo._id.toString() },
+        {
+          $push: {
+            pipeline_events: expect.objectContaining({
+              type: 'PROCESSING_FAILED',
+              meta: expect.objectContaining({ error: 'Transcode failed' }),
+            }),
+          },
+        },
+      );
+
+      // Alert was sent
+      expect(mockAlertsService.sendAlert).toHaveBeenCalledWith(
+        'Video processing failed',
+        expect.objectContaining({
+          videoId: mockVideo._id.toString(),
+          error: 'Transcode failed',
+        }),
+      );
+    });
+
 
     it('is idempotent when receiving duplicate success events', async () => {
       const mockVideo = makeMockVideo({ processed: { status: 'completed' } });
@@ -799,6 +1031,25 @@ describe('VideosService', () => {
       expect(mockVideo.processed.status).toBe('failed');
       // Should not set manifest_url when failed
       expect(mockVideo.processed.manifest_url).toBeNull();
+      expect(mockVideo.save).toHaveBeenCalled();
+    });
+
+    it('marks video as failed and stores error message when reported', async () => {
+      const mockVideo = makeMockVideo({
+        processed: { status: 'processing' },
+      });
+
+      mockVideoModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockVideo),
+      });
+
+      await service.completeProcessing(mockVideo._id.toString(), {
+        status: 'failed',
+        error: 'Incompatible codec',
+      } as any);
+
+      expect(mockVideo.processed.status).toBe('failed');
+      expect(mockVideo.processed.error).toBe('Incompatible codec');
       expect(mockVideo.save).toHaveBeenCalled();
     });
 
