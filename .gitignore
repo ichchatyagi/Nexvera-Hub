@@ -60,3 +60,8 @@ next-frontend/build_log.txt
 implementation-plans/
 nginx_config.conf
 ENVIRONMENT.md
+
+# terraform
+.terraform/
+*.tfvars
+infra/terraform/video-pipeline/artifacts/
