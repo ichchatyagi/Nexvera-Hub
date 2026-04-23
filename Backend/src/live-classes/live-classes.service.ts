@@ -278,7 +278,7 @@ export class LiveClassesService implements OnModuleInit {
       },
       recording: {
         // PROMPT 2: Hard-disable recording for tuition
-        enabled: course.product_type === 'tuition' ? false : (dto.recording?.enabled ?? false),
+        enabled: course.product_type === 'tuition' ? false : (dto.recording?.enabled ?? true),
         video_id: null,
         status: 'pending',
       },
