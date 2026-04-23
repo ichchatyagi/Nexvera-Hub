@@ -5,6 +5,7 @@ import {
   Logger,
   InternalServerErrorException,
   BadRequestException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -26,6 +27,9 @@ import { VideoProcessingQueueService } from '../video-processing-queue/video-pro
 import { EnrollmentsService } from '../enrollments/enrollments.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/schemas/notification.schema';
+import { signCloudFrontUrl } from './cloudfront-signer';
+import { AlertsService } from '../alerts/alerts.service';
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -63,6 +67,7 @@ export class VideosService {
     private readonly queueService: VideoProcessingQueueService,
     private readonly enrollmentsService: EnrollmentsService,
     private readonly notificationsService: NotificationsService,
+    private readonly alertsService: AlertsService,
   ) {
     this.s3 = new S3Client({
       region: this.appConfig.awsRegion,
@@ -85,22 +90,53 @@ export class VideosService {
     return `originals/${videoId}/original.${ext}`;
   }
 
+  /** Appends an event to the video's pipeline_events array without loading the full document. */
+  async appendPipelineEvent(
+    videoId: string | Types.ObjectId,
+    event: { type: string; message?: string; meta?: Record<string, any> },
+  ): Promise<void> {
+    try {
+      await this.videoModel.updateOne(
+        { _id: videoId },
+        {
+          $push: {
+            pipeline_events: {
+              ...event,
+              at: new Date(),
+            },
+          },
+        },
+      );
+    } catch (err: any) {
+      this.logger.error(
+        `Failed to append pipeline event for ${videoId}: ${err.message}`,
+      );
+    }
+  }
+
+
   // ─── Upload initiation ────────────────────────────────────────────────────
 
   /**
    * Initiates a video upload by:
    *   1. Generating an S3 object key using the video's future Mongo _id.
    *   2. Creating a Video document with status = 'pending'.
-   *   3. Returning a stubbed presigned PUT URL (real AWS SDK call goes here).
+   *   3. Returning a real presigned PUT URL for direct client upload.
    *
    * @see IMPLEMENTATION_PLAN_PART3.md §7 – "Step 1: Upload"
-   * Real integration: replace `buildStubPresignedUrl` with AWS SDK v3
-   * `@aws-sdk/s3-request-presigner` → `getSignedUrl(s3Client, new PutObjectCommand(...))`
    */
   async initiateUpload(
     teacherId: string,
     dto: InitiateUploadDto,
   ): Promise<InitiateUploadResult> {
+    if (!this.appConfig.videoUploadsEnabled) {
+      throw new ServiceUnavailableException({
+        success: false,
+        error: { code: 'VIDEO_PIPELINE_DISABLED' },
+        message: 'Video uploads are temporarily disabled',
+      });
+    }
+
     const videoId = new Types.ObjectId();
     const s3Key = this.buildOriginalKey(videoId.toString(), dto.filename);
 
@@ -126,7 +162,20 @@ export class VideosService {
       `Video ${videoId} created for teacher ${teacherId}. S3 key: ${s3Key}`,
     );
 
+    // ── Record pipeline event ──────────────────────────────────────────────
+    void this.appendPipelineEvent(videoId, {
+      type: 'UPLOAD_INITIATED',
+      message: 'Client requested presigned URL for upload',
+      meta: {
+        s3_key: s3Key,
+        mime_type: dto.mime_type,
+        teacher_id: teacherId,
+        course_id: dto.course_id,
+      },
+    });
+
     return { presigned, video };
+
   }
 
   private async buildPresignedUrl(
@@ -209,7 +258,15 @@ export class VideosService {
   async triggerProcessing(
     id: string,
     requesterId: string,
-  ): Promise<{ success: boolean; data: VideoDocument }> {
+  ): Promise<{ success: boolean; data: VideoDocument; message?: string }> {
+    if (!this.appConfig.videoProcessingQueueEnabled) {
+      throw new ServiceUnavailableException({
+        success: false,
+        error: { code: 'VIDEO_PIPELINE_DISABLED' },
+        message: 'Video processing is temporarily disabled',
+      });
+    }
+
     if (!Types.ObjectId.isValid(id))
       throw new NotFoundException('Invalid video ID');
 
@@ -222,16 +279,43 @@ export class VideosService {
     }
 
     video.processed.status = 'processing';
+    video.processed.error = null; // Clear any previous errors
     await video.save();
 
     // ── Publish to SQS ──────────────────────────────────────────────────────
-    await this.queueService.publishJob({
+    const queued = await this.queueService.publishJob({
       videoId: video._id.toString(),
       s3Key: video.original.key,
       source: 'upload',
     });
 
+    if (!queued) {
+      this.logger.warn(
+        `Job for video ${id} was not queued. Verify SQS configuration.`,
+      );
+      
+      void this.appendPipelineEvent(id, {
+        type: 'PROCESSING_TRIGGERED',
+        message: 'Processing manually triggered (failed to queue)',
+        meta: { queued: false },
+      });
+
+      return {
+        success: true,
+        data: video,
+        message:
+          'Video status updated, but processing job could not be queued (SQS not configured or error).',
+      };
+    }
+
+    void this.appendPipelineEvent(id, {
+      type: 'PROCESSING_TRIGGERED',
+      message: 'Processing manually triggered by teacher/admin',
+      meta: { queued: true },
+    });
+
     return { success: true, data: video };
+
   }
 
   /**
@@ -276,8 +360,11 @@ export class VideosService {
     // ── Handle Failure ───────────────────────────────────────────────────────
     if (payload.status === 'failed') {
       video.processed.status = 'failed';
+      video.processed.error = payload.error || 'Processing failed at worker';
       await video.save();
-      this.logger.error(`Video ${id} processing marked as FAILED by worker.`);
+      this.logger.error(
+        `Video ${id} processing marked as FAILED by worker. Error: ${video.processed.error}`,
+      );
 
       // Update LiveClass only if it's not already 'available'
       if (video.source === 'live_recording' && video.live_class_id) {
@@ -290,8 +377,23 @@ export class VideosService {
         );
       }
 
+      // ── Record pipeline event & Send Alert ─────────────────────────────────
+      void this.appendPipelineEvent(id, {
+        type: 'PROCESSING_FAILED',
+        message: payload.error || 'Worker reported transcode failure',
+        meta: { error: payload.error, base_key: payload.base_key },
+      });
+
+      void this.alertsService.sendAlert('Video processing failed', {
+        videoId: id,
+        error: payload.error,
+        base_key: payload.base_key,
+        environment: this.appConfig.environment,
+      });
+
       return { success: true, data: video };
     }
+
 
     // ── Handle Success ───────────────────────────────────────────────────────
 
@@ -326,6 +428,7 @@ export class VideosService {
     ];
 
     video.processed.status = 'completed';
+    video.processed.error = null;
     video.processed.manifest_url = this.cdnUrl(hlsManifestKey);
     video.processed.qualities = qualities.map((q) => ({
       resolution: q.resolution,
@@ -346,7 +449,18 @@ export class VideosService {
 
     await video.save();
 
+    // ── Record pipeline event ──────────────────────────────────────────────
+    void this.appendPipelineEvent(id, {
+      type: 'PROCESSING_COMPLETED',
+      message: 'Video transcoded successfully',
+      meta: {
+        base_key: payload.base_key,
+        duration_seconds: payload.duration_seconds,
+      },
+    });
+
     // ── Sync to LiveClass if it's a recording ────────────────────────────────
+
     if (video.source === 'live_recording' && video.live_class_id) {
       const liveClass = await this.liveClassModel
         .findById(video.live_class_id)
@@ -498,47 +612,33 @@ export class VideosService {
   ) {
     const video = await this.findById(id);
 
-    // ── Public preview fast-path (unauthenticated) ───────────────────────────
-    if (!requester) {
-      if (!video.public_preview) {
-        throw new ForbiddenException(
-          'Authentication required to access playback',
-        );
-      }
-      // Preview is valid – still respect processing state
-      if (video.processed.status !== 'completed') {
-        return {
-          success: false,
-          error: {
-            code: 'VIDEO_NOT_READY',
-            message: 'Video is not yet available for playback',
-            status: video.processed.status,
-          },
-        };
-      }
-      return this.buildPlayerPayload(video);
-    }
-
     // ── Authorization Logic ──────────────────────────────────────────────────
     let isAuthorized = false;
 
-    if (requester.role === UserRole.ADMIN) {
+    if (video.public_preview) {
       isAuthorized = true;
-    } else if (requester.role === UserRole.TEACHER) {
-      isAuthorized = video.teacher_id === requester.id;
-    } else if (requester.role === UserRole.STUDENT) {
-      isAuthorized = await this.enrollmentsService.isActiveCourseEnrollment(
-        video.course_id.toString(),
-        requester.id,
-      );
+    } else if (requester) {
+      if (requester.role === UserRole.ADMIN) {
+        isAuthorized = true;
+      } else if (requester.role === UserRole.TEACHER) {
+        isAuthorized = video.teacher_id === requester.id;
+      } else if (requester.role === UserRole.STUDENT) {
+        isAuthorized = await this.enrollmentsService.isActiveCourseEnrollment(
+          video.course_id.toString(),
+          requester.id,
+        );
+      }
     }
 
     if (!isAuthorized) {
       throw new ForbiddenException(
-        'You do not have permission to view this video. Enrollment required.',
+        requester
+          ? 'You do not have permission to view this video. Enrollment required.'
+          : 'Authentication required to access playback',
       );
     }
 
+    // ── Status Check ─────────────────────────────────────────────────────────
     if (video.processed.status !== 'completed') {
       return {
         success: false,
@@ -559,17 +659,26 @@ export class VideosService {
       success: true,
       data: {
         video_id: video._id,
-        manifest_url: video.processed.manifest_url,
+        manifest_url: signCloudFrontUrl(
+          video.processed.manifest_url,
+          this.appConfig,
+        ),
         qualities: video.processed.qualities.map((q) => ({
           resolution: q.resolution,
           bitrate: q.bitrate,
-          url: q.url,
+          url: signCloudFrontUrl(q.url, this.appConfig),
         })),
-        thumbnail_url: video.processed.thumbnail_url,
-        thumbnails_vtt: video.processed.thumbnails_vtt,
+        thumbnail_url: signCloudFrontUrl(
+          video.processed.thumbnail_url,
+          this.appConfig,
+        ),
+        thumbnails_vtt: signCloudFrontUrl(
+          video.processed.thumbnails_vtt,
+          this.appConfig,
+        ),
         captions: video.captions.map((c) => ({
           language: c.language,
-          url: c.url,
+          url: signCloudFrontUrl(c.url, this.appConfig),
           auto_generated: c.auto_generated,
         })),
         duration_seconds: video.original.duration_seconds,

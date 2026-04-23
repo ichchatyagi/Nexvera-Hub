@@ -1,6 +1,11 @@
 import axios from 'axios';
 import { EventBridgeEvent } from 'aws-lambda';
 import { S3Client, ListObjectsV2Command, CopyObjectCommand } from '@aws-sdk/client-s3';
+import {
+  VideoProcessingWebhookPayload,
+  VIDEO_PROCESSING_WEBHOOK_VERSION,
+} from '@nexvera/contracts';
+
 
 // AWS MediaConvert Job State Change Event Detail
 interface MediaConvertEventDetail {
@@ -87,12 +92,14 @@ export const handler = async (event: EventBridgeEvent<"MediaConvert Job State Ch
     durationSeconds = Math.floor(outputGroupDetails[0].outputDetails[0].durationInMs / 1000);
   }
 
-  const payload = {
-    base_key: baseKey,
+  const payload: VideoProcessingWebhookPayload = {
+    version: VIDEO_PROCESSING_WEBHOOK_VERSION,
     status: status === 'COMPLETE' ? 'completed' : 'failed',
+    base_key: baseKey,
     duration_seconds: durationSeconds,
-    error: errorMessage
+    error: errorMessage,
   };
+
 
   try {
     console.log(`Sending webhook to backend for video ${videoId}, status: ${payload.status}`);

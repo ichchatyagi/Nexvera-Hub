@@ -9,6 +9,10 @@ export class AppConfigService {
     return this.configService.get<string>('NODE_ENV') || 'development';
   }
 
+  get isProduction(): boolean {
+    return this.environment === 'production';
+  }
+
   get port(): number {
     return this.configService.get<number>('PORT') || 5000;
   }
@@ -55,6 +59,22 @@ export class AppConfigService {
 
   get redisPort(): number {
     return this.configService.get<number>('REDIS_PORT') || 6379;
+  }
+
+  get redisPassword(): string {
+    return this.configService.get<string>('REDIS_PASSWORD') || '';
+  }
+
+  get redisDb(): number {
+    return this.configService.get<number>('REDIS_DB') || 0;
+  }
+
+  get redisTls(): boolean {
+    return this.configService.get<boolean>('REDIS_TLS') || false;
+  }
+
+  get redisRequired(): boolean {
+    return this.configService.get<boolean>('REDIS_REQUIRED') || false;
   }
 
   // Stripe Config
@@ -228,5 +248,60 @@ export class AppConfigService {
 
   get agoraWhiteboardRegion(): string {
     return this.configService.get<string>('AGORA_WHITEBOARD_REGION') || 'cn-hz';
+  }
+
+  // Auth Rate Limiting
+  get authRateLimitMax(): number {
+    return this.configService.get<number>('AUTH_RATE_LIMIT_MAX') || 10;
+  }
+
+  get authRateLimitWindowSeconds(): number {
+    return (
+      this.configService.get<number>('AUTH_RATE_LIMIT_WINDOW_SECONDS') || 60
+    );
+  }
+
+  get cloudfrontKeyPairId(): string {
+    return this.configService.get<string>('CLOUDFRONT_KEY_PAIR_ID') || '';
+  }
+
+  get cloudfrontPrivateKeyBase64(): string {
+    return (
+      this.configService.get<string>('CLOUDFRONT_PRIVATE_KEY_BASE64') || ''
+    );
+  }
+
+  get cloudfrontSignedUrlTtlSeconds(): number {
+    return (
+      this.configService.get<number>('CLOUDFRONT_SIGNED_URL_TTL_SECONDS') || 600
+    );
+  }
+
+  get cloudfrontSignedUrlsEnabled(): boolean {
+    return this.configService.get<boolean>('CLOUDFRONT_SIGNED_URLS_ENABLED') ?? false;
+  }
+
+  get cacheEnabled(): boolean {
+    return this.configService.get<boolean>('CACHE_ENABLED') ?? false;
+  }
+
+  get cacheDefaultTtl(): number {
+    return this.configService.get<number>('CACHE_DEFAULT_TTL_SECONDS') ?? 60;
+  }
+
+  get videoUploadsEnabled(): boolean {
+    return this.configService.get<boolean>('VIDEO_UPLOADS_ENABLED') ?? false;
+  }
+
+  get videoProcessingQueueEnabled(): boolean {
+    return this.configService.get<boolean>('VIDEO_PROCESSING_QUEUE_ENABLED') ?? false;
+  }
+
+  get alertsEnabled(): boolean {
+    return this.configService.get<boolean>('ALERTS_ENABLED') ?? false;
+  }
+
+  get alertsWebhookUrl(): string {
+    return this.configService.get<string>('ALERTS_WEBHOOK_URL') || '';
   }
 }

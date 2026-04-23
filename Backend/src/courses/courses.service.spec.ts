@@ -10,6 +10,7 @@ import { CreateCourseDto, ProductType, TuitionMetaDto } from './dto/course.dto';
 import { EnrollmentsService } from '../enrollments/enrollments.service';
 import { UserRole } from '../users/entities/user.entity';
 import { VideosService } from '../videos/videos.service';
+import { CacheService } from '../cache/cache.service';
 
 const mockCourseModel = {
   find: jest.fn(),
@@ -34,6 +35,11 @@ const mockVideosService = {
   setPublicPreview: jest.fn().mockResolvedValue({ success: true }),
 };
 
+const mockCacheService = {
+  getOrSetJson: jest.fn().mockImplementation((ns, key, ttl, loader) => loader()),
+  bumpNamespace: jest.fn().mockResolvedValue(undefined),
+};
+
 describe('CoursesService', () => {
   let service: CoursesService;
 
@@ -56,6 +62,10 @@ describe('CoursesService', () => {
         {
           provide: VideosService,
           useValue: mockVideosService,
+        },
+        {
+          provide: CacheService,
+          useValue: mockCacheService,
         },
       ],
     }).compile();
@@ -624,6 +634,69 @@ describe('CoursesService', () => {
       await expect(
         service.findLessonById(lessonId, 's1', UserRole.STUDENT),
       ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('Caching and Invalidation', () => {
+    it('findAll should use cache for public requests', async () => {
+      mockCourseModel.find.mockReturnValue({
+        skip: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([]),
+      });
+      mockCourseModel.countDocuments.mockResolvedValue(0);
+
+      await service.findAll({});
+
+      expect(mockCacheService.getOrSetJson).toHaveBeenCalledWith(
+        'courses',
+        expect.stringContaining('cat:'),
+        60,
+        expect.any(Function),
+      );
+    });
+
+    it('findAll should NOT use cache for admin status=all requests', async () => {
+      mockCourseModel.find.mockReturnValue({
+        skip: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([]),
+      });
+      mockCourseModel.countDocuments.mockResolvedValue(0);
+
+      await service.findAll({ status: 'all' }, 'a1', UserRole.ADMIN);
+
+      expect(mockCacheService.getOrSetJson).not.toHaveBeenCalled();
+    });
+
+    it('should bump namespace on course creation', async () => {
+      mockCourseModel.create.mockResolvedValue({ _id: '1' });
+      await service.create({ title: 'New Course' } as any);
+      expect(mockCacheService.bumpNamespace).toHaveBeenCalledWith('courses');
+    });
+
+    it('should bump namespace on update', async () => {
+      const validId = new Types.ObjectId().toString();
+      const mockCourse = { _id: validId, save: jest.fn() };
+      mockCourseModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockCourse),
+      });
+      await service.update(validId, { title: 'Updated' });
+      expect(mockCacheService.bumpNamespace).toHaveBeenCalledWith('courses');
+    });
+
+    it('should bump namespace on publish', async () => {
+      const validId = new Types.ObjectId().toString();
+      const mockCourse = { _id: validId, save: jest.fn() };
+      mockCourseModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockCourse),
+      });
+      await service.publish(validId, 'published');
+      expect(mockCacheService.bumpNamespace).toHaveBeenCalledWith('courses');
     });
   });
 });

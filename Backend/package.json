@@ -15,6 +15,7 @@
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
+    "test:ci": "NODE_OPTIONS=--no-warnings jest --no-watchman",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
@@ -28,7 +29,9 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.700.0",
     "@aws-sdk/client-sqs": "^3.1030.0",
+    "@aws-sdk/cloudfront-signer": "^3.1031.0",
     "@aws-sdk/s3-request-presigner": "^3.700.0",
+    "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.3",
     "@nestjs/core": "^11.0.1",
@@ -39,13 +42,16 @@
     "@nestjs/platform-socket.io": "^11.0.1",
     "@nestjs/typeorm": "^11.0.0",
     "@nestjs/websockets": "^11.0.1",
+    "@nexvera/contracts": "file:../packages/nexvera-contracts",
     "agora-access-token": "^2.0.0",
     "axios": "^1.15.0",
     "bcrypt": "^6.0.0",
+    "bullmq": "^5.74.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "dotenv": "^17.3.1",
     "helmet": "^8.1.0",
+    "ioredis": "^5.10.1",
     "joi": "^18.0.2",
     "mongoose": "^9.3.1",
     "nodemailer": "^8.0.4",
@@ -101,6 +107,9 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "setupFilesAfterEnv": [
+      "../test/jest.setup.ts"
+    ]
   }
 }

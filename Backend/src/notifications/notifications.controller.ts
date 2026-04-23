@@ -15,8 +15,13 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
-  @Get('my')
-  async listMy(
+  @Get('unread-count')
+  async getUnreadCount(@Req() req: any) {
+    return this.notificationsService.getUnreadCount(req.user.id);
+  }
+
+  @Get()
+  async list(
     @Req() req: any,
     @Query('unread') unread: string,
     @Query('page') page: string,
@@ -27,6 +32,16 @@ export class NotificationsController {
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 20,
     });
+  }
+
+  @Get('my')
+  async listMy(
+    @Req() req: any,
+    @Query('unread') unread: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
+    return this.list(req, unread, page, limit);
   }
 
   @Post(':id/read')

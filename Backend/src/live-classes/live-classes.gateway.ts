@@ -83,6 +83,18 @@ export class LiveClassesGateway
     private readonly enrollmentsService: EnrollmentsService,
   ) {}
 
+  /**
+   * Safely emits an event to a room. 
+   * Protects against crashes if the server hasn't initialized (e.g. in unit tests).
+   */
+  sendLifecycleEvent(liveClassId: string, event: 'class:started' | 'class:ended' | 'class:cancelled') {
+    if (!this.server) {
+      this.logger.warn(`Websocket server not initialized. Skipping emit for ${event} on ${liveClassId}`);
+      return;
+    }
+    this.server.to(liveClassId).emit(event, { liveClassId });
+  }
+
   // Temporary in-memory state for whiteboard history (per session)
   // In production, this should use Redis or a persistent store
   private whiteboardHistory: Map<string, any[]> = new Map();

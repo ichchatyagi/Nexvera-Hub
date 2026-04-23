@@ -60,7 +60,9 @@ describe('PayoutsService', () => {
   });
 
   it('should link payouts to teaching assignments, not course ownership', async () => {
-    // This test ensures the calculateEarnings uses the correctly assigned courses
+    // This test ensures calculateEarnings queries by teaching assignment fields.
+    courseModel.exec.mockResolvedValue([]);
+    await service.calculateEarnings('teacher-123');
     expect(courseModel.find).toHaveBeenCalledWith(
       expect.objectContaining({
         $or: [

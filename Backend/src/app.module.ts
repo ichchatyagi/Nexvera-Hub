@@ -17,6 +17,8 @@ import { DatabaseModule } from './database/database.module';
 import { AppConfigModule } from './app-config/app-config.module';
 import { ContactModule } from './contact/contact.module';
 import { AiModule } from './ai/ai.module';
+import { RedisModule } from './redis/redis.module';
+import { CacheModule } from './cache/cache.module';
 
 @Module({
   imports: [
@@ -36,6 +38,8 @@ import { AiModule } from './ai/ai.module';
     AppConfigModule,
     ContactModule,
     AiModule,
+    RedisModule,
+    CacheModule,
   ],
   controllers: [AppController],
   providers: [AppService],

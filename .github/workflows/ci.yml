@@ -1,0 +1,175 @@
+name: Nexvera CI
+
+on:
+  push:
+    branches: [ main, master, feat/ATLIVE-11, feat/ATLIVE-12 ]
+  pull_request:
+    branches: [ main, master, feat/ATLIVE-11, feat/ATLIVE-12 ]
+
+jobs:
+  backend:
+    name: Backend CI
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: runner
+      POSTGRES_PASSWORD: runner-password
+      POSTGRES_DB: nexvera_test
+      # Use 127.0.0.1 for explicit local binding in CI
+      MONGODB_URI: mongodb://127.0.0.1:27017/nexvera_test
+      JWT_SECRET: ci-test-secret-never-use-in-prod
+      RAZORPAY_KEY_ID: rzp_test_dummy
+      RAZORPAY_KEY_SECRET: rzp_test_secret_dummy
+      RAZORPAY_WEBHOOK_SECRET: rzp_webhook_secret_dummy
+      EMAIL_USER: ci@nexvera.com
+      EMAIL_PASS: ci-password
+      SENDER_EMAIL: noreply@nexvera.com
+      SENDER_PASS: sender-password
+      RECIPIENT_EMAIL: admin@nexvera.com
+      VIDEO_PROCESSING_WEBHOOK_SECRET: worker-secret-dummy
+      REDIS_REQUIRED: false
+      CLOUDFRONT_SIGNED_URLS_ENABLED: false
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: runner
+          POSTGRES_PASSWORD: runner-password
+          POSTGRES_DB: nexvera_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U runner -d nexvera_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "echo 'db.runCommand({ping:1})' | mongosh --quiet"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for services
+        run: |
+          until docker exec ${{ job.services.postgres.id }} pg_isready -U runner -d nexvera_test; do
+            echo "Waiting for Postgres..."
+            sleep 2
+          done
+          until docker exec ${{ job.services.mongodb.id }} mongosh --quiet --eval "db.runCommand({ ping: 1 })"; do
+            echo "Waiting for MongoDB..."
+            sleep 2
+          done
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: Backend/package-lock.json
+
+      - name: Build contracts (file dependency)
+        run: npm ci && npm run build
+        working-directory: packages/nexvera-contracts
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: Backend
+        
+      - name: Run tests
+        run: npm run test:ci
+        working-directory: Backend
+        
+      - name: Build
+        run: npm run build
+        working-directory: Backend
+
+  frontend:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: next-frontend/package-lock.json
+          
+      - name: Install dependencies
+        run: npm ci
+        working-directory: next-frontend
+        
+      - name: Build
+        # Enforce Webpack build for determinism in CI
+        run: npx next build --webpack
+        working-directory: next-frontend
+
+  mobile:
+    name: Mobile Flutter Analyze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.41.7' # Matches local stable (Dart 3.11.5)
+          
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: mobile/flutter_app
+        
+      - name: Analyze
+        run: flutter analyze
+        working-directory: mobile/flutter_app
+        
+      - name: Build Debug APK (Smoke Test)
+        run: flutter build apk --debug
+        working-directory: mobile/flutter_app
+
+  contracts:
+    name: Contracts CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm ci
+        working-directory: packages/nexvera-contracts
+      - name: Build
+        run: npm run build
+        working-directory: packages/nexvera-contracts
+
+  video_worker:
+    name: Video Worker CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build contracts (file dependency)
+        run: npm ci && npm run build
+        working-directory: packages/nexvera-contracts
+      - name: Install dependencies
+        run: npm ci
+        working-directory: video-processing-worker
+      - name: Build
+        run: npm run build
+        working-directory: video-processing-worker

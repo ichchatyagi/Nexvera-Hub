@@ -1,0 +1,13 @@
+{
+  "name": "@nexvera/contracts",
+  "version": "0.0.1",
+  "description": "Shared message contracts for Nexvera microservices",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
