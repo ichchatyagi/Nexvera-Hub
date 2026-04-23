@@ -477,8 +477,10 @@ export class LiveClassesService implements OnModuleInit {
         lc.recording.sid = sid;
         lc.recording.status = 'processing';
       } catch (err) {
+        const status = err.response?.status;
+        const data = err.response?.data;
         this.logger.error(
-          `Failed to start Agora recording for class ${id}: ${err.message}`,
+          `Failed to start Agora recording for class ${id}. Status: ${status}, Response: ${JSON.stringify(data)}, Error: ${err.message}`,
         );
         lc.recording.enabled = false;
       }
@@ -598,8 +600,10 @@ export class LiveClassesService implements OnModuleInit {
           lc.recording.status = 'failed';
         }
       } catch (err) {
+        const status = err.response?.status;
+        const data = err.response?.data;
         this.logger.warn(
-          `Failed to stop Agora recording for class ${id}: ${err.message}`,
+          `Failed to stop Agora recording for class ${id}. Status: ${status}, Response: ${JSON.stringify(data)}, Error: ${err.message}`,
         );
         // Class still ends, but recording might have issues
       }
@@ -1425,7 +1429,7 @@ export class LiveClassesService implements OnModuleInit {
             bucket: this.appConfig.awsS3VideoBucket,
             accessKey: this.appConfig.awsAccessKey,
             secretKey: this.appConfig.awsSecretKey,
-            fileNamePrefix: ['recordings', 'live-classes'],
+            fileNamePrefix: ['originals', 'live-classes'],
           },
         },
       },

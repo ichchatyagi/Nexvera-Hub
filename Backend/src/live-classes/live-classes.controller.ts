@@ -55,7 +55,7 @@ export class LiveClassesController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(@CurrentUser() user: User, @Body() dto: CreateLiveClassDto) {
-    const isAdmin = user.role === UserRole.ADMIN;
+    const isAdmin = user.role === UserRole.ADMIN || user.role === UserRole.TEACHER;
     const data = await this.liveClassesService.create(user.id, dto, isAdmin);
     return { success: true, data };
   }
