@@ -41,6 +41,73 @@ class AuthRepository {
     _ref.read(authStatusProvider.notifier).setAuthenticated();
   }
 
+  Future<void> register(String email, String password, String name) async {
+    final response = await _dio.post('/auth/register', data: {
+      'email': email,
+      'password': password,
+      'name': name,
+      'role': 'student',
+    });
+
+    if (response.data['success'] != true) {
+      throw Exception(response.data['message'] ?? 'Registration failed');
+    }
+  }
+
+  Future<void> verifyRegistrationOtp(String email, String code) async {
+    final response = await _dio.post('/auth/verify-registration-otp', data: {
+      'email': email,
+      'otp': code,
+    });
+
+    if (response.data['success'] != true) {
+      throw Exception(response.data['message'] ?? 'Verification failed');
+    }
+  }
+
+  Future<void> resendVerificationOtp(String email) async {
+    final response = await _dio.post('/auth/resend-verification-otp', data: {
+      'email': email,
+    });
+
+    if (response.data['success'] != true) {
+      throw Exception(response.data['message'] ?? 'Failed to resend OTP');
+    }
+  }
+
+  Future<void> forgotPassword(String email) async {
+    final response = await _dio.post('/auth/forgot-password', data: {
+      'email': email,
+    });
+
+    if (response.data['success'] != true) {
+      throw Exception(response.data['message'] ?? 'Request failed');
+    }
+  }
+
+  Future<void> verifyResetOtp(String email, String code) async {
+    final response = await _dio.post('/auth/verify-otp', data: {
+      'email': email,
+      'otp': code,
+    });
+
+    if (response.data['success'] != true) {
+      throw Exception(response.data['message'] ?? 'Verification failed');
+    }
+  }
+
+  Future<void> resetPassword(String email, String code, String newPassword) async {
+    final response = await _dio.post('/auth/reset-password', data: {
+      'email': email,
+      'otp': code,
+      'newPassword': newPassword,
+    });
+
+    if (response.data['success'] != true) {
+      throw Exception(response.data['message'] ?? 'Reset failed');
+    }
+  }
+
   Future<void> logout() async {
     await _storage.delete(key: 'access_token');
     await _storage.delete(key: 'refresh_token');

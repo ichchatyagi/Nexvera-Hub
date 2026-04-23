@@ -2,9 +2,9 @@ name: Nexvera CI
 
 on:
   push:
-    branches: [ main, master, feat/ATLIVE-11, feat/ATLIVE-12 ]
+    branches: [ main, staging, feat/ATLIVE-11, feat/ATLIVE-12 ]
   pull_request:
-    branches: [ main, master, feat/ATLIVE-11, feat/ATLIVE-12 ]
+    branches: [ main, staging, feat/ATLIVE-11, feat/ATLIVE-12 ]
 
 jobs:
   backend:
@@ -133,6 +133,10 @@ jobs:
         
       - name: Analyze
         run: flutter analyze
+        working-directory: mobile/flutter_app
+        
+      - name: Run Tests
+        run: flutter test
         working-directory: mobile/flutter_app
         
       - name: Build Debug APK (Smoke Test)
