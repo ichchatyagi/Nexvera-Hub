@@ -33,8 +33,8 @@ export const configValidationSchema = Joi.object({
   JWT_SECRET: Joi.string().required(),
   JWT_EXPIRATION: Joi.string().default('1d'),
   STRIPE_SECRET_KEY: Joi.string().optional(),
-  AGORA_APP_ID: Joi.string().optional(),
-  AGORA_APP_CERTIFICATE: Joi.string().optional(),
+  AGORA_APP_ID: Joi.string().allow('').optional(),
+  AGORA_APP_CERTIFICATE: Joi.string().allow('').optional(),
   AWS_S3_BUCKET: Joi.string().optional(),
 
   // Video pipeline – S3 raw upload bucket (may differ from generic AWS_S3_BUCKET)
@@ -69,14 +69,14 @@ export const configValidationSchema = Joi.object({
   VIDEO_PROCESSING_WEBHOOK_SECRET: Joi.string().required(),
 
   // Agora Cloud Recording & Tokens
-  AGORA_CUSTOMER_ID: Joi.string().optional(),
-  AGORA_CUSTOMER_CERTIFICATE: Joi.string().optional(),
+  AGORA_CUSTOMER_ID: Joi.string().allow('').optional(),
+  AGORA_CUSTOMER_CERTIFICATE: Joi.string().allow('').optional(),
   AGORA_TOKEN_TTL_SECONDS: Joi.number().optional(),
 
   // Agora Whiteboard
   USE_AGORA_WHITEBOARD: Joi.string().valid('true', 'false').default('false'),
-  AGORA_WHITEBOARD_APP_ID: Joi.string().optional(),
-  AGORA_WHITEBOARD_APP_SECRET: Joi.string().optional(),
+  AGORA_WHITEBOARD_APP_ID: Joi.string().allow('').optional(),
+  AGORA_WHITEBOARD_APP_SECRET: Joi.string().allow('').optional(),
   AGORA_WHITEBOARD_TOKEN_TTL_SECONDS: Joi.number().optional(),
   AGORA_WHITEBOARD_REGION: Joi.string()
     .valid('cn-hz', 'us-sv', 'sg', 'in-mum', 'gb-lon')

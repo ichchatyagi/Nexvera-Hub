@@ -109,6 +109,9 @@ export class User {
   @Column({ type: 'int', default: 0 })
   refreshTokenVersion: number;
 
+  @Column({ type: 'jsonb', nullable: true })
+  pushTokens: { token: string; platform: string; updatedAt: Date }[];
+
   @CreateDateColumn()
   createdAt: Date;
 

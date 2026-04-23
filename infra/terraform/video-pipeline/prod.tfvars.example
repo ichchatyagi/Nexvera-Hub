@@ -1,0 +1,14 @@
+video_bucket_name          = "REPLACE_ME_GLOBALLY_UNIQUE_BUCKET"
+cloudfront_public_key_pem  = <<EOF
+-----BEGIN PUBLIC KEY-----
+REPLACE_ME
+-----END PUBLIC KEY-----
+EOF
+submit_job_artifact_path   = "artifacts/submit-job.zip"
+job_state_artifact_path    = "artifacts/job-state.zip"
+backend_base_url           = "https://api.REPLACE_ME.com"
+video_processing_webhook_secret = "REPLACE_ME_LONG_RANDOM"
+
+# Optional overrides
+# name_prefix = "nexvera-video-prod"
+# aws_region  = "us-east-1"
