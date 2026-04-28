@@ -586,6 +586,7 @@ export class LiveClassesService implements OnModuleInit {
               s3Key,
               lc.title,
             );
+            this.logger.log(`Recording ended and video ${video._id} created for class ${id}. Stop result: ${JSON.stringify(stopResponse)}`);
             lc.recording.video_id = video._id as any;
             lc.recording.status = 'processing';
           } catch (vErr) {
@@ -1421,9 +1422,18 @@ export class LiveClassesService implements OnModuleInit {
             channelType: 0, // communication
             subscribeVideoUids: ['#allstream#'],
             subscribeAudioUids: ['#allstream#'],
-            subscribeUidGroup: 0,
+            mixedVideoLayout: 1,
+            avFileType: ['mp4'],
+            transcodingConfig: {
+              height: 720,
+              width: 1280,
+              bitrate: 2260,
+              fps: 15,
+              mixedVideoLayout: 1,
+            },
           },
-          storageConfig: {
+        },
+        storageConfig: {
             vendor: 1, // AWS S3
             region: this.getAgoraS3RegionNumber(this.appConfig.awsRegion),
             bucket: this.appConfig.awsS3VideoBucket,
