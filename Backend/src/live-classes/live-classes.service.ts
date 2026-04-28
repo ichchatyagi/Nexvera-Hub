@@ -1440,7 +1440,6 @@ export class LiveClassesService implements OnModuleInit {
             accessKey: this.appConfig.awsAccessKey,
             secretKey: this.appConfig.awsSecretKey,
             fileNamePrefix: ['originals', 'live-classes'],
-          },
         },
       },
       { headers: this.getAgoraAuthHeader() },
