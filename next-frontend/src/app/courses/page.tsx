@@ -36,7 +36,7 @@ interface Course {
 const CourseCatalog = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
@@ -47,12 +47,14 @@ const CourseCatalog = () => {
   const categories = [
     'Artificial Intelligence',
     'Information Technology',
-    'Sales and Marketing',
+    'Sales & Marketing',
     'Data Science',
     'Design',
-    'Languages',
-    'Business',
-    'Entrepreneurship'
+    'Languages & Communication',
+    'Business & Management',
+    'Entrepreneurship',
+    'Project Management',
+    'Personal Development'
   ];
 
   // Sync searchTerm state with URL search param
@@ -92,7 +94,7 @@ const CourseCatalog = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const q = searchTerm.trim();
-    
+
     // Update URL param
     const params = new URLSearchParams(searchParams.toString());
     if (q) {
@@ -101,13 +103,17 @@ const CourseCatalog = () => {
       params.delete('search');
     }
     router.push(`/courses?${params.toString()}`);
-    
+
     if (currentPage !== 1) {
       setCurrentPage(1);
     } else {
       fetchCourses(1);
     }
   };
+
+  useEffect(() => {
+    handleSearch({ preventDefault: () => { } } as React.FormEvent)
+  }, [searchTerm]);
 
   const handleCategoryChange = (cat: string) => {
     setActiveCategory(cat);
@@ -267,8 +273,8 @@ const CourseCatalog = () => {
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
                   className={`px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${currentPage === 1
-                      ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                      : 'bg-white text-blue-600 shadow-xl shadow-blue-500/10 hover:bg-blue-50 hover:scale-105 active:scale-95'
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    : 'bg-white text-blue-600 shadow-xl shadow-blue-500/10 hover:bg-blue-50 hover:scale-105 active:scale-95'
                     }`}
                 >
                   Previous
@@ -280,8 +286,8 @@ const CourseCatalog = () => {
                       key={page}
                       onClick={() => setCurrentPage(page)}
                       className={`w-12 h-12 rounded-2xl font-black text-xs transition-all ${currentPage === page
-                          ? 'bg-gradient-to-br from-blue-600 to-cyan-500 text-white shadow-xl shadow-blue-500/30 scale-110'
-                          : 'bg-white text-slate-600 shadow-sm border border-slate-100 hover:border-blue-200 hover:text-blue-600 hover:bg-blue-50/30'
+                        ? 'bg-gradient-to-br from-blue-600 to-cyan-500 text-white shadow-xl shadow-blue-500/30 scale-110'
+                        : 'bg-white text-slate-600 shadow-sm border border-slate-100 hover:border-blue-200 hover:text-blue-600 hover:bg-blue-50/30'
                         }`}
                     >
                       {page}
@@ -293,8 +299,8 @@ const CourseCatalog = () => {
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
                   className={`px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${currentPage === totalPages
-                      ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                      : 'bg-white text-blue-600 shadow-xl shadow-blue-500/10 hover:bg-blue-50 hover:scale-105 active:scale-95'
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    : 'bg-white text-blue-600 shadow-xl shadow-blue-500/10 hover:bg-blue-50 hover:scale-105 active:scale-95'
                     }`}
                 >
                   Next
