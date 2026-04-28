@@ -165,11 +165,11 @@ const CareerSupport = () => {
                                     At Nexvera Hub, we don't just teach skills. We help you turn those skills into real career opportunities through mentorship, career guidance, and job preparation support.
                                 </p>
                                 <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
-                                    <Link href="/course" className="px-8 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all duration-300 shadow-xl shadow-blue-600/20 flex items-center gap-2 group uppercase tracking-widest text-xs font-black">
+                                    <Link href="/courses" className="px-8 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all duration-300 shadow-xl shadow-blue-600/20 flex items-center gap-2 group uppercase tracking-widest text-xs font-black">
                                         Start Learning
                                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                     </Link>
-                                    <Link href="/course" className="px-8 py-4 bg-white text-slate-900 font-bold rounded-2xl border border-slate-200 hover:border-blue-600 transition-all duration-300 shadow-lg group uppercase tracking-widest text-xs font-black">
+                                    <Link href="/courses" className="px-8 py-4 bg-white text-slate-900 font-bold rounded-2xl border border-slate-200 hover:border-blue-600 transition-all duration-300 shadow-lg group uppercase tracking-widest text-xs font-black">
                                         Explore Courses
                                     </Link>
                                 </div>
