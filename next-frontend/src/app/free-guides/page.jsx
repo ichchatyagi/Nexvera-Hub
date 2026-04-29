@@ -186,7 +186,7 @@ const FreeGuides = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.1 }}
-                            className="text-4xl lg:text-7xl font-black text-slate-900 leading-tight mb-8 tracking-tighter"
+                            className="text-4xl lg:text-7xl font-black text-slate-950 leading-[0.9] mb-8 tracking-tighter uppercase"
                         >
                             Free <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">Learning Guides</span>
                         </motion.h1>
@@ -195,7 +195,7 @@ const FreeGuides = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2 }}
-                            className="text-xl text-slate-600 font-medium leading-relaxed mb-12 max-w-2xl lg:mx-0 mx-auto"
+                            className="text-xl text-slate-500 font-medium leading-relaxed mb-12 max-w-2xl lg:mx-0 mx-auto tracking-tight"
                         >
                             Explore free educational resources designed to help students learn new skills, understand technology concepts, and prepare for real-world careers.
                         </motion.p>
@@ -205,7 +205,7 @@ const FreeGuides = () => {
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: 0.3 }}
                         >
-                            <Link href="/course" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black px-6 lg:px-12 py-5 rounded-2xl shadow-2xl shadow-blue-500/20 transition-all active:scale-95 flex items-center justify-center gap-4 uppercase tracking-widest text-sm mx-auto lg:mx-0">
+                            <Link href="/courses" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black px-6 lg:px-12 py-5 rounded-2xl shadow-2xl shadow-blue-500/20 transition-all active:scale-95 flex items-center justify-center gap-4 uppercase tracking-widest text-sm mx-auto lg:mx-0">
                                 Start Learning
                                 <Rocket className="w-6 h-6" />
                             </Link>
@@ -244,8 +244,8 @@ const FreeGuides = () => {
                 <div className="container mx-auto">
                     <div className="flex flex-col md:flex-row items-center md:items-end justify-between mb-16 gap-6 text-center md:text-left">
                         <div className="max-w-2xl">
-                            <h2 className="text-4xl lg:text-5xl font-black text-slate-900 mb-4 font-bold tracking-tight uppercase tracking-tighter">Featured Learning Resources</h2>
-                            <p className="text-slate-500 text-lg font-medium">Curated deep-dives into industry-standard technologies and workflows.</p>
+                            <h2 className="text-4xl lg:text-5xl font-black text-slate-950 mb-4 uppercase tracking-tighter leading-tight">Featured <span className="text-blue-600">Curriculums</span> & Guides</h2>
+                            <p className="text-slate-500 text-lg font-medium tracking-tight">Curated deep-dives into industry-standard technologies and workflows.</p>
                         </div>
                         <div className="flex items-center gap-2 text-blue-600 font-black uppercase tracking-widest text-xs hover:gap-4 transition-all cursor-pointer">
                             View All Guides <ArrowRight className="w-5 h-5" />
@@ -282,7 +282,7 @@ const FreeGuides = () => {
             <section className="py-16 lg:py-24 px-6 lg:px-12 bg-blue-50/30">
                 <div className="container mx-auto">
                     <div className="text-center mb-20 text-center">
-                        <h2 className="text-4xl lg:text-5xl font-black text-slate-900 mb-6 font-bold tracking-tight uppercase tracking-tighter">Most Popular Free Guides</h2>
+                        <h2 className="text-4xl lg:text-5xl font-black text-slate-950 mb-6 uppercase tracking-tighter leading-tight">Most Popular <span className="text-blue-600">Free Guides</span></h2>
                         <div className="h-1.5 w-24 bg-blue-600 mx-auto rounded-full"></div>
                     </div>
 
@@ -301,8 +301,8 @@ const FreeGuides = () => {
                         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/5 rounded-full blur-[100px] -mr-48 -mt-48"></div>
 
                         <div className="relative z-10 mb-16 text-center lg:text-left">
-                            <h2 className="text-4xl lg:text-5xl font-black text-slate-900 mb-4 tracking-tight uppercase tracking-tighter">Learning Library</h2>
-                            <p className="text-slate-500 font-medium font-lg">Quick reference docs and tutorials for fundamental concept mastery.</p>
+                            <h2 className="text-4xl lg:text-5xl font-black text-slate-950 mb-4 uppercase tracking-tighter leading-tight">Learning <span className="text-blue-600">Library</span></h2>
+                            <p className="text-slate-500 font-medium font-lg tracking-tight">Quick reference docs and tutorials for fundamental concept mastery.</p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 relative z-10">
@@ -335,7 +335,7 @@ const FreeGuides = () => {
             <section className="py-16 lg:py-24 px-6 lg:px-12 bg-slate-50/50">
                 <div className="container mx-auto">
                     <div className="text-center mb-16 text-center">
-                        <h2 className="text-4xl lg:text-5xl font-black text-slate-900 mb-4 font-bold tracking-tight uppercase tracking-tighter">Why Nexvera Guides?</h2>
+                        <h2 className="text-4xl lg:text-5xl font-black text-slate-950 mb-4 uppercase tracking-tighter leading-tight">Why <span className="text-blue-600">Nexvera</span> Guides?</h2>
                         <p className="text-slate-500 font-medium pb-2 uppercase tracking-widest text-[10px] block opacity-60">The ultimate value for your learning journey</p>
                     </div>
 

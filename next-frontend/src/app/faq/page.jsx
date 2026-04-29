@@ -169,7 +169,7 @@ const FAQ = () => {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.1 }}
-                                className="text-3xl sm:text-5xl lg:text-7xl font-black text-slate-900 leading-tight mb-8 tracking-tighter"
+                                className="text-3xl sm:text-5xl lg:text-7xl font-black text-slate-950 leading-[0.9] mb-8 tracking-tighter uppercase"
                             >
                                 Frequently Asked <br />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 underline decoration-blue-100 decoration-8 underline-offset-8">Questions</span>
@@ -179,7 +179,7 @@ const FAQ = () => {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.2 }}
-                                className="text-xl text-slate-600 font-medium leading-relaxed mb-12 max-w-2xl lg:mx-0 mx-auto"
+                                className="text-xl text-slate-500 font-medium leading-relaxed mb-12 max-w-2xl lg:mx-0 mx-auto tracking-tight"
                             >
                                 Find quick answers to common questions about Nexvera Hub courses, learning process, certifications, and career support.
                             </motion.p>
@@ -190,7 +190,7 @@ const FAQ = () => {
                                 transition={{ delay: 0.3 }}
                                 className="flex flex-col sm:flex-row items-center lg:justify-start justify-center gap-4"
                             >
-                                <Link href="/course" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black px-10 py-5 rounded-2xl shadow-2xl shadow-blue-500/20 transition-all active:scale-95 flex items-center gap-3 uppercase tracking-widest text-sm">
+                                <Link href="/courses" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black px-10 py-5 rounded-2xl shadow-2xl shadow-blue-500/20 transition-all active:scale-95 flex items-center gap-3 uppercase tracking-widest text-sm">
                                     Browse Courses
                                     <Rocket className="w-5 h-5" />
                                 </Link>
@@ -252,7 +252,7 @@ const FAQ = () => {
             <section className="py-16 lg:py-24 px-6 lg:px-12">
                 <div className="container mx-auto max-w-4xl">
                     <div className="text-center mb-16 text-center">
-                        <h2 className="text-4xl lg:text-5xl font-black text-slate-900 mb-4 font-bold tracking-tight uppercase tracking-tighter">Detailed Answers</h2>
+                        <h2 className="text-4xl lg:text-5xl font-black text-slate-950 mb-4 uppercase tracking-tighter leading-tight">Detailed <span className="text-blue-600">Answers</span></h2>
                         <p className="text-slate-500 font-medium uppercase tracking-widest text-[10px] block opacity-60">Everything you need to know about your journey</p>
                     </div>
 

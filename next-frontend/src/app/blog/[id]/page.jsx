@@ -243,7 +243,7 @@ await nexusAgent.initiateLearningFlow({
                                 </div>
 
                                 <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-                                    <Link href="/course" className="px-8 py-4 bg-white text-indigo-600 font-black rounded-xl shadow-xl hover:bg-slate-50 transition-all active:scale-95 text-xs uppercase tracking-widest whitespace-nowrap flex items-center justify-center gap-3">
+                                    <Link href="/courses" className="px-8 py-4 bg-white text-indigo-600 font-black rounded-xl shadow-xl hover:bg-slate-50 transition-all active:scale-95 text-xs uppercase tracking-widest whitespace-nowrap flex items-center justify-center gap-3">
                                         Browse Courses
                                         <ArrowRight className="w-4 h-4" />
                                     </Link>

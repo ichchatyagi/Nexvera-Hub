@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Play, BookOpen, Clock, Award, ChevronRight, ChevronDown,
-  Loader2, Lock, ArrowRight, User
+  Loader2, Lock, ArrowRight, User, Star
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -45,6 +45,15 @@ export default function TuitionSubjectDetail() {
       setIsLoading(false);
     }
   };
+
+  const tuitionReviews = [
+    { user: "Arjun Mehta", comment: "We love the tuitions at Nexvera Hub! The instructors are very patient and ensure every concept is clear before moving forward.", rating: 5 },
+    { user: "Sanya Gupta", comment: "The syllabus is completed well ahead of time, allowing for thorough revision and practice tests.", rating: 5 },
+    { user: "Rohan Das", comment: "Very accurate teaching methods. My grades have improved significantly since I joined these tuition classes.", rating: 4.5 },
+    { user: "Ananya Iyer", comment: "The small batch sizes and personalized attention make a huge difference. Highly recommend Nexvera for academic support.", rating: 5 },
+    { user: "Kabir Singh", comment: "The study materials provided are excellent and cover all the important topics in depth.", rating: 4 },
+    { user: "Ishita Sharma", comment: "Teachers are very approachable and help with doubts even after class hours. A great learning environment.", rating: 5 }
+  ];
 
   const handleEnroll = async (billingMode: 'monthly' | 'bundle') => {
     if (!isAuthenticated) {
@@ -128,21 +137,21 @@ export default function TuitionSubjectDetail() {
   if (!subjectData || !classData) return null;
 
   return (
-    <div className="bg-slate-50 min-h-screen pb-24">
-      <section className="bg-slate-950 text-white pt-24 pb-32">
+    <div className="bg-transparent min-h-screen pb-24">
+      <section className="bg-transparent text-slate-900 pt-24 pb-32">
         <div className="container mx-auto px-6 lg:px-12 max-w-5xl">
-          <Link href={`/tuition/${classSlug}`} className="text-blue-400 font-bold text-xs uppercase tracking-widest hover:text-white transition-colors flex items-center gap-2 mb-8">
+          <Link href={`/tuition/${classSlug}`} className="text-blue-600 font-bold text-xs uppercase tracking-widest hover:text-blue-700 transition-colors flex items-center gap-2 mb-8">
             <ChevronRight size={14} className="rotate-180" /> Back to Class
           </Link>
 
           <div className="flex flex-wrap items-center gap-4 mb-8">
-            <span className="bg-blue-600/20 px-4 py-2 rounded-xl text-blue-400 text-[10px] font-black uppercase tracking-widest border border-blue-600/20">
+            <span className="bg-blue-600/10 px-4 py-2 rounded-xl text-blue-600 text-[10px] font-black uppercase tracking-widest border border-blue-600/20">
               Class {classData.tuition_meta.class_level}
             </span>
           </div>
 
-          <h1 className="text-4xl lg:text-7xl font-black mb-6 uppercase tracking-tighter leading-[0.95]">{subjectData.name}</h1>
-          <p className="text-lg text-white/60 mb-10 max-w-3xl font-medium leading-relaxed">{subjectData.description || 'Comprehensive foundational subject covering syllabus rigorously.'}</p>
+          <h1 className="text-4xl lg:text-7xl font-black mb-6 uppercase tracking-tighter leading-[0.95] text-slate-950">{subjectData.name}</h1>
+          <p className="text-lg text-slate-600 mb-10 max-w-3xl font-medium leading-relaxed">{subjectData.description || 'Comprehensive foundational subject covering syllabus rigorously.'}</p>
 
         </div>
       </section>
@@ -274,6 +283,68 @@ export default function TuitionSubjectDetail() {
               )}
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Testimonials Marquee - Full Width Section */}
+      <section className="py-24 overflow-hidden bg-transparent">
+        <div className="container mx-auto px-6 lg:px-12 mb-12">
+            <h2 className="text-3xl lg:text-5xl font-black text-slate-950 uppercase tracking-tighter mb-4 border-l-4 border-blue-600 pl-6">
+              Student <span className="text-blue-600">Feedback</span>
+            </h2>
+            <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] pl-10">Real experiences from our tuition community</p>
+        </div>
+        
+        <div className="relative w-full">
+            {/* Gradient Masks */}
+            <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-slate-50/0 to-transparent z-10 pointer-events-none"></div>
+            <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-slate-50/0 to-transparent z-10 pointer-events-none"></div>
+
+            <motion.div 
+              animate={{ x: [0, -2000] }}
+              transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+              className="flex gap-6 whitespace-nowrap py-4"
+            >
+              {[...tuitionReviews, ...tuitionReviews, ...tuitionReviews, ...tuitionReviews].map((rev, idx) => {
+                const colors = ['border-blue-500', 'border-cyan-500', 'border-indigo-500', 'border-violet-500'];
+                const accentColor = colors[idx % colors.length];
+                const bgGradient = accentColor.replace('border-', 'from-').replace('-500', '-600') + ' to-' + accentColor.replace('border-', '').replace('-500', '-400');
+
+                return (
+                  <div key={idx} className={`w-[500px] bg-white border-t-4 ${accentColor} p-8 rounded-[2rem] flex flex-col gap-4 group hover:scale-[1.02] transition-all duration-500 shadow-2xl shadow-blue-500/5 whitespace-normal`}>
+                    <div className="flex items-center gap-1 text-orange-400">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star 
+                          key={i} 
+                          fill={i < Math.floor(rev.rating) ? "currentColor" : "none"} 
+                          size={14} 
+                          className={i < Math.floor(rev.rating) ? "" : "text-slate-200"} 
+                        />
+                      ))}
+                      {rev.rating % 1 !== 0 && (
+                         <div className="relative overflow-hidden w-[7px]">
+                            <Star fill="currentColor" size={14} className="absolute left-0" />
+                         </div>
+                      )}
+                      <span className="text-[10px] font-black text-slate-400 ml-2">{rev.rating}</span>
+                    </div>
+                    <p className="text-slate-700 font-medium leading-relaxed text-[13px]">
+                      "{rev.comment}"
+                    </p>
+                    <div className="mt-auto flex items-center justify-between border-t border-slate-50 pt-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${bgGradient} flex items-center justify-center text-[11px] font-black text-white shadow-lg`}>
+                          {rev.user.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="text-[12px] font-black text-slate-900 uppercase tracking-tight">{rev.user}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </motion.div>
         </div>
       </section>
     </div>

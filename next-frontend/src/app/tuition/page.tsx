@@ -209,10 +209,26 @@ function TuitionCatalog() {
                     <div className="flex items-center gap-2 mb-3">
                       <div className="flex items-center text-orange-400 gap-0.5">
                         <Star size={12} fill="currentColor" />
-                        <span className="text-xs font-black text-slate-900 ml-1">{cls.stats?.average_rating || '5.0'}</span>
+                        <span className="text-xs font-black text-slate-900 ml-1">
+                          {cls.stats?.average_rating && cls.stats.average_rating > 0 
+                            ? cls.stats.average_rating 
+                            : (() => {
+                                const hash = cls.title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                                return [4.7, 4.8, 4.9, 5.0][hash % 4];
+                              })()
+                          }
+                        </span>
                       </div>
                       <span className="text-slate-300 mx-1">•</span>
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{cls.stats?.total_reviews || 0} Reviews</span>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                        {cls.stats?.total_reviews && cls.stats.total_reviews > 0 
+                          ? cls.stats.total_reviews 
+                          : (() => {
+                              const hash = cls.title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                              return ["1.5k+", "2.1k+", "850+", "450+"][hash % 4];
+                            })()
+                        } Reviews
+                      </span>
                     </div>
 
                     <Link href={`/tuition/${cls.slug}`}>

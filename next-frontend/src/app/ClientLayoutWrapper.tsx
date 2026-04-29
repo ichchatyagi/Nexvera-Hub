@@ -18,7 +18,7 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
   const pathname = usePathname();
 
   const backgroundPages = [
-    '/', '/course', '/courses', '/tuition', '/about', '/blog', '/contact',
+    '/', '/courses', '/tuition', '/about', '/blog', '/contact',
     '/certifications', '/free-guides', '/roadmaps',
     '/career-support', '/student-stories', '/faq', '/our-educators',
     '/terms-and-conditions', '/privacy-policy', '/cookie-policy', '/refund-and-cancellation'
@@ -28,6 +28,7 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
     pathname.startsWith('/blog/') ||
     pathname.startsWith('/course/') ||
     pathname.startsWith('/courses/') ||
+    pathname.startsWith('/tuition/') ||
     pathname.startsWith('/guide/') ||
     pathname.startsWith('/faq/');
 

@@ -146,7 +146,7 @@ const LearningRoadmaps = () => {
                             <motion.h1
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="text-4xl lg:text-7xl font-black text-slate-900 leading-tight mb-8 tracking-tighter"
+                                className="text-4xl lg:text-7xl font-black text-slate-950 leading-[0.9] mb-8 tracking-tighter uppercase"
                             >
                                 Our <br />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Educational</span> Roadmap
@@ -156,7 +156,7 @@ const LearningRoadmaps = () => {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.1 }}
-                                className="text-xl text-slate-600 font-medium leading-relaxed mb-12 max-w-2xl lg:mx-0 mx-auto"
+                                className="text-xl text-slate-500 font-medium leading-relaxed mb-12 max-w-2xl lg:mx-0 mx-auto tracking-tight"
                             >
                                 Discover how Nexvera Hub transforms aspiring talent into industry leaders through our structured, multi-phase teaching methodology.
                             </motion.p>
@@ -167,7 +167,7 @@ const LearningRoadmaps = () => {
                                 transition={{ delay: 0.2 }}
                                 className="flex justify-center lg:justify-start"
                             >
-                                <Link href="/course" className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black px-10 py-5 rounded-2xl shadow-2xl hover:shadow-blue-500/30 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-sm text-center">
+                                <Link href="/courses" className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black px-10 py-5 rounded-2xl shadow-2xl hover:shadow-blue-500/30 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-sm text-center">
                                     Join the Journey
                                     <Rocket className="w-5 h-5" />
                                 </Link>
@@ -204,8 +204,8 @@ const LearningRoadmaps = () => {
             <section className="py-16 lg:py-24 px-6 lg:px-12 bg-slate-50/50">
                 <div className="container mx-auto">
                     <div className="text-center mb-16 text-center">
-                        <h2 className="text-3xl lg:text-4xl font-black text-slate-900 uppercase tracking-tight tracking-tighter">The <span className="text-blue-600">Nexvera</span> Advantage</h2>
-                        <p className="text-slate-500 font-medium mt-2">Why our roadmap leads to guaranteed mastery</p>
+                        <h2 className="text-3xl lg:text-4xl font-black text-slate-950 uppercase tracking-tighter leading-tight">The <span className="text-blue-600">Nexvera</span> Advantage</h2>
+                        <p className="text-slate-500 font-medium mt-2 tracking-tight">Why our roadmap leads to guaranteed mastery</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
@@ -242,7 +242,7 @@ const LearningRoadmaps = () => {
                 <div className="container mx-auto max-w-5xl">
                     <div className="text-center mb-24 relative text-center">
                         <div className="absolute top-1/2 left-0 w-full h-[2px] bg-slate-100 -z-10"></div>
-                        <span className="bg-white px-8 text-4xl lg:text-5xl font-black text-slate-900 inline-block uppercase tracking-tight tracking-tighter">
+                        <span className="bg-white px-8 text-4xl lg:text-5xl font-black text-slate-950 inline-block uppercase tracking-tighter leading-tight">
                             The Student <span className="text-blue-600">Growth Path</span>
                         </span>
                         <p className="text-slate-500 font-black uppercase tracking-[0.2em] text-[10px] mt-4 italic">From First Enrollment to Global Certification</p>
@@ -285,10 +285,10 @@ const LearningRoadmaps = () => {
                                         <MessageCircle className="w-5 h-5 text-white" />
                                         <span className="text-white text-xs font-black uppercase tracking-widest">Connect with Us</span>
                                     </div>
-                                    <h2 className="text-3xl lg:text-4xl font-black text-white leading-tight uppercase tracking-tight mb-6 tracking-tighter">
+                                    <h2 className="text-3xl lg:text-4xl font-black text-white leading-tight uppercase tracking-tighter mb-6">
                                         Still Have <span className="text-cyan-200">Questions?</span>
                                     </h2>
-                                    <p className="text-white/90 text-lg font-medium leading-relaxed">
+                                    <p className="text-white/90 text-lg font-medium leading-relaxed tracking-tight">
                                         If you couldn't find the answer you were looking for, our dedicated team is here to support you in your learning journey.
                                     </p>
                                 </div>
@@ -298,7 +298,7 @@ const LearningRoadmaps = () => {
                                         Contact Support
                                         <ArrowRight className="w-5 h-5" />
                                     </Link>
-                                    <Link href="/course" className="px-10 py-5 bg-cyan-400 text-slate-900 font-black rounded-xl shadow-xl hover:bg-cyan-300 transition-all active:scale-95 text-xs uppercase tracking-widest whitespace-nowrap flex items-center justify-center gap-3">
+                                    <Link href="/courses" className="px-10 py-5 bg-cyan-400 text-slate-900 font-black rounded-xl shadow-xl hover:bg-cyan-300 transition-all active:scale-95 text-xs uppercase tracking-widest whitespace-nowrap flex items-center justify-center gap-3">
                                         Explore Courses
                                         <Globe className="w-5 h-5" />
                                     </Link>

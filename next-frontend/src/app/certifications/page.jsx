@@ -10,11 +10,13 @@ import {
     ChevronRight,
     ShieldCheck,
     Globe,
-    Star
+    Star,
+    ArrowRight
 } from 'lucide-react';
+import Link from 'next/link';
 import ConsultancyCTA from '@/components/ConsultancyCTA';
 
-const CertificationCard = ({ title, description, skills, level, color, metallicGlow }) => (
+const CertificationCard = ({ title, description, skills, level, color, metallicGlow, slug }) => (
     <motion.div
         whileHover={{ y: -10, scale: 1.02 }}
         className={`relative p-[1.5px] rounded-[2.5rem] bg-gradient-to-br ${metallicGlow || 'from-slate-400 via-white to-slate-400'} shadow-2xl group overflow-hidden cursor-pointer h-full`}
@@ -46,10 +48,10 @@ const CertificationCard = ({ title, description, skills, level, color, metallicG
                 </div>
             </div>
 
-            <button className="flex items-center justify-between w-full px-5 py-4 bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl text-white font-black text-[10px] uppercase tracking-widest hover:bg-white/30 transition-all group/btn shadow-lg">
-                View Details
+            <Link href="/courses" className="flex items-center justify-between w-full px-5 py-4 bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl text-white font-black text-[10px] uppercase tracking-widest hover:bg-white/30 transition-all group/btn shadow-lg">
+                Enroll Now
                 <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-            </button>
+            </Link>
         </div>
     </motion.div>
 );
@@ -102,61 +104,66 @@ const LandscapeStep = ({ step, title, description, isLast }) => (
 
 const Certifications = () => {
     const categoriesSet = [
-        { name: "Information Technology", color: "text-blue-500" },
-        { name: "Health & Wellness", color: "text-emerald-500" },
-        { name: "Language Learning", color: "text-amber-500" },
-        { name: "Business & Entrepreneurship", color: "text-purple-500" },
-        { name: "Management", color: "text-rose-500" },
-        { name: "Sales & Marketing", color: "text-cyan-500" },
-        { name: "Engineering & Construction", color: "text-orange-500" },
-        { name: "Teaching & Academics", color: "text-indigo-500" },
-        { name: "Personal Development", color: "text-fuchsia-500" },
-        { name: "Artificial Intelligence", color: "text-sky-500" },
-        { name: "Media & Entertainment", color: "text-teal-500" }
+        { name: "Information Technology", color: "text-blue-600" },
+        { name: "Sales & Marketing", color: "text-emerald-600" },
+        { name: "Artificial Intelligence", color: "text-indigo-600" },
+        { name: "Data Science", color: "text-purple-600" },
+        { name: "Design", color: "text-rose-600" },
+        { name: "Languages & Communication", color: "text-amber-600" },
+        { name: "Business & Management", color: "text-cyan-600" },
+        { name: "Entrepreneurship", color: "text-orange-600" },
+        { name: "Project Management", color: "text-fuchsia-600" },
+        { name: "Personal Development", color: "text-sky-600" }
     ];
 
     const certs = [
         {
             title: "AI Specialist",
-            description: "Master the intersection of machine learning, neural networks, and prompt engineering.",
-            skills: ["ML Ops", "NLP", "Computer Vision", "Generative AI"],
+            description: "Master the intersection of machine learning, neural networks, and prompt engineering with our advanced AI engineering track.",
+            skills: ["ML Ops", "NLP", "Neural Networks", "Generative AI"],
             level: "Advanced",
-            color: "from-blue-600 to-indigo-700"
+            color: "from-blue-600 to-indigo-700",
+            slug: "python-programming-fundamentals-advanced"
         },
         {
-            title: "Media Production",
-            description: "Advanced certification in cinematic video production and digital entertainment workflows.",
-            skills: ["Filmmaking", "Post-Production", "Sound Design", "Animation"],
-            level: "Intermediate",
-            color: "from-emerald-600 to-teal-700"
-        },
-        {
-            title: "Full Stack IT",
-            description: "A comprehensive certification covering backend systems and frontend architecture.",
-            skills: ["Node.js", "React", "Docker", "Cybersecurity"],
+            title: "Cyber Security",
+            description: "Advanced certification in penetration testing, network security, and ethical hacking protocols.",
+            skills: ["Pen-testing", "Firewalls", "Ethical Hacking", "Encryption"],
             level: "Advanced",
-            color: "from-purple-600 to-violet-700"
+            color: "from-emerald-600 to-teal-700",
+            slug: "cybersecurity-essentials-advanced"
         },
         {
-            title: "Modern Pedagogy",
-            description: "Certification for advanced teaching methodologies and educational technology integration.",
-            skills: ["Blended Learning", "Classroom Mgmt", "LMS Admin", "Child Psych"],
-            level: "Intermediate",
-            color: "from-amber-500 to-orange-600"
+            title: "Cloud Architecture",
+            description: "Master the AWS ecosystem and modern cloud infrastructure at scale with professional-grade cloud engineering.",
+            skills: ["AWS", "Terraform", "Serverless", "Scalability"],
+            level: "Advanced",
+            color: "from-purple-600 to-violet-700",
+            slug: "cloud-computing-with-aws-advanced"
         },
         {
-            title: "Sales & Marketing",
-            description: "Master digital marketing growth hacks and high-ticket sales psychology.",
-            skills: ["SEO/SEM", "GaryVee Strategy", "Negotiation", "CRM"],
-            level: "Beginner",
-            color: "from-fuchsia-600 to-pink-700"
+            title: "Full Stack Development",
+            description: "A comprehensive certification covering advanced React architecture, backend systems, and modern web protocols.",
+            skills: ["React 18", "Node.js", "System Design", "WebSockets"],
+            level: "Advanced",
+            color: "from-amber-500 to-orange-600",
+            slug: "web-development-bootcamp-advanced"
         },
         {
-            title: "Health & Nutrition",
-            description: "Professional certification in nutrition science and holistic wellness coaching.",
-            skills: ["Diet Planning", "Stress Mgmt", "Fitness Science", "Yoga"],
-            level: "Beginner",
-            color: "from-cyan-600 to-blue-700"
+            title: "DevOps Engineering",
+            description: "Master digital infrastructure automation, CI/CD pipelines, and high-performance container orchestration.",
+            skills: ["Docker", "Kubernetes", "Jenkins", "Prometheus"],
+            level: "Advanced",
+            color: "from-fuchsia-600 to-pink-700",
+            slug: "devops-&-ci/cd-practices-advanced"
+        },
+        {
+            title: "Data Engineering",
+            description: "Professional certification in high-volume database design, SQL architecture, and big data management.",
+            skills: ["SQL", "PostgreSQL", "ETL", "Normalization"],
+            level: "Advanced",
+            color: "from-cyan-600 to-blue-700",
+            slug: "database-design-&-sql-advanced"
         }
     ];
 
@@ -192,7 +199,7 @@ const Certifications = () => {
                         <motion.h1
                             initial={{ opacity: 0, y: -20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="text-3xl sm:text-5xl lg:text-7xl font-black text-slate-900 leading-tight mb-8 tracking-tighter"
+                            className="text-4xl lg:text-7xl font-black text-slate-950 leading-[0.9] mb-8 tracking-tighter uppercase"
                         >
                             Professional <br />
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Certifications</span>
@@ -202,7 +209,7 @@ const Certifications = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.1 }}
-                            className="text-lg text-slate-600 font-medium leading-relaxed mb-12 max-w-2xl lg:mx-0 mx-auto"
+                            className="text-lg text-slate-500 font-medium leading-relaxed mb-12 max-w-2xl lg:mx-0 mx-auto tracking-tight"
                         >
                             Earn industry-recognized certifications from Nexvera Hub and showcase your skills with confidence. Our programs validate your knowledge and help you stand out.
                         </motion.p>
@@ -213,10 +220,10 @@ const Certifications = () => {
                             transition={{ delay: 0.2 }}
                             className="flex flex-col sm:flex-row items-center gap-4 lg:justify-start justify-center"
                         >
-                            <button className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black px-10 py-5 rounded-2xl shadow-2xl hover:shadow-blue-500/30 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-sm">
-                                Explore Certifications
-                                <Target className="w-5 h-5" />
-                            </button>
+                            <Link href="/courses" className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black px-10 py-5 rounded-2xl shadow-2xl hover:shadow-blue-500/30 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-sm text-center">
+                                Explore Courses
+                                <ArrowRight className="w-5 h-5" />
+                            </Link>
                         </motion.div>
                     </div>
 
@@ -263,10 +270,10 @@ const Certifications = () => {
                 <div className="container mx-auto">
                     <div className="flex flex-col lg:flex-row gap-16 items-center">
                         <div className="lg:w-1/2">
-                            <h2 className="text-4xl lg:text-5xl font-black text-slate-900 leading-tight mb-8 font-bold uppercase tracking-tight text-center lg:text-left tracking-tighter">
+                            <h2 className="text-3xl lg:text-5xl font-black text-slate-950 leading-tight mb-8 uppercase tracking-tighter text-center lg:text-left">
                                 Why Professional <br /> <span className="text-blue-600">Certification</span> Matters
                             </h2>
-                            <p className="text-slate-600 text-lg font-medium leading-relaxed text-center lg:text-left">
+                            <p className="text-slate-600 text-lg font-medium leading-relaxed text-center lg:text-left tracking-tight">
                                 Professional certifications demonstrate your expertise and commitment to learning. Nexvera Hub certifications help learners showcase their skills through structured training, practical projects, and successful course completion.
                             </p>
                         </div>
@@ -283,10 +290,10 @@ const Certifications = () => {
             <section className="py-20 lg:py-32 px-6 lg:px-12 relative bg-slate-50/50">
                 <div className="container mx-auto">
                     <div className="text-center mb-20">
-                        <h2 className="text-4xl lg:text-5xl font-black text-slate-900 font-bold uppercase tracking-tight mb-6 text-center tracking-tighter">
-                            Certifications for <span className="text-blue-600 underline underline-offset-8 decoration-blue-200">Every Direction</span>
+                        <h2 className="text-3xl lg:text-5xl font-black text-slate-950 uppercase tracking-tighter mb-6 text-center leading-tight">
+                            Certifications for <span className="text-blue-600">Every Direction</span>
                         </h2>
-                        <p className="text-slate-500 font-medium max-w-2xl mx-auto text-center">
+                        <p className="text-slate-500 font-medium max-w-2xl mx-auto text-center tracking-tight">
                             We provide industry-standard certifications across all categories of excellence.
                         </p>
                     </div>
@@ -303,7 +310,7 @@ const Certifications = () => {
             <section className="py-20 lg:py-32 px-6 lg:px-12 relative">
                 <div className="container mx-auto">
                     <div className="text-center mb-20 text-center">
-                        <h2 className="text-4xl lg:text-5xl font-black text-slate-900 leading-tight font-bold uppercase tracking-tight tracking-tighter">
+                        <h2 className="text-3xl lg:text-5xl font-black text-slate-950 leading-tight uppercase tracking-tighter">
                             The Path to <span className="text-blue-600">Professional Excellence</span>
                         </h2>
                     </div>
@@ -323,8 +330,8 @@ const Certifications = () => {
                 <div className="container mx-auto relative z-10">
                     <div className="text-center mb-20 text-center">
                         <span className="text-blue-600 font-black uppercase tracking-[0.3em] text-[10px] mb-4 block">Certified Community</span>
-                        <h2 className="text-4xl lg:text-5xl font-black text-slate-900 font-bold uppercase tracking-tight mb-4 tracking-tighter">
-                            Success <span className="text-blue-600 underline underline-offset-8 decoration-blue-200">Stories</span>
+                        <h2 className="text-3xl lg:text-5xl font-black text-slate-950 uppercase tracking-tighter mb-4 leading-tight">
+                            Success <span className="text-blue-600">Stories</span>
                         </h2>
                     </div>
 

@@ -166,7 +166,7 @@ const GuideDetail = () => {
                                     <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/20 rounded-full -mr-16 -mt-16 blur-3xl"></div>
                                     <h3 className="text-xl font-black mb-6 uppercase tracking-widest relative z-10">Master This Skill</h3>
                                     <p className="text-blue-100/80 font-medium mb-8 relative z-10">Ready to take your learning to the next level? Join our structured course program.</p>
-                                    <Link href="/course" className="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl transition-all relative z-10 flex items-center justify-center gap-3 uppercase tracking-widest text-xs">
+                                    <Link href="/courses" className="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl transition-all relative z-10 flex items-center justify-center gap-3 uppercase tracking-widest text-xs">
                                         Initialize Enrollment
                                         <Rocket className="w-4 h-4" />
                                     </Link>
@@ -225,9 +225,9 @@ const GuideDetail = () => {
                                 <Link href="/free-guides" className="px-10 py-5 bg-white text-blue-600 font-black rounded-2xl shadow-xl hover:bg-slate-50 transition-all active:scale-95 text-xs uppercase tracking-widest">
                                     Browse All Guides
                                 </Link>
-                                <button className="px-10 py-5 bg-cyan-400 text-slate-900 font-black rounded-2xl shadow-xl hover:bg-cyan-300 transition-all active:scale-95 text-xs uppercase tracking-widest">
+                                <Link href="/contact" className="px-10 py-5 bg-cyan-400 text-slate-900 font-black rounded-2xl shadow-xl hover:bg-cyan-300 transition-all active:scale-95 text-xs uppercase tracking-widest flex items-center justify-center">
                                     Subscribe Now
-                                </button>
+                                </Link>
                             </div>
                         </div>
                     </div>

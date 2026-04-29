@@ -43,25 +43,30 @@ const CourseDetail = () => {
         const courseInfo = getCourseBySlug(courseSlug);
 
         if (!courseInfo) {
-            router.push('/course');
+            router.push('/courses');
             return;
         }
 
         const details = getCourseDetails(decodedCategory, courseInfo.title, selectedLevel);
 
         if (!details) {
-            router.push('/course');
+            router.push('/courses');
             return;
         }
 
-        // Fetch dynamic pricing
-        const pricingInfo = coursesPricing.find(p => p.title === details.title);
-        const dynamicPrices = pricingInfo ? pricingInfo.pricing : { "Beginner": 699, "Intermediate": 1299, "Advanced": 1799 };
+        // Premium Tier Pricing Calculation
+        const premiumTiers = {
+            "Beginner": { original: 39999, launch: 19999 },
+            "Intermediate": { original: 91999, launch: 45999 },
+            "Advanced": { original: 119999, launch: 59999 }
+        };
+        const pricing = premiumTiers[selectedLevel] || premiumTiers["Beginner"];
 
         setCourse({
             ...details,
             level: selectedLevel,
-            price: dynamicPrices[selectedLevel.toLowerCase()] || dynamicPrices[selectedLevel],
+            originalPrice: pricing.original,
+            price: pricing.launch,
             lessonsCount: lessonCounts[selectedLevel]
         });
     }, [category, courseSlug, router, selectedLevel]);
@@ -83,7 +88,7 @@ const CourseDetail = () => {
     return (
         <div className="min-h-screen bg-white text-slate-900 selection:bg-blue-100 selection:text-blue-900 font-sans">
             {/* 1. TOP HERO SECTION */}
-            <section className="relative pt-6 lg:pt-12 pb-16 lg:pb-24 overflow-hidden bg-slate-50">
+            <section className="relative pt-6 lg:pt-12 pb-16 lg:pb-24 overflow-hidden bg-transparent">
                 <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-b from-transparent to-white opacity-40`}></div>
                 <div className="container mx-auto px-6 lg:px-12 relative z-10">
                     <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-20">
@@ -112,7 +117,7 @@ const CourseDetail = () => {
                                 initial={{ opacity: 0, y: 15 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.1 }}
-                                className="text-slate-500 text-sm md:text-lg font-medium max-w-2xl mb-8 leading-relaxed mx-auto lg:mx-0 shadow-none"
+                                className="text-slate-950 text-sm md:text-lg font-black max-w-2xl mb-8 leading-relaxed mx-auto lg:mx-0 shadow-none"
                             >
                                 {course.description}
                             </motion.p>
@@ -155,9 +160,21 @@ const CourseDetail = () => {
                                 transition={{ delay: 0.3 }}
                                 className="flex flex-wrap items-center justify-center lg:justify-start gap-12 mt-10"
                             >
-                                <div className="flex items-center gap-4">
-                                    <span className="text-base font-medium text-slate-400 line-through decoration-slate-300">₹2,999</span>
-                                    <span className="text-5xl font-black text-slate-950 tracking-tighter">₹{course.price}</span>
+                                <div className="flex items-center gap-8">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Standard Price</span>
+                                        <span className="text-xl font-bold text-slate-400 line-through decoration-slate-300">₹{course.originalPrice?.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">Special Launch</span>
+                                            <Sparkles size={10} className="text-blue-600 animate-pulse" />
+                                        </div>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-5xl font-black text-slate-950 tracking-tighter">₹{course.price?.toLocaleString()}</span>
+                                            <span className="text-sm font-black text-slate-400 uppercase tracking-widest">/Full Access</span>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div className="flex items-center gap-4">
@@ -190,9 +207,9 @@ const CourseDetail = () => {
                                 <div className="w-full h-full bg-white rounded-[3.4rem] flex items-center justify-center relative overflow-hidden group">
                                     <div className={`absolute inset-0 bg-gradient-to-br ${themeColor} opacity-[0.03] group-hover:opacity-[0.07] transition-opacity`}></div>
                                     {course.image ? (
-                                        <img 
-                                            src={course.image} 
-                                            alt={course.title} 
+                                        <img
+                                            src={course.image}
+                                            alt={course.title}
                                             className="w-full h-full object-cover filter drop-shadow-[0_10px_30px_rgba(0,0,0,0.1)] group-hover:scale-110 transition-transform duration-700 z-10 select-none"
                                         />
                                     ) : (
@@ -298,7 +315,7 @@ const CourseDetail = () => {
                                                                 <h5 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 mb-6 flex items-center gap-2">
                                                                     <Rocket size={14} /> Learning Method
                                                                 </h5>
-                                                                <p className="text-slate-600 text-sm font-bold leading-relaxed pl-6">
+                                                                <p className="text-sm text-slate-950 font-bold leading-relaxed pl-6">
                                                                     {course.overview.learningMethod}
                                                                 </p>
                                                             </div>
@@ -393,7 +410,7 @@ const CourseDetail = () => {
                                                     {(course.roadmap || []).map((step, idx) => {
                                                         const isEven = idx % 2 === 0;
                                                         const icons = [<Zap key="1" />, <Binary key="2" />, <Settings key="3" />, <Trophy key="4" />];
-                                                        
+
                                                         return (
                                                             <div key={idx} className={`flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-24 relative ${idx !== 0 ? 'lg:-mt-12' : ''}`}>
                                                                 {/* Left Content (Odd) */}
@@ -441,8 +458,8 @@ const CourseDetail = () => {
                                                         <div className="flex flex-col lg:flex-row items-stretch">
                                                             {/* Project Image Section */}
                                                             <div className="w-full lg:w-[45%] h-[300px] lg:h-auto relative overflow-hidden bg-slate-100">
-                                                                <img 
-                                                                    src={project.image} 
+                                                                <img
+                                                                    src={project.image}
                                                                     alt={project.title}
                                                                     className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 grayscale-[50%] group-hover:grayscale-0"
                                                                     onError={(e) => {
@@ -462,7 +479,7 @@ const CourseDetail = () => {
                                                                 <div className={`w-1 h-16 absolute left-0 top-1/2 -translate-y-1/2 bg-gradient-to-b ${themeColor} opacity-0 group-hover:opacity-100 transition-opacity`}></div>
                                                                 <h4 className="text-3xl lg:text-4xl font-black mb-6 uppercase tracking-tighter text-slate-950 leading-[0.9]">{project.title}</h4>
                                                                 <p className="text-slate-500 text-lg leading-relaxed mb-10 font-medium italic opacity-80 group-hover:opacity-100 transition-opacity">{project.desc}</p>
-                                                                
+
                                                                 <div className="space-y-6">
                                                                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Integrated Skillset</p>
                                                                     <div className="flex flex-wrap gap-4">

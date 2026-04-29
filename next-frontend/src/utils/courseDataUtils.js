@@ -96,13 +96,20 @@ const getCategoryOutcomes = (categoryName, title) => {
 };
 
 export const getCourseDetails = (categoryName, title, selectedLevel = null) => {
-    // Find the base course info from categoryData to preserve icon/color/instructor
-    const category = categoryData.find(cat => cat.name === categoryName);
+    // Generate deterministic but varied social proof (Ratings & Reviews)
+    const getSocialVariation = (str, options) => {
+        const hash = str.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        return options[hash % options.length];
+    };
+
+    const rating = getSocialVariation(title, [3.8, 4.2, 4.5, 4.6, 4.8, 4.9, 5.0]);
+    const reviews = getSocialVariation(title, ["1.2k+", "2.8k+", "4.5k+", "850+", "3.2k+", "5.0k+", "8.4k+"]);
+
     const baseCourse = category?.courses.find(c => c.title === title) || {
         title: title,
         instructor: "Expert Instructor",
-        rating: 4.8,
-        reviews: "1.2k",
+        rating: rating,
+        reviews: reviews,
         color: "from-blue-600 to-indigo-700",
         icon: "✨",
         lessons: 20
@@ -398,13 +405,13 @@ export const getCourseDetails = (categoryName, title, selectedLevel = null) => {
             else count = 5;
 
             const projectNames = [
-                "Initial Core Sprint", "Market Solution Design", "Scalable Enterprise Beta", 
+                "Initial Core Sprint", "Market Solution Design", "Scalable Enterprise Beta",
                 "Advanced Logic Optimization", "Final Industrial Capstone", "Global Implementation"
             ];
 
             const categoryLower = categoryName.toLowerCase();
             let toolsPool = ["Professional Skills", "Strategic Thinking", "Industry Standards", "Case Analysis", "Portfolio Sprint"];
-            
+
             if (categoryLower.includes("information technology") || categoryLower.includes("tech") || categoryLower.includes("software") || categoryLower.includes("cloud") || categoryLower.includes("cyber") || categoryLower.includes("data")) {
                 toolsPool = ["VS Code", "GitHub", "Terminal", "NPM Ecosystem", "REST API", "Docker Containers", "AWS Cloud", "System Design Tool"];
             } else if (categoryLower.includes("health") || categoryLower.includes("wellness") || categoryLower.includes("medical")) {
@@ -462,7 +469,7 @@ export const getCourseDetails = (categoryName, title, selectedLevel = null) => {
         ...explicitDetails,
         overview: (() => {
             const rawOverview = explicitDetails?.overview || defaultDetails.overview;
-            
+
             // If it's already a rich object with levels, resolve the active one
             if (rawOverview && typeof rawOverview === 'object' && rawOverview[activeLevel]) {
                 return rawOverview[activeLevel];
@@ -471,22 +478,22 @@ export const getCourseDetails = (categoryName, title, selectedLevel = null) => {
             // Fallback: Generate a Universal Rich Overview for any of the 243 courses
             const isBeginner = activeLevel === 'beginner';
             const isIntermediate = activeLevel === 'intermediate';
-            
+
             return {
-                hook: isBeginner 
-                    ? `Master the foundational intelligence of ${title}.` 
-                    : isIntermediate 
-                        ? `Elevate your ${title} expertise for the professional market.` 
+                hook: isBeginner
+                    ? `Master the foundational intelligence of ${title}.`
+                    : isIntermediate
+                        ? `Elevate your ${title} expertise for the professional market.`
                         : `Master the elite architectural strategies of ${title}.`,
-                problem: typeof rawOverview === 'string' 
-                    ? rawOverview 
+                problem: typeof rawOverview === 'string'
+                    ? rawOverview
                     : `Most practitioners of ${title} hit a ceiling because they lack the structured methodologies required for high-performance deployment.`,
                 transformation: `We turn you into an authority. Transition from fragmented knowledge to technical mastery with a curriculum designed by industry experts.`,
                 whatYouWillLearn: explicitDetails?.whatYouWillLearn?.slice(0, 4) || defaultDetails.whatYouLearn.slice(0, 4),
                 whyChoose: `A curriculum focused on 'Industrial Excellence.' We bridge the gap between theory and the high-stakes demands of the global market.`,
                 learningMethod: `Victory-driven, hands-on pedagogical approach with a focus on real-world capstone projects.`,
-                outcomes: isBeginner 
-                    ? `Confident in selecting and applying core ${title} principles in professional environments.` 
+                outcomes: isBeginner
+                    ? `Confident in selecting and applying core ${title} principles in professional environments.`
                     : `Capable of architecting and optimizing complex ${title} systems for corporate scale.`,
                 closing: `The future belongs to the skilled in ${title}. Let's master it.`
             };
@@ -501,7 +508,7 @@ export const getCourseDetails = (categoryName, title, selectedLevel = null) => {
             else count = getVarietyNum(20, 6);
 
             const courseSpecificTitles = [
-                "Foundational Intelligence", "Core Methodologies", "Practical Lab Session", 
+                "Foundational Intelligence", "Core Methodologies", "Practical Lab Session",
                 "Technical Architecture", "Optimization Strategies", "Market-Ready Projects",
                 "Advanced Logic", "Industry Standards", "Security Protocols", "Deployment Workflows",
                 "High-Performance Design", "System Orchestration", "Final Capstone", "Specialized Deep-Dive"

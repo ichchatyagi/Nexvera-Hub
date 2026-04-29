@@ -240,7 +240,7 @@ const FAQDetail = () => {
                                 <Link href="/contact" className="px-10 py-5 bg-slate-950 text-white font-black rounded-2xl hover:bg-black transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-xs shadow-xl shadow-slate-950/10">
                                     Contact Support
                                 </Link>
-                                <Link href="/course" className={`px-10 py-5 bg-gradient-to-r ${faq.color} text-white font-black rounded-2xl shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-xs`}>
+                                <Link href="/courses" className={`px-10 py-5 bg-gradient-to-r ${faq.color} text-white font-black rounded-2xl shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-xs`}>
                                     Explore Courses <ChevronRight size={16} strokeWidth={3} />
                                 </Link>
                             </div>

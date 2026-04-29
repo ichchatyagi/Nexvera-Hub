@@ -44,12 +44,12 @@ const Home = () => {
                         </p>
 
                         <div className="flex flex-col sm:flex-row gap-6">
-                            <button
-                                onClick={openModal}
+                            <Link
+                                href="/contact"
                                 className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:scale-105 text-white font-black text-xs uppercase tracking-widest px-14 py-6 rounded-2xl shadow-2xl shadow-blue-200 transition-all active:scale-95 text-center"
                             >
                                 Get Started
-                            </button>
+                            </Link>
                             <Link href="/about" className="bg-white border border-slate-200 text-slate-900 font-black text-xs uppercase tracking-widest px-14 py-6 rounded-2xl hover:bg-slate-50 transition-all text-center">
                                 Our Mission
                             </Link>
@@ -181,12 +181,12 @@ const Home = () => {
                         </div>
 
                         <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="p-8 sm:p-10 rounded-[3rem] bg-white border-[3px] border-blue-500 text-slate-900 flex flex-col justify-end min-h-[16rem] h-auto hover:-translate-y-2 transition-transform duration-500 shadow-2xl shadow-blue-500/10">
-                                <Shield className="w-10 h-10 mb-8 text-blue-600" />
+                            <div className="p-8 sm:p-10 rounded-[3rem] bg-white border-[3px] border-blue-500 text-slate-900 flex flex-col items-center justify-center text-center min-h-[16rem] h-auto hover:-translate-y-2 transition-transform duration-500 shadow-2xl shadow-blue-500/10">
+                                <Shield className="w-12 h-12 mb-6 text-blue-600" />
                                 <h4 className="text-xl sm:text-2xl font-black uppercase tracking-tighter">Verified Systems</h4>
                             </div>
-                            <div className="p-8 sm:p-10 rounded-[3rem] bg-white border-[3px] border-cyan-400 text-slate-900 flex flex-col justify-end min-h-[16rem] h-auto hover:-translate-y-2 transition-transform duration-500 delay-75 shadow-2xl shadow-cyan-500/10">
-                                <Zap className="w-10 h-10 mb-8 text-cyan-500" />
+                            <div className="p-8 sm:p-10 rounded-[3rem] bg-white border-[3px] border-cyan-400 text-slate-900 flex flex-col items-center justify-center text-center min-h-[16rem] h-auto hover:-translate-y-2 transition-transform duration-500 delay-75 shadow-2xl shadow-cyan-500/10">
+                                <Zap className="w-12 h-12 mb-6 text-cyan-500" />
                                 <h4 className="text-xl sm:text-2xl font-black uppercase tracking-tighter">Real-Time Insight</h4>
                             </div>
                         </div>
@@ -241,7 +241,7 @@ const Home = () => {
                                 <h3 className="text-3xl font-black text-white uppercase tracking-tight">Online Mode</h3>
                             </div>
                             <p className="text-white/80 text-lg font-medium leading-relaxed mb-6">
-                                Students attend live classes through <strong className="text-white underline decoration-white/30 underline-offset-4">Google Meet</strong>, where mentors guide them through lessons, discussions, and practical learning sessions.
+                                Students attend live classes through <strong className="text-white underline decoration-white/30 underline-offset-4">Agora Classroom</strong>, where mentors guide them through lessons, discussions, and practical learning sessions.
                             </p>
                         </MetallicCard>
 
@@ -282,6 +282,84 @@ const Home = () => {
                     </div>
                 </div>
             </section>
+
+            {/* Testimonial Section */}
+            <section className="py-16 lg:py-20 bg-transparent overflow-hidden relative border-t border-slate-50">
+                <div className="container mx-auto px-6 lg:px-12 mb-12 text-center">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                    >
+                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-600 mb-4 block italic">Verified Student Success</span>
+                        <h2 className="text-3xl lg:text-5xl font-black text-slate-950 uppercase tracking-tighter">
+                            Real <span className="text-blue-600">Impact</span>, Real Results
+                        </h2>
+                    </motion.div>
+                </div>
+
+                {/* Single Marquee Row */}
+                <div className="flex relative">
+                    <motion.div
+                        animate={{ x: ["0%", "-50%"] }}
+                        transition={{ duration: 50, repeat: Infinity, ease: "linear" }}
+                        className="flex gap-6 whitespace-nowrap"
+                    >
+                        {[
+                            { name: "Mohit", image: "/testimonials/1.png", role: "AI Student", text: "Built a professional portfolio that got me hired at a top startup.", rating: "5/5", color: "border-blue-400" },
+                            { name: "Priya", image: "/testimonials/2.png", role: "UI Designer", text: "Design feedback sessions were a game-changer for my creative process.", rating: "4.5/5", color: "border-purple-400" },
+                            { name: "Rahul", image: "/testimonials/3.png", role: "Developer", text: "Industry pros as mentors is what makes Nexvera unique and valuable.", rating: "5/5", color: "border-indigo-400" },
+                            { name: "Aryan", image: "/testimonials/1.png", role: "Software Eng", text: "Roadmaps are structured perfectly for career growth and skill acquisition.", rating: "4.5/5", color: "border-emerald-400" },
+                            { name: "Ananya", image: "/testimonials/4.png", role: "React Dev", text: "The community support here is amazing. I never felt stuck for long.", rating: "5/5", color: "border-pink-400" },
+                            { name: "Karan", image: "/testimonials/3.png", role: "Frontend Lead", text: "Most comprehensive React masterclass I've ever taken. pure gold.", rating: "5/5", color: "border-cyan-400" },
+                            { name: "Sumit", image: "/testimonials/1.png", role: "Cybersecurity", text: "Landed an internship within weeks. The labs were fantastic.", rating: "5/5", color: "border-cyan-400" },
+                            { name: "Sneha", image: "/testimonials/2.png", role: "Class 12", text: "Aced my board exams with Nexvera's tuition support. life-saving!", rating: "5/5", color: "border-orange-400" },
+                            { name: "Vikram", image: "/testimonials/3.png", role: "Data Scientist", text: "Certification helped me stand out in a pool of qualified applicants.", rating: "4.5/5", color: "border-amber-400" },
+                            { name: "Divya", image: "/testimonials/4.png", role: "Web Dev", text: "Best of both worlds: live sessions and top self-paced materials.", rating: "5/5", color: "border-emerald-400" },
+                            { name: "Rohan", image: "/testimonials/1.png", role: "Product Manager", text: "Placement assistance helped me land at a top tech firm. Five stars!", rating: "5/5", color: "border-red-400" },
+                            { name: "Megha", image: "/testimonials/2.png", role: "UX Researcher", text: "The depth of curriculum is unmatched. Learned things I use daily.", rating: "4.5/5", color: "border-rose-400" }
+                        ].concat([
+                            { name: "Mohit", image: "/testimonials/1.png", role: "AI Student", text: "Built a professional portfolio that got me hired at a top startup.", rating: "5/5", color: "border-blue-400" },
+                            { name: "Priya", image: "/testimonials/2.png", role: "UI Designer", text: "Design feedback sessions were a game-changer for my creative process.", rating: "4.5/5", color: "border-purple-400" },
+                            { name: "Rahul", image: "/testimonials/3.png", role: "Developer", text: "Industry pros as mentors is what makes Nexvera unique and valuable.", rating: "5/5", color: "border-indigo-400" },
+                            { name: "Aryan", image: "/testimonials/1.png", role: "Software Eng", text: "Roadmaps are structured perfectly for career growth and skill acquisition.", rating: "4.5/5", color: "border-emerald-400" },
+                            { name: "Ananya", image: "/testimonials/4.png", role: "React Dev", text: "The community support here is amazing. I never felt stuck for long.", rating: "5/5", color: "border-pink-400" },
+                            { name: "Karan", image: "/testimonials/3.png", role: "Frontend Lead", text: "Most comprehensive React masterclass I've ever taken. pure gold.", rating: "5/5", color: "border-cyan-400" },
+                            { name: "Sumit", image: "/testimonials/1.png", role: "Cybersecurity", text: "Landed an internship within weeks. The labs were fantastic.", rating: "5/5", color: "border-cyan-400" },
+                            { name: "Sneha", image: "/testimonials/2.png", role: "Class 12", text: "Aced my board exams with Nexvera's tuition support. life-saving!", rating: "5/5", color: "border-orange-400" },
+                            { name: "Vikram", image: "/testimonials/3.png", role: "Data Scientist", text: "Certification helped me stand out in a pool of qualified applicants.", rating: "4.5/5", color: "border-amber-400" },
+                            { name: "Divya", image: "/testimonials/4.png", role: "Web Dev", text: "Best of both worlds: live sessions and top self-paced materials.", rating: "5/5", color: "border-emerald-400" },
+                            { name: "Rohan", image: "/testimonials/1.png", role: "Product Manager", text: "Placement assistance helped me land at a top tech firm. Five stars!", rating: "5/5", color: "border-red-400" },
+                            { name: "Megha", image: "/testimonials/2.png", role: "UX Researcher", text: "The depth of curriculum is unmatched. Learned things I use daily.", rating: "4.5/5", color: "border-rose-400" }
+                        ]).map((t, idx) => (
+                            <div key={idx} className={`w-[260px] bg-white border-t-4 ${t.color} p-7 rounded-[2.5rem] flex flex-col gap-4 group hover:scale-105 transition-all duration-500 shadow-2xl shadow-blue-500/5`}>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex gap-0.5">
+                                        {[1, 2, 3, 4, 5].map(s => (
+                                            <Star key={s} size={10} className={`${s <= Math.floor(parseFloat(t.rating)) ? 'fill-yellow-400 text-yellow-400' : 'text-slate-200'}`} />
+                                        ))}
+                                    </div>
+                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{t.rating}</span>
+                                </div>
+                                <p className="text-slate-600 text-[11px] font-medium leading-relaxed whitespace-normal tracking-tight line-clamp-3">
+                                    "{t.text}"
+                                </p>
+                                <div className="flex items-center gap-3 mt-auto">
+                                    <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg border border-slate-100">
+                                        <img src={t.image} alt={t.name} className="w-full h-full object-cover" />
+                                    </div>
+                                    <div className="text-left">
+                                        <h4 className="text-slate-950 font-black uppercase tracking-widest text-[8px] mb-0.5">{t.name}</h4>
+                                        <p className="text-blue-600 text-[7px] font-black uppercase tracking-widest opacity-80">{t.role}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </motion.div>
+                </div>
+            </section>
+
+
             <ConsultancyCTA />
         </div>
     );

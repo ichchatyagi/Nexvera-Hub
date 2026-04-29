@@ -34,7 +34,7 @@ const ConsultancyCTA = () => {
                                     <span className="text-white text-[10px] font-black uppercase tracking-[0.3em]">Expert Guidance</span>
                                 </div>
                                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-white leading-tight uppercase tracking-tight mb-4">
-                                    Talk to Experts <span className="text-cyan-200">for Free</span>
+                                    Get a Free <span className="text-cyan-200">Consultation</span>
                                 </h2>
                                 <p className="text-blue-50 text-base md:text-lg font-bold leading-relaxed max-w-2xl opacity-90">
                                     Get guidance from our experts and choose the best course for yourself.
@@ -46,7 +46,7 @@ const ConsultancyCTA = () => {
                                     onClick={openModal}
                                     className="px-12 py-6 bg-white text-indigo-600 font-black rounded-2xl shadow-2xl hover:bg-slate-50 hover:scale-105 transition-all active:scale-95 text-sm uppercase tracking-[0.2em] flex items-center gap-3 group"
                                 >
-                                    Talk to Experts for Free
+                                    Get Free Consultation
                                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </button>
                                 <p className="text-white/60 text-[9px] font-black uppercase tracking-[0.3em]">No commitment required • Quick Response</p>

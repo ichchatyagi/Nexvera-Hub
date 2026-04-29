@@ -38,18 +38,28 @@ export const categoryData = [
         courses: itCoursesDetails.filter(c => c.title.includes('Web Development') || c.title.includes('Mobile'))
     },
     {
-        name: 'Languages',
+        name: 'Languages & Communication',
         icon: 'Language Learning',
         courses: []
     },
     {
-        name: 'Business',
+        name: 'Business & Management',
         icon: 'Business & Entrepreneurship',
         courses: []
     },
     {
         name: 'Entrepreneurship',
         icon: '🚀',
+        courses: []
+    },
+    {
+        name: 'Project Management',
+        icon: 'Target',
+        courses: []
+    },
+    {
+        name: 'Personal Development',
+        icon: 'Award',
         courses: []
     }
 ];
