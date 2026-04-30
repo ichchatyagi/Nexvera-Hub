@@ -123,9 +123,29 @@ export class CoursesService {
             created_at: -1,
           } as any)
           .exec();
-        total = await this.courseModel.countDocuments(textFilters);
+        
+        // If text search returned no results, fallback to regex for better fuzzy matching
+        if (!data || data.length === 0) {
+          const regexFilters = {
+            ...filters,
+            $or: [
+              { title: { $regex: trimmedSearch, $options: 'i' } },
+              { description: { $regex: trimmedSearch, $options: 'i' } },
+            ],
+          };
+          data = await this.courseModel
+            .find(regexFilters)
+            .skip(skip)
+            .limit(limit)
+            .select('-curriculum')
+            .sort({ published_at: -1, created_at: -1 })
+            .exec();
+          total = await this.courseModel.countDocuments(regexFilters);
+        } else {
+          total = await this.courseModel.countDocuments(textFilters);
+        }
       } catch (err) {
-        // Fallback to old regex behavior if index is missing
+        // Fallback to old regex behavior if index is missing or other error
         const regexFilters = {
           ...filters,
           $or: [

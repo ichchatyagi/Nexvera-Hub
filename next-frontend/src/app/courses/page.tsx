@@ -40,11 +40,13 @@ const CourseCatalog = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
-  const [activeCategory, setActiveCategory] = useState(searchParams.get('category') || 'Artificial Intelligence');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchParams.get('search') || '');
+  const [activeCategory, setActiveCategory] = useState(searchParams.get('category') || 'All Categories');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
   const categories = [
+    'All Categories',
     'Artificial Intelligence',
     'Information Technology',
     'Sales and Marketing',
@@ -57,35 +59,51 @@ const CourseCatalog = () => {
     'Personal Development'
   ];
 
-  // Sync searchTerm state with URL search param
+  // Sync searchTerm state with URL search param only on initial load or browser back/forward
   useEffect(() => {
     const urlSearch = searchParams.get('search') || '';
-    if (urlSearch !== searchTerm) {
+    if (urlSearch !== searchTerm && !searchTerm) {
       setSearchTerm(urlSearch);
+      setDebouncedSearchTerm(urlSearch);
     }
   }, [searchParams]);
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   useEffect(() => {
     const urlCategory = searchParams.get('category');
     if (urlCategory && categories.includes(urlCategory)) {
       setActiveCategory(urlCategory);
+    } else if (!urlCategory) {
+      setActiveCategory('All Categories');
     }
   }, [searchParams]);
 
   useEffect(() => {
     fetchCourses(currentPage);
-  }, [activeCategory, currentPage, searchParams.get('search')]);
+  }, [activeCategory, currentPage, debouncedSearchTerm]);
 
   const fetchCourses = async (page = 1) => {
     try {
       setIsLoading(true);
-      const currentSearch = searchParams.get('search') || '';
       const params: any = {
-        category: activeCategory,
         page,
         limit: 8
       };
-      if (currentSearch) params.search = currentSearch;
+      
+      // If we have a search term, we keep it category neutral as requested
+      if (debouncedSearchTerm.trim()) {
+        params.search = debouncedSearchTerm.trim();
+        // Don't add category to params if searching
+      } else if (activeCategory !== 'All Categories') {
+        params.category = activeCategory;
+      }
 
       const response = await api.get('/courses', { params });
       setCourses(response.data || []);
@@ -100,27 +118,34 @@ const CourseCatalog = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const q = searchTerm.trim();
-
-    // Update URL param
+    setDebouncedSearchTerm(searchTerm);
+    
+    // Update URL param for persistence
     const params = new URLSearchParams(searchParams.toString());
-    if (q) {
-      params.set('search', q);
+    if (searchTerm.trim()) {
+      params.set('search', searchTerm.trim());
+      params.delete('category');
     } else {
       params.delete('search');
     }
-    router.push(`/courses?${params.toString()}`);
-
-    if (currentPage !== 1) {
-      setCurrentPage(1);
-    } else {
-      fetchCourses(1);
-    }
+    router.push(`/courses?${params.toString()}`, { scroll: false });
   };
 
+  // Update URL when debounced search term changes
   useEffect(() => {
-    handleSearch({ preventDefault: () => { } } as React.FormEvent)
-  }, [searchTerm]);
+    if (debouncedSearchTerm !== (searchParams.get('search') || '')) {
+      const params = new URLSearchParams(searchParams.toString());
+      if (debouncedSearchTerm.trim()) {
+        params.set('search', debouncedSearchTerm.trim());
+        params.delete('category');
+        if (activeCategory !== 'All Categories') setActiveCategory('All Categories');
+      } else {
+        params.delete('search');
+      }
+      router.push(`/courses?${params.toString()}`, { scroll: false });
+    }
+    setCurrentPage(1);
+  }, [debouncedSearchTerm]);
 
   const handleCategoryChange = (cat: string) => {
     setActiveCategory(cat);
@@ -128,7 +153,11 @@ const CourseCatalog = () => {
 
     // Update URL param
     const params = new URLSearchParams(searchParams.toString());
-    params.set('category', cat);
+    if (cat === 'All Categories') {
+      params.delete('category');
+    } else {
+      params.set('category', cat);
+    }
     router.push(`/courses?${params.toString()}`);
   };
 
@@ -159,9 +188,9 @@ const CourseCatalog = () => {
             transition={{ delay: 0.2 }}
             className="max-w-4xl mx-auto"
           >
-            <form onSubmit={handleSearch} className="flex p-2 bg-white/80 backdrop-blur-md rounded-3xl shadow-2xl shadow-blue-500/10 border border-slate-100 mb-10">
+            <form onSubmit={handleSearch} className="flex p-2 bg-white/80 backdrop-blur-md rounded-3xl shadow-2xl shadow-blue-500/10 border border-slate-100 mb-10 group focus-within:ring-4 focus-within:ring-blue-500/5 transition-all">
               <div className="flex-1 flex items-center px-6">
-                <Search className="text-slate-400 mr-4" size={20} />
+                <Search className={`transition-colors duration-300 ${searchTerm ? 'text-blue-600' : 'text-slate-400'} mr-4`} size={20} />
                 <input
                   type="text"
                   value={searchTerm}
@@ -169,6 +198,15 @@ const CourseCatalog = () => {
                   placeholder="Search our catalog of elite curriculums..."
                   className="w-full py-4 bg-transparent outline-none text-slate-700 font-bold placeholder:text-slate-300"
                 />
+                {(isLoading && searchTerm) && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="mr-2"
+                  >
+                    <Loader2 className="animate-spin text-blue-600" size={18} />
+                  </motion.div>
+                )}
               </div>
               <button className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:scale-105 text-white font-black text-xs uppercase tracking-widest px-10 py-5 rounded-2xl transition-all shadow-xl shadow-blue-200 active:scale-95">
                 Explore
@@ -180,7 +218,7 @@ const CourseCatalog = () => {
                 <button
                   key={cat}
                   onClick={() => handleCategoryChange(cat)}
-                  className={`flex flex-col items-center justify-center p-6 rounded-[2rem] transition-all duration-500 border ${activeCategory === cat
+                  className={`flex flex-col items-center justify-center ${cat === 'All Categories' ? 'hidden' : 'cursor-pointer'} p-6 rounded-[2rem] transition-all duration-500 border ${activeCategory === cat
                     ? 'bg-slate-950 text-white border-slate-950 shadow-2xl shadow-blue-500/20 scale-[1.02]'
                     : 'bg-white text-slate-500 border-slate-100 hover:border-blue-200 hover:text-blue-600 hover:bg-blue-50/30'
                     }`}
@@ -344,7 +382,7 @@ const CourseCatalog = () => {
             <h3 className="text-xl font-black text-slate-900 mb-2 uppercase tracking-tight">No courses found</h3>
             <p className="text-slate-500 font-medium">Try adjusting your filters or search keywords.</p>
             <button
-              onClick={() => { setSearchTerm(''); handleCategoryChange('Artificial Intelligence'); }}
+              onClick={() => { setSearchTerm(''); handleCategoryChange('All Categories'); }}
               className="mt-8 text-blue-600 font-black text-xs uppercase tracking-widest hover:underline"
             >
               Clear all filters

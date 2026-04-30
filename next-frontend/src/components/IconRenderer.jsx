@@ -14,6 +14,7 @@ import {
 
 const iconMap = {
     // Categories
+    'All Categories': Sparkles,
     'Artificial Intelligence': Brain,
     'Information Technology': Monitor,
     'Media & Entertainment': Film,
@@ -192,6 +193,7 @@ function MessageSquare(props) { return <Languages {...props} />; }
 function PlusSquare(props) { return <TrendingUp {...props} />; }
 
 const categoryStyles = {
+    'All Categories': { colors: ['#94A3B8', '#64748B', '#475569'], glow: 'rgba(148, 163, 184, 0.2)' },
     'Artificial Intelligence': { colors: ['#60A5FA', '#3B82F6', '#2563EB'], glow: 'rgba(59, 130, 246, 0.3)' },
     'Information Technology': { colors: ['#38BDF8', '#0EA5E9', '#0284C7'], glow: 'rgba(14, 165, 233, 0.3)' },
     'Sales and Marketing': { colors: ['#F87171', '#EF4444', '#DC2626'], glow: 'rgba(239, 68, 68, 0.3)' },
