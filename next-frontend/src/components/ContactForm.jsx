@@ -46,7 +46,7 @@ const ContactForm = ({ onSuccess }) => {
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                    className="w-full px-6 py-4 sm:px-8 sm:py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 text-sm"
+                    className="w-full px-5 py-3.5 bg-slate-50 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 text-sm"
                     placeholder="Enter your name..."
                 />
             </div>
@@ -58,7 +58,7 @@ const ContactForm = ({ onSuccess }) => {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    className="w-full px-6 py-4 sm:px-8 sm:py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 text-sm"
+                    className="w-full px-5 py-3.5 bg-slate-50 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 text-sm"
                     placeholder="name@email.com"
                 />
             </div>
@@ -79,7 +79,7 @@ const ContactForm = ({ onSuccess }) => {
                     name="inquiryFor"
                     value={formData.inquiryFor}
                     onChange={handleChange}
-                    className="w-full px-6 py-4 sm:px-8 sm:py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold appearance-none cursor-pointer text-sm"
+                    className="w-full px-5 py-3.5 bg-slate-50 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold appearance-none cursor-pointer text-sm"
                 >
                     <option value="" disabled>Select an option...</option>
                     <option value="enroll_course" className="text-slate-900">Enroll in a course</option>
@@ -93,14 +93,14 @@ const ContactForm = ({ onSuccess }) => {
                     name="message"
                     value={formData.message}
                     onChange={handleChange}
-                    rows="4"
-                    className="w-full px-6 py-4 sm:px-8 sm:py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 resize-none text-sm"
+                    rows="3"
+                    className="w-full px-5 py-3.5 bg-slate-50 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 resize-none text-sm"
                     placeholder="Enter your message..."
                 ></textarea>
             </div>
             <button
                 disabled={isSubmitting}
-                className="w-full bg-blue-600 text-white font-black py-5 sm:py-6 rounded-2xl shadow-xl shadow-blue-500/20 hover:bg-blue-700 hover:-translate-y-1 transition-all active:scale-[0.98] uppercase tracking-[0.3em] text-[10px] flex items-center justify-center gap-3 disabled:opacity-70"
+                className="w-full bg-blue-600 text-white font-black py-4 rounded-xl shadow-xl shadow-blue-500/20 hover:bg-blue-700 hover:-translate-y-1 transition-all active:scale-[0.98] uppercase tracking-[0.3em] text-[10px] flex items-center justify-center gap-3 disabled:opacity-70"
             >
                 {isSubmitting ? 'Sending...' : 'Send Message'}
                 {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}

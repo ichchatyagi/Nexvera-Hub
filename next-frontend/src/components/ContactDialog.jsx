@@ -9,23 +9,24 @@ const ContactDialog = ({ isOpen, onClose }) => {
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 sm:p-6 lg:p-8 pt-12 sm:pt-20 lg:pt-24 overflow-y-auto">
-                    {/* Overlay */}
+                <div className="fixed inset-0 z-[100] flex flex-col items-center">
+                    {/* Fixed Overlay */}
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+                        className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm"
                     />
 
-                    {/* Modal Content */}
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="relative w-full max-w-2xl bg-white rounded-[2.5rem] sm:rounded-[3.5rem] shadow-2xl overflow-hidden border border-slate-100 flex flex-col mb-12"
-                    >
+                    {/* Scrollable Container */}
+                    <div className="relative w-full h-full overflow-y-auto flex justify-center p-4 sm:p-6 lg:p-8 pt-12 sm:pt-20 lg:pt-24">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative w-full max-w-lg bg-white rounded-[2.5rem] sm:rounded-[3rem] shadow-2xl overflow-hidden border border-slate-100 flex flex-col mb-12 h-fit"
+                        >
                         {/* Close Button */}
                         <button
                             onClick={onClose}
@@ -34,9 +35,9 @@ const ContactDialog = ({ isOpen, onClose }) => {
                             <X size={24} />
                         </button>
 
-                        <div className="overflow-y-auto p-8 sm:p-12 lg:p-16 custom-scrollbar">
-                            <div className="mb-10 text-center sm:text-left">
-                                <h2 className="text-3xl lg:text-4xl font-black text-slate-950 mb-3 uppercase tracking-tighter">
+                        <div className="overflow-y-auto p-6 sm:p-10 custom-scrollbar">
+                            <div className="mb-8 text-center sm:text-left">
+                                <h2 className="text-2xl lg:text-3xl font-black text-slate-950 mb-2 uppercase tracking-tighter">
                                     Start Your <span className="text-blue-600">Journey</span>
                                 </h2>
                                 <p className="text-slate-500 font-medium text-sm sm:text-base">
@@ -47,6 +48,7 @@ const ContactDialog = ({ isOpen, onClose }) => {
                             <ContactForm onSuccess={onClose} />
                         </div>
                     </motion.div>
+                    </div>
                 </div>
             )}
         </AnimatePresence>

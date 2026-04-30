@@ -75,7 +75,7 @@ const PhoneInput = ({ value, onChange, placeholder = "00000 00000", required = f
                         type="button"
                         onClick={() => setIsOpen(!isOpen)}
                         className={`
-                            h-full px-2 sm:px-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center gap-1.5 sm:gap-3 
+                            h-full px-2 sm:px-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-1.5 sm:gap-3 
                             hover:bg-white hover:border-blue-300 transition-all outline-none
                             ${isOpen ? 'ring-4 ring-blue-500/5 border-blue-300 bg-white' : ''}
                         `}
@@ -107,7 +107,7 @@ const PhoneInput = ({ value, onChange, placeholder = "00000 00000", required = f
                                         placeholder="Search country..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-[11px] font-black uppercase tracking-widest text-slate-900 outline-none focus:bg-white focus:border-blue-200 transition-all placeholder:text-slate-300"
+                                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-[11px] font-black uppercase tracking-widest text-slate-900 outline-none focus:bg-white focus:border-blue-200 transition-all placeholder:text-slate-300"
                                     />
                                 </div>
 
@@ -118,7 +118,7 @@ const PhoneInput = ({ value, onChange, placeholder = "00000 00000", required = f
                                             type="button"
                                             onClick={() => handleCountrySelect(c)}
                                             className={`
-                                                w-full flex items-center justify-between p-3 rounded-2xl transition-all mb-1 last:mb-0 group
+                                                w-full flex items-center justify-between p-2.5 rounded-xl transition-all mb-1 last:mb-0 group
                                                 ${selectedCountry.code === c.code ? 'bg-blue-50' : 'hover:bg-slate-50'}
                                             `}
                                         >
@@ -154,7 +154,7 @@ const PhoneInput = ({ value, onChange, placeholder = "00000 00000", required = f
                     name={name}
                     value={localPart}
                     onChange={handleNumberChange}
-                    className="flex-1 min-w-0 px-3 sm:px-6 py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/5 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 text-sm uppercase tracking-tight"
+                    className="flex-1 min-w-0 px-3 sm:px-6 py-3.5 bg-slate-50 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/5 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 text-sm uppercase tracking-tight"
                     placeholder={placeholder}
                 />
             </div>
