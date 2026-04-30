@@ -9,7 +9,7 @@ const ContactDialog = ({ isOpen, onClose }) => {
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 sm:p-6 lg:p-8 pt-12 sm:pt-20 lg:pt-24">
+                <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 sm:p-6 lg:p-8 pt-12 sm:pt-20 lg:pt-24 overflow-y-auto">
                     {/* Overlay */}
                     <motion.div
                         initial={{ opacity: 0 }}
