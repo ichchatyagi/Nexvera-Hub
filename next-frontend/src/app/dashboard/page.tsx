@@ -149,13 +149,15 @@ const Dashboard = () => {
                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">System Live • {user?.role}</span>
              </div>
-             <button 
+             
+             {/* TODO Enable when we have AI credits (Backend Integration is completed) */}
+             {/* <button 
                 onClick={() => setIsAiOpen(true)}
                 className="flex items-center gap-3 bg-blue-600 text-white px-6 py-3 rounded-2xl shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all group scale-105"
               >
                  <Sparkles size={14} className="group-hover:rotate-12 transition-transform" />
                  <span className="text-[10px] font-black uppercase tracking-widest">Ask Nexvera AI</span>
-              </button>
+              </button> */}
           </div>
         </div>
 

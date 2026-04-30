@@ -1,42 +1,11 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Mail, Phone, MessageCircle, Clock, Send, Building2, Smartphone, Loader2, ChevronRight, Instagram, Facebook, Linkedin, Users } from 'lucide-react';
-import api from '../../lib/api';
-import PhoneInput from '../../components/PhoneInput';
+import { MapPin, Mail, MessageCircle, Clock, Building2, Smartphone, Instagram, Facebook, Linkedin } from 'lucide-react';
+import ContactForm from '../../components/ContactForm';
 
 const Contact = () => {
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        phone: '',
-        inquiryFor: '',
-        message: ''
-    });
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setIsSubmitting(true);
-
-        try {
-            await api.post('/contact', formData);
-
-            alert('Details sent successfully! Please check your email for confirmation.');
-            setFormData({ name: '', email: '', phone: '', inquiryFor: '', message: '' });
-        } catch (error) {
-            console.error('Email Error:', error);
-            alert('Failed to send details. Please try again later.');
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
     return (
         <div className="pt-6 lg:pt-12 pb-24 bg-transparent overflow-x-hidden selection:bg-blue-100 selection:text-blue-900">
             <div className="container mx-auto px-4 sm:px-6 lg:px-12">
@@ -67,77 +36,10 @@ const Contact = () => {
                     >
                         <div className="bg-white p-4 sm:p-10 lg:p-16 rounded-[1.4rem] sm:rounded-[3.4rem] relative overflow-hidden h-full">
                             <h2 className="text-3xl lg:text-4xl font-black text-slate-950 mb-10 uppercase tracking-tighter">Contact <span className="text-blue-600">Us</span></h2>
-                            <form onSubmit={handleSubmit} className="space-y-8">
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
-                                    <input
-                                        required
-                                        type="text"
-                                        name="name"
-                                        value={formData.name}
-                                        onChange={handleChange}
-                                        className="w-full px-8 py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 text-sm"
-                                        placeholder="Enter your name..."
-                                    />
-                                </div>
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
-                                    <input
-                                        required
-                                        type="email"
-                                        name="email"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        className="w-full px-8 py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 text-sm"
-                                        placeholder="name@email.com"
-                                    />
-                                </div>
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Contact Number</label>
-                                    <PhoneInput
-                                        required
-                                        name="phone"
-                                        value={formData.phone}
-                                        onChange={handleChange}
-                                        placeholder="00000 00000"
-                                    />
-                                </div>
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Inquiry For</label>
-                                    <select
-                                        required
-                                        name="inquiryFor"
-                                        value={formData.inquiryFor}
-                                        onChange={handleChange}
-                                        className="w-full px-8 py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold appearance-none cursor-pointer text-sm"
-                                    >
-                                        <option value="" disabled>Select an option...</option>
-                                        <option value="enroll_course" className="text-slate-900">Enroll in a course</option>
-                                        <option value="join_instructor" className="text-slate-900">Join as an instructor</option>
-                                        <option value="request_consultation" className="text-slate-900">Request consultation</option>
-                                    </select>
-                                </div>
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Message</label>
-                                    <textarea
-                                        name="message"
-                                        value={formData.message}
-                                        onChange={handleChange}
-                                        rows="4"
-                                        className="w-full px-8 py-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all text-slate-900 font-bold placeholder:text-slate-300 resize-none text-sm"
-                                        placeholder="Enter your message..."
-                                    ></textarea>
-                                </div>
-                                <button
-                                    disabled={isSubmitting}
-                                    className="w-full bg-blue-600 text-white font-black py-6 rounded-2xl shadow-xl shadow-blue-500/20 hover:bg-blue-700 hover:-translate-y-1 transition-all active:scale-[0.98] uppercase tracking-[0.3em] text-[10px] flex items-center justify-center gap-3 disabled:opacity-70"
-                                >
-                                    {isSubmitting ? 'Sending...' : 'Send Message'}
-                                    {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-                                </button>
-                            </form>
+                            <ContactForm />
                         </div>
                     </motion.div>
+
 
 
                     {/* Right: Quick Connect Box */}

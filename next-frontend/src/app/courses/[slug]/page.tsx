@@ -415,13 +415,14 @@ const CourseDetail = () => {
                   {isEnrolled ? 'Continue Learning' : `Buy Course | ₹${(course.pricing?.price || 0).toLocaleString()}`}
                 </button>
 
-                <button 
+                {/* TODO Enable when we have AI credits (Backend Integration is completed) */}
+                {/* <button 
                   onClick={() => setIsAiOpen(true)}
                   className="w-full mt-4 py-4 rounded-2xl border border-slate-100 flex items-center justify-center gap-3 text-slate-400 font-bold uppercase tracking-widest text-[10px] hover:bg-slate-50 transition-all group"
                 >
                    <Sparkles size={14} className="text-blue-600 group-hover:rotate-12 transition-transform" />
                    Ask AI about this course
-                </button>
+                </button> */}
 
 
               </motion.div>

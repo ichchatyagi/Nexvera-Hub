@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { ChevronRight, Star, Shield, Zap, Target, BookOpen, Users, Award, PresentationIcon, Rocket, GraduationCap } from 'lucide-react';
@@ -8,6 +8,7 @@ import { categoryData } from '@/data/categoryData';
 import { useConsultation } from '@/context/ConsultationContext';
 import ConsultancyCTA from '@/components/ConsultancyCTA';
 import IconRenderer from '@/components/IconRenderer';
+import ContactDialog from '@/components/ContactDialog';
 
 const MetallicCard = ({ children, color = "from-blue-600 to-indigo-700", className = "", borderGradient = "from-slate-400 via-white to-slate-400" }) => (
     <motion.div
@@ -23,6 +24,8 @@ const MetallicCard = ({ children, color = "from-blue-600 to-indigo-700", classNa
 
 const Home = () => {
     const { openModal } = useConsultation();
+    const [isContactOpen, setIsContactOpen] = useState(false);
+
     return (
         <div className="relative min-h-screen bg-transparent">
             {/* Hero Section */}
@@ -44,12 +47,12 @@ const Home = () => {
                         </p>
 
                         <div className="flex flex-col sm:flex-row gap-6">
-                            <Link
-                                href="/contact"
+                            <button
+                                onClick={() => setIsContactOpen(true)}
                                 className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:scale-105 text-white font-black text-xs uppercase tracking-widest px-14 py-6 rounded-2xl shadow-2xl shadow-blue-200 transition-all active:scale-95 text-center"
                             >
                                 Get Started
-                            </Link>
+                            </button>
                             <Link href="/about" className="bg-white border border-slate-200 text-slate-900 font-black text-xs uppercase tracking-widest px-14 py-6 rounded-2xl hover:bg-slate-50 transition-all text-center">
                                 Our Mission
                             </Link>
@@ -361,6 +364,7 @@ const Home = () => {
 
 
             <ConsultancyCTA />
+            <ContactDialog isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
         </div>
     );
 };
