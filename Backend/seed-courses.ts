@@ -105,6 +105,72 @@ const generateSpecificCourse = (
 };
 
 
+const generateSpecificTuition = (
+    title: string,
+    slug: string,
+    gradeLevel: number,
+    boards: string[],
+    monthlyPrice: number,
+    bundlePrice: number,
+    shortDesc: string,
+    detailedDesc: string
+) => {
+    let subjects: string[] = [];
+    if (gradeLevel <= 10) {
+      subjects = ["Mathematics", "Science", "English", "Social Science"];
+    } else {
+      subjects = ["Physics", "Chemistry", "Mathematics", "Biology", "English Core"];
+    }
+    
+    const generatedSubjects = subjects.map(sub => ({
+      name: sub,
+      slug: `${slug}-${sub.toLowerCase().replace(/ /g, '-')}`,
+      short_description: `Comprehensive ${sub} curriculum with ${title}`,
+      status: 'published',
+      pricing: {
+        monthly_enabled: true,
+        monthly_price: Math.floor(monthlyPrice / subjects.length),
+        bundle_enabled: false,
+        bundle_price: 0,
+        currency: 'INR'
+      },
+      syllabus: [
+        {
+          title: "Term 1 Framework",
+          order: 1,
+          lessons: [
+            { title: "Introduction", type: "video", order: 1, is_preview: true },
+            { title: "Core Concepts", type: "video", order: 2, is_preview: false }
+          ]
+        }
+      ],
+      total_lessons: 2,
+      total_duration_hours: 5
+    }));
+
+    return {
+        title: title,
+        slug: slug,
+        product_type: 'tuition',
+        status: 'published',
+        description: detailedDesc,
+        short_description: shortDesc,
+        tuition_meta: {
+            class_level: gradeLevel,
+            boards_supported: boards,
+            pricing: {
+                monthly_enabled: true,
+                monthly_price: monthlyPrice,
+                bundle_enabled: true,
+                bundle_price: bundlePrice,
+                currency: 'INR'
+            },
+            subjects: generatedSubjects
+        }
+    };
+};
+
+
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule);
   const coursesService = app.get(CoursesService);
@@ -974,7 +1040,7 @@ async function bootstrap() {
         "This course focuses on advanced branding strategies. Students learn brand positioning and identity creation. It covers storytelling and communication. Learners explore market research and audience targeting. The course includes case studies of successful brands. Practical branding projects are included. Strategy development is emphasized. By the end, students can build strong brand identities."
     ),
 
-    // 6. Languages & Communication (13 courses)
+    // 6. Languages & Communication (23 courses)
     generateSpecificCourse(
         "Spoken English Mastery", 
         "spoken-english-mastery", 
@@ -1104,6 +1170,106 @@ async function bootstrap() {
         14999, 
         "Master storytelling for impactful presentations.\nEngage and influence audiences effectively.", 
         "This course focuses on storytelling and presentation techniques. Students learn how to structure compelling stories. It covers audience engagement and delivery. Learners practice presentations and speaking. Visual storytelling techniques are included. Real-world case studies are discussed. Feedback helps improve performance. By the end, students can deliver powerful presentations."
+    ),
+    generateSpecificCourse(
+        "Hindi Communication Mastery",
+        "hindi-communication-mastery",
+        "Languages & Communication",
+        "Hindi Language",
+        "Beginner",
+        18999,
+        "Learn spoken and written Hindi confidently through interactive and practical sessions.",
+        "Hindi Communication Mastery is designed for learners who want to improve their fluency, pronunciation, and confidence in Hindi communication. The course focuses on practical conversations, vocabulary building, grammar understanding, and real-world communication skills. Students participate in interactive speaking sessions, reading exercises, and guided practice activities that help them become comfortable using Hindi in daily life, academics, and professional environments."
+    ),
+    generateSpecificCourse(
+        "Advanced German Fluency Program",
+        "advanced-german-fluency-program",
+        "Languages & Communication",
+        "German Language",
+        "Advanced",
+        47999,
+        "Master advanced German communication and professional-level fluency with expert guidance.",
+        "Advanced German Fluency Program is created for learners aiming to achieve professional and academic fluency in German. The course covers advanced grammar, professional communication, fluent speaking practice, and comprehension development through interactive live sessions. Students gain confidence in formal conversations, workplace communication, and advanced language usage while preparing for international opportunities and certifications."
+    ),
+    generateSpecificCourse(
+        "Japanese Language Essentials",
+        "japanese-language-essentials",
+        "Languages & Communication",
+        "Japanese Language",
+        "Beginner",
+        19499,
+        "Start learning Japanese with easy conversational lessons and cultural understanding.",
+        "Japanese Language Essentials introduces learners to the basics of Japanese communication through practical conversation training, pronunciation practice, and interactive activities. The course helps students understand sentence structures, commonly used phrases, and cultural communication styles. It is ideal for beginners interested in travel, anime culture, international careers, or language learning as a hobby."
+    ),
+    generateSpecificCourse(
+        "Korean Speaking and Writing Course",
+        "korean-speaking-writing-course",
+        "Languages & Communication",
+        "Korean Language",
+        "Intermediate",
+        32999,
+        "Improve Korean speaking, reading, and writing skills with interactive live learning.",
+        "Korean Speaking and Writing Course is designed for learners who want to strengthen their Korean communication skills beyond the basics. The course includes pronunciation improvement, conversational practice, writing exercises, and cultural communication training. Students gain confidence in understanding and using Korean naturally in daily conversations and professional settings."
+    ),
+    generateSpecificCourse(
+        "Mandarin Chinese Professional Course",
+        "mandarin-chinese-professional-course",
+        "Languages & Communication",
+        "Chinese Language",
+        "Advanced",
+        49999,
+        "Build advanced Mandarin communication skills for international and professional opportunities.",
+        "Mandarin Chinese Professional Course focuses on helping learners achieve strong communication skills in Mandarin through immersive and interactive learning methods. The course includes advanced vocabulary, pronunciation training, listening comprehension, and professional communication practice. Students also gain exposure to cultural etiquette and real-world language applications useful for business and global networking."
+    ),
+    generateSpecificCourse(
+        "Italian Conversation Masterclass",
+        "italian-conversation-masterclass",
+        "Languages & Communication",
+        "Italian Language",
+        "Intermediate",
+        29999,
+        "Learn conversational Italian confidently through practical speaking-focused sessions.",
+        "Italian Conversation Masterclass helps learners develop fluent communication skills through interactive speaking practice and real-life conversational exercises. The course emphasizes pronunciation, listening comprehension, and natural communication techniques. Students gain confidence in expressing themselves comfortably while understanding Italian culture and communication styles."
+    ),
+    generateSpecificCourse(
+        "Arabic Language and Communication Program",
+        "arabic-language-communication-program",
+        "Languages & Communication",
+        "Arabic Language",
+        "Intermediate",
+        34999,
+        "Develop practical Arabic communication skills for travel, business, and everyday conversations.",
+        "Arabic Language and Communication Program is designed to help learners improve speaking, reading, and listening skills through structured and interactive sessions. The course focuses on practical communication, pronunciation accuracy, and vocabulary development. Learners also gain exposure to cultural communication practices and professional language applications."
+    ),
+    generateSpecificCourse(
+        "Russian Language Certification Course",
+        "russian-language-certification-course",
+        "Languages & Communication",
+        "Russian Language",
+        "Advanced",
+        45999,
+        "Prepare for advanced Russian fluency and certification through expert-led training.",
+        "Russian Language Certification Course focuses on advanced communication skills, professional vocabulary, and certification-oriented preparation. The course helps students improve pronunciation, listening ability, and real-world communication confidence through practical assignments and interactive speaking sessions. It is ideal for learners preparing for academic, professional, or international opportunities."
+    ),
+    generateSpecificCourse(
+        "Portuguese Fluency Program",
+        "portuguese-fluency-program",
+        "Languages & Communication",
+        "Portuguese Language",
+        "Beginner",
+        17999,
+        "Learn practical Portuguese communication skills through engaging and beginner-friendly lessons.",
+        "Portuguese Fluency Program introduces learners to the foundations of Portuguese communication through speaking practice, listening exercises, and vocabulary-building activities. The course focuses on helping students become comfortable with real-life conversations while improving pronunciation and communication confidence in an engaging learning environment."
+    ),
+    generateSpecificCourse(
+        "Public Speaking and Communication Excellence",
+        "public-speaking-communication-excellence",
+        "Languages & Communication",
+        "Communication Skills",
+        "Advanced",
+        42999,
+        "Build strong public speaking, presentation, and communication confidence for professional success.",
+        "Public Speaking and Communication Excellence is designed for learners who want to improve confidence, stage presence, and professional communication abilities. The course focuses on speech delivery, audience engagement, personality development, and presentation techniques through live interactive practice sessions. Students gain practical communication skills that are valuable for careers, leadership, and personal growth."
     ),
 
     // 7. Business & Management (16 courses)
@@ -1861,6 +2027,69 @@ async function bootstrap() {
       }
     });
   }
+
+  allTuitions.push(
+    // GRADE 5
+    generateSpecificTuition("Anita Ma’am", "anita-maam-grade5", 5, ["CBSE", "ICSE"], 1499, 12999, "A friendly and encouraging mentor who helps young learners build confidence and enjoy learning.", "Anita Ma’am is known for her patient teaching style and engaging classroom sessions. She creates a positive learning environment where students feel comfortable asking questions and expressing themselves freely. With years of experience mentoring young learners, she focuses on building confidence, discipline, and curiosity among students. Her interactive teaching methods and supportive guidance help students stay motivated and perform better academically."),
+    generateSpecificTuition("Rahul Sir", "rahul-sir-grade5", 5, ["CBSE"], 1499, 12999, "An energetic and engaging teacher who makes online learning fun and interactive.", "Rahul Sir believes that learning should always be enjoyable and stress-free. His sessions are filled with interactive discussions, practical examples, and activities that keep students attentive throughout the class. He has helped hundreds of students improve their classroom performance while also boosting their confidence. His calm and approachable nature makes him one of the most loved teachers among students."),
+    generateSpecificTuition("Shivam Sir", "shivam-sir-grade5", 5, ["CBSE", "ICSE"], 1499, 12999, "A dedicated mentor focused on creating strong academic foundations for students.", "Shivam Sir is passionate about helping students understand concepts clearly instead of memorizing them. His teaching approach focuses on patience, concept clarity, and personalized attention. He motivates students to think creatively and develop problem-solving skills from an early stage. His classes are highly interactive and designed to make every learner feel involved and confident."),
+    generateSpecificTuition("Neha Ma’am", "neha-maam-grade5", 5, ["ICSE"], 1499, 12999, "A warm and motivating educator who helps students learn with confidence.", "Neha Ma’am has a student-friendly teaching style that encourages participation and curiosity. She believes in creating a comfortable environment where students can grow academically and personally. Her sessions are well-structured, interactive, and focused on improving attention span and understanding. Parents appreciate her dedication and ability to keep students engaged throughout the learning journey."),
+    generateSpecificTuition("Arjun Sir", "arjun-sir-grade5", 5, ["CBSE", "ICSE"], 1499, 12999, "A highly supportive mentor who inspires students to achieve their best potential.", "Arjun Sir focuses on helping students become independent learners with strong critical-thinking abilities. His sessions are designed to encourage active participation and confidence building. He uses real-life examples and engaging teaching techniques to make learning simple and effective. Students enjoy his positive attitude, motivational guidance, and easy-to-understand explanations."),
+    
+    // GRADE 6
+    generateSpecificTuition("Kavita Ma’am", "kavita-maam-grade6", 6, ["CBSE", "ICSE"], 1499, 12999, "A compassionate mentor who helps students stay focused and motivated.", "Kavita Ma’am has years of experience guiding middle school learners through interactive and engaging online classes. Her calm teaching approach and structured sessions help students stay disciplined while enjoying the learning process. She strongly believes in individual attention and encourages every student to participate confidently in class discussions."),
+    generateSpecificTuition("Rohit Sir", "rohit-sir-grade6", 6, ["CBSE"], 1499, 12999, "A dynamic educator who makes learning enjoyable and easy to understand.", "Rohit Sir is appreciated for his energetic teaching style and student-friendly nature. He encourages curiosity and creativity among students while helping them improve their overall academic performance. His classes focus on discipline, interaction, and long-term understanding rather than rote learning."),
+    generateSpecificTuition("Sneha Ma’am", "sneha-maam-grade6", 6, ["CBSE", "ICSE"], 1499, 12999, "A patient and supportive teacher who believes every child can excel with the right guidance.", "Sneha Ma’am creates an engaging online learning atmosphere where students feel encouraged to ask questions and express themselves. She focuses on building confidence and developing strong study habits among learners. Her classes are interactive, organized, and highly appreciated by parents and students alike."),
+    generateSpecificTuition("Amit Sir", "amit-sir-grade6", 6, ["CBSE", "ICSE"], 1499, 12999, "A creative and enthusiastic mentor known for his practical teaching methods.", "Amit Sir uses modern teaching techniques and interactive activities to keep students engaged throughout the class. He believes in simplifying difficult concepts and making learning enjoyable. His sessions are focused on developing confidence, discipline, and analytical thinking among students."),
+    generateSpecificTuition("Pooja Ma’am", "pooja-maam-grade6", 6, ["CBSE"], 1499, 12999, "A caring educator who helps students build consistency and confidence in learning.", "Pooja Ma’am is loved for her approachable nature and highly engaging sessions. She focuses on improving students’ learning habits through structured guidance and regular interaction. Her goal is to make every student feel motivated and capable of achieving academic success."),
+
+    // GRADE 7
+    generateSpecificTuition("Meera Ma’am", "meera-maam-grade7", 7, ["CBSE", "ICSE"], 1499, 12999, "A calm and inspiring educator who helps students stay motivated and academically confident.", "Meera Ma’am is known for her supportive teaching style and ability to connect with students personally. She specializes in helping middle school students improve learning consistency, confidence, and communication skills. Her sessions are interactive and designed to create a stress-free learning environment where students can comfortably participate and grow academically."),
+    generateSpecificTuition("Aditya Sir", "aditya-sir-grade7", 7, ["CBSE", "ICSE"], 1499, 12999, "An energetic mentor who makes learning engaging and practical.", "Aditya Sir focuses on concept clarity, analytical thinking, and interactive learning methods. He encourages students to ask questions confidently and participate actively during sessions. His practical teaching approach helps learners stay motivated and develop strong academic discipline from an early stage."),
+    generateSpecificTuition("Nidhi Ma’am", "nidhi-maam-grade7", 7, ["CBSE"], 1499, 12999, "A supportive teacher who focuses on student confidence and steady growth.", "Nidhi Ma’am is appreciated for her approachable personality and student-friendly teaching methods. She specializes in personalized mentoring and interactive classroom engagement that helps students improve concentration and overall academic performance."),
+    generateSpecificTuition("Karan Sir", "karan-sir-grade7", 7, ["CBSE", "ICSE"], 1499, 12999, "A motivating educator known for his engaging online sessions.", "Karan Sir believes in simplifying concepts through relatable examples and interactive discussions. His expertise lies in helping students develop independent learning habits and stronger problem-solving skills while maintaining confidence throughout the academic year."),
+    generateSpecificTuition("Sophia Williams", "sophia-williams-grade7", 7, ["CBSE", "ICSE"], 1499, 12999, "An international educator focused on communication skills and global learning methods.", "Sophia Williams has experience teaching international middle school students through modern and interactive online learning techniques. She specializes in communication development, confidence building, and collaborative learning strategies that help students become more expressive and academically active."),
+    generateSpecificTuition("Ethan Carter", "ethan-carter-grade7", 7, ["CBSE", "ICSE"], 1499, 12999, "A globally experienced mentor who focuses on critical thinking and practical learning.", "Ethan Carter is known for his engaging teaching style and student-focused learning approach. His expertise includes logical reasoning, interactive problem-solving, and helping students adapt to modern learning environments through activity-based sessions and personalized mentoring."),
+
+    // GRADE 8
+    generateSpecificTuition("Riya Ma’am", "riya-maam-grade8", 8, ["CBSE", "ICSE"], 1499, 12999, "A confident educator who creates engaging and student-friendly classes.", "Riya Ma’am focuses on improving confidence, communication, and learning discipline among students. Her classes are interactive and designed to help learners participate actively while developing stronger academic habits."),
+    generateSpecificTuition("Manav Sir", "manav-sir-grade8", 8, ["CBSE"], 1499, 12999, "A passionate mentor known for concept clarity and interactive learning.", "Manav Sir specializes in helping students improve analytical thinking and classroom consistency. His practical and engaging teaching style encourages learners to understand concepts deeply rather than relying on memorization."),
+    generateSpecificTuition("Tanya Ma’am", "tanya-maam-grade8", 8, ["ICSE"], 1499, 12999, "A motivating teacher who encourages confidence and discipline.", "Tanya Ma’am creates a positive learning environment where students feel comfortable participating and asking questions. She focuses on improving communication, academic discipline, and classroom engagement through interactive sessions."),
+    generateSpecificTuition("Harsh Sir", "harsh-sir-grade8", 8, ["CBSE", "ICSE"], 1499, 12999, "An engaging mentor who inspires students to stay focused and motivated.", "Harsh Sir uses activity-based teaching methods and practical examples to make learning enjoyable and effective. His expertise lies in helping students improve confidence, participation, and independent thinking abilities."),
+    generateSpecificTuition("Olivia Brown", "olivia-brown-grade8", 8, ["CBSE", "ICSE"], 1499, 12999, "An international teacher focused on modern learning techniques and student confidence.", "Olivia Brown specializes in communication skills, collaborative learning, and interactive classroom engagement. She helps students improve self-expression and confidence while adapting to global online education methods."),
+    generateSpecificTuition("Daniel Smith", "daniel-smith-grade8", 8, ["CBSE", "ICSE"], 1499, 12999, "A globally experienced educator who encourages creativity and analytical thinking.", "Daniel Smith is known for his practical teaching methods and highly engaging sessions. His expertise includes critical thinking development, logical reasoning, and helping students become more confident independent learners."),
+
+    // GRADE 9
+    generateSpecificTuition("Sanya Ma’am", "sanya-maam-grade9", 9, ["CBSE", "ICSE"], 1499, 12999, "A disciplined and supportive mentor who helps students stay academically focused.", "Sanya Ma’am specializes in helping students improve concentration, consistency, and learning confidence during important academic years. Her structured sessions and motivational teaching style encourage active classroom participation and long-term academic improvement."),
+    generateSpecificTuition("Akash Sir", "akash-sir-grade9", 9, ["CBSE"], 1499, 12999, "An energetic educator who makes online learning engaging and practical.", "Akash Sir focuses on concept clarity, logical thinking, and practical learning approaches. His sessions are interactive and designed to help students stay motivated while improving their confidence and analytical abilities."),
+    generateSpecificTuition("Kritika Ma’am", "kritika-maam-grade9", 9, ["CBSE", "ICSE"], 1499, 12999, "A patient mentor who creates a positive and confidence-building learning atmosphere.", "Kritika Ma’am is appreciated for her organized teaching methods and personalized guidance. She specializes in helping students manage academic pressure effectively while improving discipline and communication skills."),
+    generateSpecificTuition("Ryan Mitchell", "ryan-mitchell-grade9", 9, ["CBSE", "ICSE"], 1499, 12999, "An international mentor focused on analytical learning and problem-solving techniques.", "Ryan Mitchell has expertise in activity-based online teaching and interactive student mentoring. His teaching methods encourage critical thinking, logical reasoning, and active classroom participation among learners."),
+    generateSpecificTuition("Emma Wilson", "emma-wilson-grade9", 9, ["CBSE", "ICSE"], 1499, 12999, "A globally experienced educator known for modern and engaging online learning strategies.", "Emma Wilson specializes in communication development, confidence-building, and collaborative classroom engagement. Her sessions focus on helping students improve academic performance while developing stronger learning habits."),
+
+    // GRADE 10
+    generateSpecificTuition("Pritam Sir", "pritam-sir-grade10", 10, ["CBSE", "ICSE"], 1499, 12999, "A focused and disciplined mentor who helps students prepare confidently for board examinations.", "Pritam Sir specializes in board exam preparation, time management strategies, and helping students build consistent study habits. His sessions are structured, interactive, and focused on reducing exam stress while improving confidence and performance. Students appreciate his practical guidance, motivational support, and easy-to-follow teaching style."),
+    generateSpecificTuition("Anjali Ma’am", "anjali-maam-grade10", 10, ["CBSE"], 1499, 12999, "A supportive educator who creates a motivating and confidence-building learning environment.", "Anjali Ma’am is known for her patient teaching style and strong student mentorship. She focuses on improving concentration, discipline, and classroom consistency among learners. Her personalized guidance and engaging sessions help students feel academically confident and exam-ready."),
+    generateSpecificTuition("Rohan Sir", "rohan-sir-grade10", 10, ["CBSE", "ICSE"], 1499, 12999, "An energetic mentor who makes online learning engaging and result-oriented.", "Rohan Sir uses practical examples and interactive discussions to simplify learning and improve student understanding. His expertise lies in helping students strengthen confidence, study discipline, and analytical thinking while maintaining motivation throughout the academic year."),
+    generateSpecificTuition("Garima Ma’am", "garima-maam-grade10", 10, ["ICSE"], 1499, 12999, "A dedicated mentor who helps students stay calm, focused, and academically strong.", "Garima Ma’am focuses on concept clarity, structured learning, and stress-free academic preparation. She creates engaging sessions that encourage active participation and confidence-building among students preparing for board examinations."),
+    generateSpecificTuition("Liam Anderson", "liam-anderson-grade10", 10, ["CBSE", "ICSE"], 1499, 12999, "An international educator focused on analytical learning and modern teaching methods.", "Liam Anderson specializes in critical thinking development, interactive classroom engagement, and helping students improve independent learning skills. His sessions combine practical activities with modern online learning strategies to create an enjoyable and productive educational experience."),
+    generateSpecificTuition("Chloe Martin", "chloe-martin-grade10", 10, ["CBSE", "ICSE"], 1499, 12999, "A globally experienced teacher who helps students build confidence and communication skills.", "Chloe Martin focuses on collaborative learning, student participation, and confidence-building techniques. Her interactive teaching style helps learners improve classroom engagement, communication abilities, and overall academic consistency."),
+
+    // GRADE 11
+    generateSpecificTuition("Aarav Sir", "aarav-sir-grade11", 11, ["CBSE", "ICSE"], 1499, 12999, "A knowledgeable mentor who helps students transition confidently into senior secondary academics.", "Aarav Sir specializes in concept-based learning and advanced academic guidance for senior secondary students. His structured and engaging teaching style helps learners improve discipline, confidence, and analytical thinking while adapting smoothly to higher-level studies."),
+    generateSpecificTuition("Sakshi Ma’am", "sakshi-maam-grade11", 11, ["CBSE"], 1499, 12999, "A supportive educator who creates a balanced and motivating learning environment.", "Sakshi Ma’am focuses on improving concentration, confidence, and classroom consistency among students. Her interactive sessions and personalized mentoring approach help learners manage academic pressure effectively while maintaining motivation throughout the year."),
+    generateSpecificTuition("Ritesh Sir", "ritesh-sir-grade11", 11, ["CBSE", "ICSE"], 1499, 12999, "An engaging mentor who encourages curiosity, discipline, and academic growth.", "Ritesh Sir uses practical learning methods and interactive discussions to help students strengthen understanding and communication skills. His sessions focus on developing independent learning habits and stronger analytical abilities among learners."),
+    generateSpecificTuition("Divya Ma’am", "divya-maam-grade11", 11, ["ICSE"], 1499, 12999, "A patient and motivating teacher who helps students manage advanced studies confidently.", "Divya Ma’am creates highly engaging classroom sessions that encourage participation and active learning. She specializes in helping students improve confidence, discipline, and conceptual understanding while preparing for senior secondary academic challenges."),
+    generateSpecificTuition("Noah Thompson", "noah-thompson-grade11", 11, ["CBSE", "ICSE"], 1499, 12999, "An international mentor focused on logical reasoning and modern learning techniques.", "Noah Thompson specializes in analytical thinking, collaborative online learning, and practical academic strategies. His sessions are designed to improve student engagement, independent learning skills, and overall classroom confidence."),
+    generateSpecificTuition("Grace Miller", "grace-miller-grade11", 11, ["CBSE", "ICSE"], 1499, 12999, "A globally experienced educator who focuses on communication and confidence development.", "Grace Miller is known for her engaging and supportive teaching style. Her expertise lies in helping students improve self-expression, communication skills, and active classroom participation through interactive and modern teaching approaches."),
+
+    // GRADE 12
+    generateSpecificTuition("Abhishek Sir", "abhishek-sir-grade12", 12, ["CBSE", "ICSE"], 1499, 12999, "A highly experienced mentor who helps students prepare confidently for board exams and future goals.", "Abhishek Sir focuses on strategic learning, confidence-building, and disciplined preparation for senior secondary students. His sessions are interactive and designed to reduce academic pressure while improving overall academic performance and consistency."),
+    generateSpecificTuition("Radhika Ma’am", "radhika-maam-grade12", 12, ["CBSE"], 1499, 12999, "A supportive educator who helps students stay calm, focused, and academically motivated.", "Radhika Ma’am specializes in personalized mentoring and structured learning methods that help students stay disciplined during board exam preparation. Her interactive sessions encourage confidence, participation, and effective time management."),
+    generateSpecificTuition("Nishant Sir", "nishant-sir-grade12", 12, ["CBSE", "ICSE"], 1499, 12999, "An engaging mentor known for his practical teaching methods and student-friendly approach.", "Nishant Sir focuses on simplifying advanced concepts through interactive discussions and structured academic guidance. His expertise lies in helping students improve analytical thinking, confidence, and consistency while preparing for higher education goals."),
+    generateSpecificTuition("Muskan Ma’am", "muskan-maam-grade12", 12, ["ICSE"], 1499, 12999, "A calm and dedicated teacher who helps students handle academic pressure effectively.", "Muskan Ma’am creates a balanced and supportive learning environment where students feel encouraged and motivated. Her sessions focus on improving concentration, communication skills, and classroom participation while maintaining academic discipline."),
+    generateSpecificTuition("William Parker", "william-parker-grade12", 12, ["CBSE", "ICSE"], 1499, 12999, "An international educator focused on critical thinking and modern online learning strategies.", "William Parker specializes in interactive teaching techniques, logical reasoning development, and helping students become independent learners. His engaging sessions encourage creativity, confidence, and strong analytical abilities among senior secondary students."),
+    generateSpecificTuition("Amelia Scott", "amelia-scott-grade12", 12, ["CBSE", "ICSE"], 1499, 12999, "A globally experienced mentor who helps students improve communication and academic confidence.", "Amelia Scott focuses on collaborative learning, communication development, and personalized student mentoring. Her modern teaching methods help students stay motivated, engaged, and academically prepared for future educational opportunities.")
+  );
 
   const allDataToSeed: any[] = [...allCourses, ...allTuitions];
 
