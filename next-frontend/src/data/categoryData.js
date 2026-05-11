@@ -18,7 +18,7 @@ export const categoryData = [
         )
     },
     {
-        name: 'Sales and Marketing',
+        name: 'Sales & Marketing',
         icon: 'Sales & Marketing',
         courses: []
     },

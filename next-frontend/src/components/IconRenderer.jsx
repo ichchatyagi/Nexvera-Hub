@@ -196,7 +196,7 @@ const categoryStyles = {
     'All Categories': { colors: ['#94A3B8', '#64748B', '#475569'], glow: 'rgba(148, 163, 184, 0.2)' },
     'Artificial Intelligence': { colors: ['#60A5FA', '#3B82F6', '#2563EB'], glow: 'rgba(59, 130, 246, 0.3)' },
     'Information Technology': { colors: ['#38BDF8', '#0EA5E9', '#0284C7'], glow: 'rgba(14, 165, 233, 0.3)' },
-    'Sales and Marketing': { colors: ['#F87171', '#EF4444', '#DC2626'], glow: 'rgba(239, 68, 68, 0.3)' },
+    'Sales & Marketing': { colors: ['#F87171', '#EF4444', '#DC2626'], glow: 'rgba(239, 68, 68, 0.3)' },
     'Data Science': { colors: ['#A78BFA', '#8B5CF6', '#7C3AED'], glow: 'rgba(139, 92, 246, 0.3)' },
     'Design': { colors: ['#F472B6', '#EC4899', '#DB2777'], glow: 'rgba(236, 72, 153, 0.3)' },
     'Languages & Communication': { colors: ['#FBBF24', '#F59E0B', '#D97706'], glow: 'rgba(245, 158, 11, 0.3)' },

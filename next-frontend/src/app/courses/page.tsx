@@ -49,7 +49,7 @@ const CourseCatalog = () => {
     'All Categories',
     'Artificial Intelligence',
     'Information Technology',
-    'Sales and Marketing',
+    'Sales & Marketing',
     'Data Science',
     'Design',
     'Languages & Communication',
