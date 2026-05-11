@@ -309,31 +309,31 @@ const Home = () => {
                         className="flex gap-6 whitespace-nowrap"
                     >
                         {[
-                            { name: "Mohit", image: "/testimonials/1.png", role: "AI Student", text: "Built a professional portfolio that got me hired at a top startup.", rating: "5/5", color: "border-blue-400" },
-                            { name: "Priya", image: "/testimonials/2.png", role: "UI Designer", text: "Design feedback sessions were a game-changer for my creative process.", rating: "4.5/5", color: "border-purple-400" },
-                            { name: "Rahul", image: "/testimonials/3.png", role: "Developer", text: "Industry pros as mentors is what makes Nexvera unique and valuable.", rating: "5/5", color: "border-indigo-400" },
-                            { name: "Aryan", image: "/testimonials/1.png", role: "Software Eng", text: "Roadmaps are structured perfectly for career growth and skill acquisition.", rating: "4.5/5", color: "border-emerald-400" },
-                            { name: "Ananya", image: "/testimonials/4.png", role: "React Dev", text: "The community support here is amazing. I never felt stuck for long.", rating: "5/5", color: "border-pink-400" },
-                            { name: "Karan", image: "/testimonials/3.png", role: "Frontend Lead", text: "Most comprehensive React masterclass I've ever taken. pure gold.", rating: "5/5", color: "border-cyan-400" },
-                            { name: "Sumit", image: "/testimonials/1.png", role: "Cybersecurity", text: "Landed an internship within weeks. The labs were fantastic.", rating: "5/5", color: "border-cyan-400" },
-                            { name: "Sneha", image: "/testimonials/2.png", role: "Class 12", text: "Aced my board exams with Nexvera's tuition support. life-saving!", rating: "5/5", color: "border-orange-400" },
-                            { name: "Vikram", image: "/testimonials/3.png", role: "Data Scientist", text: "Certification helped me stand out in a pool of qualified applicants.", rating: "4.5/5", color: "border-amber-400" },
-                            { name: "Divya", image: "/testimonials/4.png", role: "Web Dev", text: "Best of both worlds: live sessions and top self-paced materials.", rating: "5/5", color: "border-emerald-400" },
-                            { name: "Rohan", image: "/testimonials/1.png", role: "Product Manager", text: "Placement assistance helped me land at a top tech firm. Five stars!", rating: "5/5", color: "border-red-400" },
-                            { name: "Megha", image: "/testimonials/2.png", role: "UX Researcher", text: "The depth of curriculum is unmatched. Learned things I use daily.", rating: "4.5/5", color: "border-rose-400" }
+                            { name: "Mohit", image: "/testimonials/mohit.png", role: "AI Student", text: "Built a professional portfolio that got me hired at a top startup.", rating: "5/5", color: "border-blue-400" },
+                            { name: "Priya", image: "/testimonials/priya.png", role: "UI Designer", text: "Design feedback sessions were a game-changer for my creative process.", rating: "4.5/5", color: "border-purple-400" },
+                            { name: "Rahul", image: "/testimonials/rahul.png", role: "Developer", text: "Industry pros as mentors is what makes Nexvera unique and valuable.", rating: "5/5", color: "border-indigo-400" },
+                            { name: "Aryan", image: "/testimonials/aryan.png", role: "Software Eng", text: "Roadmaps are structured perfectly for career growth and skill acquisition.", rating: "4.5/5", color: "border-emerald-400" },
+                            { name: "Ananya", image: "/testimonials/ananya.png", role: "React Dev", text: "The community support here is amazing. I never felt stuck for long.", rating: "5/5", color: "border-pink-400" },
+                            { name: "Karan", image: "/testimonials/karan.png", role: "Frontend Lead", text: "Most comprehensive React masterclass I've ever taken. pure gold.", rating: "5/5", color: "border-cyan-400" },
+                            { name: "Sumit", image: "/testimonials/sumit.png", role: "Cybersecurity", text: "Landed an internship within weeks. The labs were fantastic.", rating: "5/5", color: "border-cyan-400" },
+                            { name: "Sneha", image: "/testimonials/6.png", role: "Class 12", text: "Aced my board exams with Nexvera's tuition support. life-saving!", rating: "5/5", color: "border-orange-400" },
+                            { name: "Vikram", image: "/testimonials/vikram.png", role: "Data Scientist", text: "Certification helped me stand out in a pool of qualified applicants.", rating: "4.5/5", color: "border-amber-400" },
+                            { name: "Divya", image: "/testimonials/8.png", role: "Web Dev", text: "Best of both worlds: live sessions and top self-paced materials.", rating: "5/5", color: "border-emerald-400" },
+                            { name: "Rohan", image: "/testimonials/rohan.png", role: "Product Manager", text: "Placement assistance helped me land at a top tech firm. Five stars!", rating: "5/5", color: "border-red-400" },
+                            { name: "Megha", image: "/testimonials/10.png", role: "UX Researcher", text: "The depth of curriculum is unmatched. Learned things I use daily.", rating: "4.5/5", color: "border-rose-400" }
                         ].concat([
-                            { name: "Mohit", image: "/testimonials/1.png", role: "AI Student", text: "Built a professional portfolio that got me hired at a top startup.", rating: "5/5", color: "border-blue-400" },
-                            { name: "Priya", image: "/testimonials/2.png", role: "UI Designer", text: "Design feedback sessions were a game-changer for my creative process.", rating: "4.5/5", color: "border-purple-400" },
-                            { name: "Rahul", image: "/testimonials/3.png", role: "Developer", text: "Industry pros as mentors is what makes Nexvera unique and valuable.", rating: "5/5", color: "border-indigo-400" },
-                            { name: "Aryan", image: "/testimonials/1.png", role: "Software Eng", text: "Roadmaps are structured perfectly for career growth and skill acquisition.", rating: "4.5/5", color: "border-emerald-400" },
-                            { name: "Ananya", image: "/testimonials/4.png", role: "React Dev", text: "The community support here is amazing. I never felt stuck for long.", rating: "5/5", color: "border-pink-400" },
-                            { name: "Karan", image: "/testimonials/3.png", role: "Frontend Lead", text: "Most comprehensive React masterclass I've ever taken. pure gold.", rating: "5/5", color: "border-cyan-400" },
-                            { name: "Sumit", image: "/testimonials/1.png", role: "Cybersecurity", text: "Landed an internship within weeks. The labs were fantastic.", rating: "5/5", color: "border-cyan-400" },
-                            { name: "Sneha", image: "/testimonials/2.png", role: "Class 12", text: "Aced my board exams with Nexvera's tuition support. life-saving!", rating: "5/5", color: "border-orange-400" },
-                            { name: "Vikram", image: "/testimonials/3.png", role: "Data Scientist", text: "Certification helped me stand out in a pool of qualified applicants.", rating: "4.5/5", color: "border-amber-400" },
-                            { name: "Divya", image: "/testimonials/4.png", role: "Web Dev", text: "Best of both worlds: live sessions and top self-paced materials.", rating: "5/5", color: "border-emerald-400" },
-                            { name: "Rohan", image: "/testimonials/1.png", role: "Product Manager", text: "Placement assistance helped me land at a top tech firm. Five stars!", rating: "5/5", color: "border-red-400" },
-                            { name: "Megha", image: "/testimonials/2.png", role: "UX Researcher", text: "The depth of curriculum is unmatched. Learned things I use daily.", rating: "4.5/5", color: "border-rose-400" }
+                            { name: "Mohit", image: "/testimonials/mohit.png", role: "AI Student", text: "Built a professional portfolio that got me hired at a top startup.", rating: "5/5", color: "border-blue-400" },
+                            { name: "Priya", image: "/testimonials/priya.png", role: "UI Designer", text: "Design feedback sessions were a game-changer for my creative process.", rating: "4.5/5", color: "border-purple-400" },
+                            { name: "Rahul", image: "/testimonials/rahul.png", role: "Developer", text: "Industry pros as mentors is what makes Nexvera unique and valuable.", rating: "5/5", color: "border-indigo-400" },
+                            { name: "Aryan", image: "/testimonials/aryan.png", role: "Software Eng", text: "Roadmaps are structured perfectly for career growth and skill acquisition.", rating: "4.5/5", color: "border-emerald-400" },
+                            { name: "Ananya", image: "/testimonials/ananya.png", role: "React Dev", text: "The community support here is amazing. I never felt stuck for long.", rating: "5/5", color: "border-pink-400" },
+                            { name: "Karan", image: "/testimonials/karan.png", role: "Frontend Lead", text: "Most comprehensive React masterclass I've ever taken. pure gold.", rating: "5/5", color: "border-cyan-400" },
+                            { name: "Sumit", image: "/testimonials/sumit.png", role: "Cybersecurity", text: "Landed an internship within weeks. The labs were fantastic.", rating: "5/5", color: "border-cyan-400" },
+                            { name: "Sneha", image: "/testimonials/6.png", role: "Class 12", text: "Aced my board exams with Nexvera's tuition support. life-saving!", rating: "5/5", color: "border-orange-400" },
+                            { name: "Vikram", image: "/testimonials/vikram.png", role: "Data Scientist", text: "Certification helped me stand out in a pool of qualified applicants.", rating: "4.5/5", color: "border-amber-400" },
+                            { name: "Divya", image: "/testimonials/8.png", role: "Web Dev", text: "Best of both worlds: live sessions and top self-paced materials.", rating: "5/5", color: "border-emerald-400" },
+                            { name: "Rohan", image: "/testimonials/rohan.png", role: "Product Manager", text: "Placement assistance helped me land at a top tech firm. Five stars!", rating: "5/5", color: "border-red-400" },
+                            { name: "Megha", image: "/testimonials/10.png", role: "UX Researcher", text: "The depth of curriculum is unmatched. Learned things I use daily.", rating: "4.5/5", color: "border-rose-400" }
                         ]).map((t, idx) => (
                             <div key={idx} className={`w-[260px] bg-white border-t-4 ${t.color} p-7 rounded-[2.5rem] flex flex-col gap-4 group hover:scale-105 transition-all duration-500 shadow-2xl shadow-blue-500/5`}>
                                 <div className="flex items-center justify-between">
