@@ -25,6 +25,26 @@ const MetallicCard = ({ children, color = "from-blue-600 to-indigo-700", classNa
 const Home = () => {
     const { openModal } = useConsultation();
     const [isContactOpen, setIsContactOpen] = useState(false);
+    const [currentBanner, setCurrentBanner] = useState(0);
+    const banners = ['/banner1.png', '/banner2.png', '/banner3.png', '/banner4.png'];
+
+    const [currentDisc, setCurrentDisc] = useState(0);
+    const discs = ['/disc1.png', '/disc2.png', '/disc3.png'];
+
+    const nextBanner = () => setCurrentBanner((prev) => (prev + 1) % banners.length);
+    const prevBanner = () => setCurrentBanner((prev) => (prev - 1 + banners.length) % banners.length);
+
+    const nextDisc = () => setCurrentDisc((prev) => (prev + 1) % discs.length);
+    const prevDisc = () => setCurrentDisc((prev) => (prev - 1 + discs.length) % discs.length);
+
+    React.useEffect(() => {
+        const bannerTimer = setInterval(nextBanner, 5000);
+        const discTimer = setInterval(nextDisc, 5000);
+        return () => {
+            clearInterval(bannerTimer);
+            clearInterval(discTimer);
+        };
+    }, []);
 
     return (
         <div className="relative min-h-screen bg-transparent">
@@ -99,6 +119,60 @@ const Home = () => {
                             More
                         </Link>
                     </div>
+                </div>
+            </section>
+
+            {/* Banner Carousel Section */}
+            <section className="py-16 bg-transparent overflow-hidden">
+                <div className="max-w-[1500px] mx-auto px-4 lg:px-8">
+                    <motion.div
+                        whileHover={{ y: -10 }}
+                        className="relative p-[2px] rounded-[3.5rem] bg-gradient-to-br from-slate-200 via-white to-slate-400 shadow-2xl group overflow-hidden"
+                    >
+                        <div className="relative bg-white rounded-[3.4rem] overflow-hidden aspect-[21/9] sm:aspect-[2.1/1]">
+                            <motion.div
+                                animate={{ x: `-${currentBanner * 100}%` }}
+                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                className="flex h-full"
+                            >
+                                {banners.map((banner, index) => (
+                                    <div key={index} className="min-w-full h-full relative">
+                                        <img
+                                            src={banner}
+                                            alt={`Nexvera Banner ${index + 1}`}
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                                    </div>
+                                ))}
+                            </motion.div>
+
+                            {/* Navigation Buttons */}
+                            <button
+                                onClick={prevBanner}
+                                className="absolute left-6 top-1/2 -translate-y-1/2 w-14 h-14 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-2xl border border-white opacity-0 group-hover:opacity-100 transition-all z-20 hover:bg-white hover:scale-110 active:scale-95"
+                            >
+                                <ChevronRight className="w-8 h-8 rotate-180" />
+                            </button>
+                            <button
+                                onClick={nextBanner}
+                                className="absolute right-6 top-1/2 -translate-y-1/2 w-14 h-14 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-2xl border border-white opacity-0 group-hover:opacity-100 transition-all z-20 hover:bg-white hover:scale-110 active:scale-95"
+                            >
+                                <ChevronRight className="w-8 h-8" />
+                            </button>
+
+                            {/* Indicators */}
+                            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-4 z-20">
+                                {banners.map((_, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => setCurrentBanner(index)}
+                                        className={`h-2 rounded-full transition-all duration-500 ${currentBanner === index ? 'w-12 bg-blue-600' : 'w-3 bg-white/40 hover:bg-white/70'}`}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </motion.div>
                 </div>
             </section>
 
@@ -364,6 +438,66 @@ const Home = () => {
 
 
             <ConsultancyCTA />
+
+            {/* Promotional Disc Carousel */}
+            <section className="py-12 bg-transparent overflow-hidden">
+                <div className="container mx-auto px-6 lg:px-12">
+                    <motion.div
+                        initial={{ opacity: 0, y: 40 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        whileHover={{ y: -10, scale: 1.01 }}
+                        transition={{ duration: 0.6, ease: "easeOut" }}
+                        className="relative p-[2.5px] rounded-[3.5rem] bg-gradient-to-br from-[#BF953F] via-[#FCF6BA] to-[#B38728] shadow-[0_25px_60px_rgba(191,149,63,0.25)] group overflow-hidden"
+                    >
+                        <div className="relative bg-white rounded-[3.4rem] overflow-hidden">
+                            <motion.div
+                                animate={{ x: `-${currentDisc * 100}%` }}
+                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                className="flex"
+                            >
+                                {discs.map((disc, index) => (
+                                    <div key={index} className="min-w-full relative">
+                                        <img
+                                            src={disc}
+                                            alt={`Nexvera Promotion ${index + 1}`}
+                                            className="w-full h-auto block"
+                                        />
+                                        {/* Subtle Metallic Sheen */}
+                                        <div className="absolute inset-0 bg-gradient-to-tr from-white/20 via-transparent to-black/5 pointer-events-none" />
+                                    </div>
+                                ))}
+                            </motion.div>
+
+                            {/* Navigation Buttons */}
+                            <button
+                                onClick={prevDisc}
+                                className="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-2xl border border-white opacity-0 group-hover:opacity-100 transition-all z-20 hover:bg-white hover:scale-110 active:scale-95"
+                            >
+                                <ChevronRight className="w-6 h-6 rotate-180" />
+                            </button>
+                            <button
+                                onClick={nextDisc}
+                                className="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-2xl border border-white opacity-0 group-hover:opacity-100 transition-all z-20 hover:bg-white hover:scale-110 active:scale-95"
+                            >
+                                <ChevronRight className="w-6 h-6" />
+                            </button>
+
+                            {/* Indicators */}
+                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-20">
+                                {discs.map((_, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => setCurrentDisc(index)}
+                                        className={`h-1.5 rounded-full transition-all duration-500 ${currentDisc === index ? 'w-8 bg-blue-600' : 'w-2 bg-white/40 hover:bg-white/70'}`}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+            </section>
+
             <ContactDialog isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
         </div>
     );
